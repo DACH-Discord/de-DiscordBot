@@ -26,7 +26,7 @@ import java.util.Optional;
 
 public class Games {
     private static IDiscordClient client;
-    private final static Path JSON_PATH = Paths.get("data/gameStats.json");
+    private final static Path GAMESTATS_PATH = Paths.get("data/gameStats.json");
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
     private final static String MODULE_NAME = "Spiele";
@@ -35,22 +35,20 @@ public class Games {
 
     private final String prefix;
 
-    private JSONObject json;
+    private JSONObject gameStatsJSON;
 
     public Games(IDiscordClient dClient) {
         client = dClient;
 
         // Prefix aus Config-Datei auslesen
         final String configFileContent = Util.readFile(CONFIG_PATH);
-        if (configFileContent == null) {
-            throw new RuntimeException("[ERROR] Config-Datei konnte nicht gelesen werden!");
-        }
+
         final JSONObject json = new JSONObject(configFileContent);
         this.prefix = json.getString("prefix");
 
         // Spiel-Liste einlesen
-        final String jsonContent = Util.readFile(JSON_PATH);
-        this.json = new JSONObject(jsonContent);
+        final String jsonContent = Util.readFile(GAMESTATS_PATH);
+        this.gameStatsJSON = new JSONObject(jsonContent);
     }
 
     @EventSubscriber
@@ -108,26 +106,26 @@ public class Games {
 
     private void addUser(final String game, final String user) {
         // TODO: User mit ID abspeichern
-        JSONArray gameArray = json.getJSONArray(game);
+        JSONArray gameArray = gameStatsJSON.getJSONArray(game);
         gameArray.put(user);
         saveJSON();
     }
 
     private void addGame(final String game) {
         JSONArray gameArray = new JSONArray();
-        json.put(game, gameArray);
+        gameStatsJSON.put(game, gameArray);
         saveJSON();
     }
 
     private boolean doesGameExist(final String game) {
-            return json.has(game);
+            return gameStatsJSON.has(game);
     }
 
     private boolean doesUserPlay(final String user, final String game) {
-        if (json.has(game)) {
+        if (gameStatsJSON.has(game)) {
             // Spiel ist vorhanden
 
-            JSONArray gameArray = json.getJSONArray(game);
+            JSONArray gameArray = gameStatsJSON.getJSONArray(game);
             for (int i = 0; i < gameArray.length(); i++) {
                 if (gameArray.getString(i).equals(user)) {
                     // User ist in Array Vorhanden
@@ -139,10 +137,10 @@ public class Games {
     }
 
     private void saveJSON() {
-        final String jsonOutput = json.toString(4);
-        Util.writeToFile(JSON_PATH, jsonOutput);
+        final String jsonOutput = gameStatsJSON.toString(4);
+        Util.writeToFile(GAMESTATS_PATH, jsonOutput);
 
-        json = new JSONObject(jsonOutput);
+        gameStatsJSON = new JSONObject(jsonOutput);
     }
 
 
@@ -191,7 +189,7 @@ public class Games {
 
             // Alle Spiele in der Liste, die zu dem Input passen
             List<String> gameKeys = new ArrayList<>(1);
-            for (Object obj : json.keySet()) {
+            for (Object obj : gameStatsJSON.keySet()) {
                 final String gameKey = obj.toString();
                 if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), game.toLowerCase()) < levDistTreshold) {
                     gameKeys.add(gameKey.toLowerCase());
@@ -201,8 +199,8 @@ public class Games {
             String usersPlayingAny = "";
             for (String gameKey : gameKeys) {
 
-                if (json.has(gameKey)) {
-                    JSONArray gameArray = json.getJSONArray(gameKey);
+                if (gameStatsJSON.has(gameKey)) {
+                    JSONArray gameArray = gameStatsJSON.getJSONArray(gameKey);
 
                     for (int i = 0; i < gameArray.length(); i++) {
                         if (!usersPlayingAny.contains(gameArray.getString(i))) {    // No double names

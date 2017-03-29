@@ -11,8 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class RedditLinker {
-    private final static Path LOGGER_PATH = Paths.get("data/logger/");
-
     private static IDiscordClient client;
 
     public RedditLinker(IDiscordClient dClient) {
