@@ -163,8 +163,6 @@ public class Games {
     }
 
     private void command_Playing(final IMessage message) {
-        final int levDistTreshold = 4;  // zulässige Änderungen für Fuzzy Matching
-
         final String content = message.getContent();
         final String game = Util.getContext(content);
 
@@ -172,11 +170,12 @@ public class Games {
             IGuild guild = message.getGuild();
             final List<IUser> users = guild.getUsers();
 
+            final int levDistTreshold = 2 + StringUtils.countMatches(game, " ");
+
             /*
              * Nutzer, die gerade das Spiel spielen
              */
             String usersPlayingNow = "";
-
             for (IUser user : users) {
                 final Optional<String> playing = user.getPresence().getPlayingText();
 
