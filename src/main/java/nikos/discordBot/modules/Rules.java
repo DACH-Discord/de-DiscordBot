@@ -8,7 +8,6 @@ import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.handle.obj.IPrivateChannel;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
@@ -22,7 +21,7 @@ public class Rules {
     private static final String COMMANDS =
                     "`regeln         " + SEPARATOR + "`  Schickt die Regeln dieses Servers" + '\n' +
                     "`rules          " + SEPARATOR + "`  Schickt die Regeln dieses Servers";
-    private final static Path WELCOME_PATH = Paths.get("data/welcome.json");
+    private final static Path RULES_PATH = Paths.get("data/rules.json");
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
     private static IDiscordClient client;
@@ -46,7 +45,7 @@ public class Rules {
         this.ownerID = jsonConfig.getString("owner");
 
         // Welcome Nachricht auslesen
-        final String welcomeFileContent = Util.readFile(WELCOME_PATH);
+        final String welcomeFileContent = Util.readFile(RULES_PATH);
         jsonWelcome = new JSONObject(welcomeFileContent);
 
         this.welcomeMessage = jsonWelcome.getString("welcome");
@@ -139,7 +138,7 @@ public class Rules {
             jsonWelcome.remove("welcome");
         }
         jsonWelcome.put("welcome", this.welcomeMessage);
-        this.saveWelcomeJSON();
+        this.saveRulesJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Nachricht geändert");
         Util.sendMessage(message.getChannel(), welcomeMessage);
@@ -151,7 +150,7 @@ public class Rules {
             jsonWelcome.remove("rules");
         }
         jsonWelcome.put("rules", this.welcomeRules);
-        this.saveWelcomeJSON();
+        this.saveRulesJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
         Util.sendMessage(message.getChannel(), welcomeRules);
@@ -163,7 +162,7 @@ public class Rules {
             jsonWelcome.remove("on");
         }
         jsonWelcome.put("on", true);
-        this.saveWelcomeJSON();
+        this.saveRulesJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
     }
@@ -174,14 +173,14 @@ public class Rules {
             jsonWelcome.remove("on");
         }
         jsonWelcome.put("on", false);
-        this.saveWelcomeJSON();
+        this.saveRulesJSON();
 
         Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
     }
 
-    private void saveWelcomeJSON() {
+    private void saveRulesJSON() {
         final String jsonOutput = jsonWelcome.toString(4);
-        Util.writeToFile(WELCOME_PATH, jsonOutput);
+        Util.writeToFile(RULES_PATH, jsonOutput);
 
         jsonWelcome = new JSONObject(jsonOutput);
     }
