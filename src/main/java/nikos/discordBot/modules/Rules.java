@@ -71,22 +71,11 @@ public class Rules {
         final String messageContentLowerCase = messageContent.toLowerCase();
 
         if (messageContentLowerCase.startsWith(prefix + "help")) {
-            final EmbedBuilder embedBuilder = new EmbedBuilder();
-
-            embedBuilder.withColor(new Color(114, 137, 218));
-            embedBuilder.appendField(MODULE_NAME, COMMANDS, false);
-
-            final EmbedObject embedObject = embedBuilder.build();
-
-            Util.sendEmbed(message.getChannel(), embedObject);
+            this.command_Help(message);
         }
         else if (messageContentLowerCase.equals(prefix + "rules") ||
                  messageContentLowerCase.equals(prefix + "regeln")) {
-            Util.sendPM(message.getAuthor(), this.welcomeRules);
-
-            if (!message.getChannel().isPrivate()) {
-                Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
-            }
+            this.command_Rules(message);
         }
 
         // Folgende Befehle nur Owner
@@ -94,58 +83,100 @@ public class Rules {
             return;
         }
 
-        final String context = Util.getContext(Util.getContext(messageContent));
-        if (messageContentLowerCase.equals(prefix + "welcomeset")) {
-            // Im Channel antworten
-            Util.sendMessage(message.getChannel(), this.welcomeMessage);
-            Util.sendMessage(message.getChannel(), this.welcomeRules);
-
-            // Per PM antworten
-            Util.sendPM(message.getAuthor(), this.welcomeMessage);
-            Util.sendPM(message.getAuthor(), this.welcomeRules);
+        if (messageContent.equalsIgnoreCase(prefix + "welcomeset")) {
+            this.command_Welcomeset(message);
         }
         else if (messageContentLowerCase.startsWith(prefix + "welcomeset welcome ")) {
-            this.welcomeMessage = context;
-            if (jsonWelcome.has("welcome")) {
-                jsonWelcome.remove("welcome");
-            }
-            jsonWelcome.put("welcome", this.welcomeMessage);
-            this.saveWelcomeJSON();
-
-            Util.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Nachricht geändert");
-            Util.sendMessage(message.getChannel(), welcomeMessage);
+            this.command_Welcomeset_Welcome(message);
         }
         else if (messageContentLowerCase.startsWith(prefix + "welcomeset rules ")) {
-            this.welcomeRules = context;
-            if (jsonWelcome.has("rules")) {
-                jsonWelcome.remove("rules");
-            }
-            jsonWelcome.put("rules", this.welcomeRules);
-            this.saveWelcomeJSON();
-
-            Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
-            Util.sendMessage(message.getChannel(), welcomeRules);
+            this.command_Welcomeset_Rules(message);
         }
         else if (messageContentLowerCase.equals(prefix + "welcomeset enable")) {
-            this.on = true;
-            if (jsonWelcome.has("on")) {
-                jsonWelcome.remove("on");
-            }
-            jsonWelcome.put("on", true);
-            this.saveWelcomeJSON();
-
-            Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
+            this.command_Welcomeset_Enable(message);
         }
         else if (messageContentLowerCase.equals(prefix + "welcomeset disable")) {
-            this.on = false;
-            if (jsonWelcome.has("on")) {
-                jsonWelcome.remove("on");
-            }
-            jsonWelcome.put("on", false);
-            this.saveWelcomeJSON();
-
-            Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
+            this.command_Welcomeset_Disable(message);
         }
+    }
+
+    /**********
+     * COMMANDS
+     **********/
+
+    private void command_Help(final IMessage message) {
+        final EmbedBuilder embedBuilder = new EmbedBuilder();
+
+        embedBuilder.withColor(new Color(114, 137, 218));
+        embedBuilder.appendField(MODULE_NAME, COMMANDS, false);
+
+        final EmbedObject embedObject = embedBuilder.build();
+
+        Util.sendEmbed(message.getChannel(), embedObject);
+    }
+
+    private void command_Rules(final IMessage message) {
+        Util.sendPM(message.getAuthor(), this.welcomeRules);
+
+        if (!message.getChannel().isPrivate()) {
+            Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+        }
+    }
+
+    private void command_Welcomeset(final IMessage message) {
+        // Im Channel antworten
+        Util.sendMessage(message.getChannel(), this.welcomeMessage);
+        Util.sendMessage(message.getChannel(), this.welcomeRules);
+
+        // Per PM antworten
+        Util.sendPM(message.getAuthor(), this.welcomeMessage);
+        Util.sendPM(message.getAuthor(), this.welcomeRules);
+    }
+
+    private void command_Welcomeset_Welcome(final IMessage message) {
+        this.welcomeMessage = Util.getContext(Util.getContext(message.getContent()));
+        if (jsonWelcome.has("welcome")) {
+            jsonWelcome.remove("welcome");
+        }
+        jsonWelcome.put("welcome", this.welcomeMessage);
+        this.saveWelcomeJSON();
+
+        Util.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Nachricht geändert");
+        Util.sendMessage(message.getChannel(), welcomeMessage);
+    }
+
+    private void command_Welcomeset_Rules(final IMessage message) {
+        this.welcomeRules = Util.getContext(Util.getContext(message.getContent()));
+        if (jsonWelcome.has("rules")) {
+            jsonWelcome.remove("rules");
+        }
+        jsonWelcome.put("rules", this.welcomeRules);
+        this.saveWelcomeJSON();
+
+        Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
+        Util.sendMessage(message.getChannel(), welcomeRules);
+    }
+
+    private void command_Welcomeset_Enable(final IMessage message) {
+        this.on = true;
+        if (jsonWelcome.has("on")) {
+            jsonWelcome.remove("on");
+        }
+        jsonWelcome.put("on", true);
+        this.saveWelcomeJSON();
+
+        Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
+    }
+
+    private void command_Welcomeset_Disable(final IMessage message) {
+        this.on = false;
+        if (jsonWelcome.has("on")) {
+            jsonWelcome.remove("on");
+        }
+        jsonWelcome.put("on", false);
+        this.saveWelcomeJSON();
+
+        Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
     }
 
     private void saveWelcomeJSON() {
