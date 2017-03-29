@@ -57,7 +57,7 @@ public class UserLog {
         this.on = jsonUserLog.getBoolean("on");
         final String channelID = jsonUserLog.getString("channel");
         this.userLogChannel = client.getChannelByID(channelID);
-        if (userLogChannel == null) {
+        if (this.userLogChannel == null) {
             System.err.print("[ERR] Invalid UserLog Channel!");
         }
     }
@@ -65,21 +65,21 @@ public class UserLog {
     @EventSubscriber
     public void onUserJoin(UserJoinEvent event) {
         if (this.on) {
-            this.userJoin(event.getUser());
+            this.userJoinNotify(event.getUser());
         }
     }
 
     @EventSubscriber
     public void onUnserLeave(UserLeaveEvent event) {
         if (this.on) {
-            this.userLeave(event.getUser());
+            this.userLeaveNotify(event.getUser());
         }
     }
 
     @EventSubscriber
     public void onUserBan(UserBanEvent event) {
         if (this.on) {
-            this.userBan(event.getUser());
+            this.userBanNotify(event.getUser());
         }
     }
 
@@ -91,57 +91,29 @@ public class UserLog {
         }
 
         final String messageContent = message.getContent();
+        final String messageContentLowerCase = messageContent.toLowerCase();
 
-        if (messageContent.toLowerCase().equals(prefix + "userlog")) {
-            Util.sendMessage(message.getChannel(), "Kanal: <#" + userLogChannel.getID() + ">");
+        if (messageContent.equalsIgnoreCase(prefix + "userlog")) {
+            this.command_Userlog(message);
         }
-        else if (messageContent.toLowerCase().startsWith(prefix + "userlog channel")) {
-            final String channelID = Util.getContext(Util.getContext(messageContent));
-            if (jsonUserLog.has("channel")) {
-                jsonUserLog.remove("channel");
-            }
-            jsonUserLog.put("channel", channelID);
-            saveUserLogJSON();
-
-            this.userLogChannel = client.getChannelByID(channelID);
-            if (userLogChannel == null) {
-                System.err.print("[ERR] Invalid UserLog Channel!");
-                Util.sendMessage(message.getChannel(), ":x: Kanal mit der ID `" + channelID + "` nicht gefunden!");
-            }
-            else {
-                Util.sendMessage(message.getChannel(), ":white_check_mark: Neuer Kanal: " +
-                        "<#" + userLogChannel.getID() + ">");
-            }
+        else if (messageContentLowerCase.startsWith(prefix + "userlog channel")) {
+            this.command_Userlog_Channel(message);
         }
         else if (messageContent.toLowerCase().startsWith(prefix + "userlog enable")) {
-            this.on = true;
-            if (jsonUserLog.has("on")) {
-                jsonUserLog.remove("on");
-            }
-            jsonUserLog.put("on", true);
-            saveUserLogJSON();
-
-            Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
+            this.command_Userlog_Enable(message);
         }
         else if (messageContent.toLowerCase().startsWith(prefix + "userlog disable")) {
-            this.on = false;
-            if (jsonUserLog.has("on")) {
-                jsonUserLog.remove("on");
-            }
-            jsonUserLog.put("on", false);
-            saveUserLogJSON();
-
-            Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
+            this.command_Userlog_Disable(message);
         }
         else if (messageContent.equals(prefix + "userlog test")) {
-            IUser user = message.getAuthor();
-            userJoin(user);
-            userLeave(user);
-            userBan(user);
+            final IUser user = message.getAuthor();
+            userJoinNotify(user);
+            userLeaveNotify(user);
+            userBanNotify(user);
         }
     }
 
-    private void userJoin(final IUser user) {
+    private void userJoinNotify(final IUser user) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
         final DateTimeFormatter serverJoinTimeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
         final DateTimeFormatter discordJoinTimestampFormatter = DateTimeFormatter.ofPattern("dd.MM.YYYY | HH:mm");
@@ -159,7 +131,7 @@ public class UserLog {
         Util.sendEmbed(userLogChannel, embedObject);
     }
 
-    private void userLeave(final IUser user) {
+    private void userLeaveNotify(final IUser user) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
 
@@ -175,7 +147,7 @@ public class UserLog {
         Util.sendEmbed(userLogChannel, embedObject);
     }
 
-    private void userBan(final IUser user) {
+    private void userBanNotify(final IUser user) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
 
@@ -189,6 +161,62 @@ public class UserLog {
         final EmbedObject embedObject = embedBuilder.build();
 
         Util.sendEmbed(userLogChannel, embedObject);
+    }
+
+    /**********
+     * COMMANDS
+     **********/
+
+    private void command_Userlog(final IMessage message) {
+        Util.sendMessage(message.getChannel(), "Kanal: <#" + userLogChannel.getID() + ">");
+    }
+
+    private void command_Userlog_Channel(final IMessage message) {
+        final String channelID = Util.getContext(Util.getContext(message.getContent()));
+        if (jsonUserLog.has("channel")) {
+            jsonUserLog.remove("channel");
+        }
+        jsonUserLog.put("channel", channelID);
+        saveUserLogJSON();
+
+        this.userLogChannel = client.getChannelByID(channelID);
+        if (userLogChannel == null) {
+            System.err.print("[ERR] Invalid UserLog Channel!");
+            Util.sendMessage(message.getChannel(), ":x: Kanal mit der ID `" + channelID + "` nicht gefunden!");
+        }
+        else {
+            Util.sendMessage(message.getChannel(), ":white_check_mark: Neuer Kanal: " +
+                    "<#" + userLogChannel.getID() + ">");
+        }
+    }
+
+    private void command_Userlog_Enable(final IMessage message) {
+        this.on = true;
+        if (jsonUserLog.has("on")) {
+            jsonUserLog.remove("on");
+        }
+        jsonUserLog.put("on", true);
+        saveUserLogJSON();
+
+        Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
+    }
+
+    private void command_Userlog_Disable(final IMessage message) {
+        this.on = false;
+        if (jsonUserLog.has("on")) {
+            jsonUserLog.remove("on");
+        }
+        jsonUserLog.put("on", false);
+        saveUserLogJSON();
+
+        Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
+    }
+
+    private void command_Userlog_Test(final IMessage message) {
+        final IUser user = message.getAuthor();
+        userJoinNotify(user);
+        userLeaveNotify(user);
+        userBanNotify(user);
     }
 
     private void saveUserLogJSON() {
