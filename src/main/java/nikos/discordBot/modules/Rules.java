@@ -40,18 +40,13 @@ public class Rules {
 
         // Prefix und Owner ID aus Config-Datei auslesen
         final String configFileContent = Util.readFile(CONFIG_PATH);
-        if (configFileContent == null) {
-            throw new RuntimeException("[ERROR] Could not read Config File!");
-        }
         final JSONObject jsonConfig = new JSONObject(configFileContent);
+
         this.prefix = jsonConfig.getString("prefix");
         this.ownerID = jsonConfig.getString("owner");
 
         // Welcome Nachricht auslesen
         final String welcomeFileContent = Util.readFile(WELCOME_PATH);
-        if (welcomeFileContent == null) {
-            throw new RuntimeException("[ERROR] Could not read Welcome File!");
-        }
         jsonWelcome = new JSONObject(welcomeFileContent);
 
         this.welcomeMessage = jsonWelcome.getString("welcome");
