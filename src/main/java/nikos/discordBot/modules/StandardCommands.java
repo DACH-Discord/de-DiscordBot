@@ -23,7 +23,10 @@ import nikos.discordBot.util.Util;
  * Standard Listeners
  */
 public class StandardCommands {
+    private static IDiscordClient client;
+
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
+
     private static final String MODULE_NAME = "Allgemeine Befehle";
     private static final char SEPARATOR = '⠀';
     private static final String COMMANDS =
@@ -31,8 +34,6 @@ public class StandardCommands {
             "`quote <ID>     " + SEPARATOR + "`  Zitiert die Nachricht mit der angegebenen ID" + '\n' +
             "`ping           " + SEPARATOR + "`  Pong" + '\n' +
             "`uptime         " + SEPARATOR + "`  Zeigt seit wann der Bot online ist";
-
-    private static IDiscordClient client;
 
     private final LocalDateTime startupTimestamp;
     private final String prefix;

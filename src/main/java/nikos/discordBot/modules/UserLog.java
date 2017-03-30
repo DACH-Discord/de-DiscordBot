@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class UserLog {
+    static IDiscordClient client;
+
     private final static Path USERLOG_PATH = Paths.get("data/userLog.json");
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
@@ -28,18 +30,13 @@ public class UserLog {
 
     private JSONObject jsonUserLog;
     private IChannel userLogChannel;
-    private boolean on;
-
-    static IDiscordClient client;
+    private boolean isEnabled;
 
     public UserLog(final IDiscordClient dClient) {
         client = dClient;
 
         // Prefix und Owner ID aus Config-Datei auslesen
         final String configFileContent = Util.readFile(CONFIG_PATH);
-        if (configFileContent == null) {
-            throw new RuntimeException("[ERROR] Could not read Config File!");
-        }
         final JSONObject jsonConfig = new JSONObject(configFileContent);
         this.prefix = jsonConfig.getString("prefix");
         this.ownerID = jsonConfig.getString("owner");
@@ -54,7 +51,7 @@ public class UserLog {
         }
         jsonUserLog = new JSONObject(userLogFileContent);
 
-        this.on = jsonUserLog.getBoolean("on");
+        this.isEnabled = jsonUserLog.getBoolean("on");
         final String channelID = jsonUserLog.getString("channel");
         this.userLogChannel = client.getChannelByID(channelID);
         if (this.userLogChannel == null) {
@@ -64,21 +61,21 @@ public class UserLog {
 
     @EventSubscriber
     public void onUserJoin(UserJoinEvent event) {
-        if (this.on) {
+        if (this.isEnabled) {
             this.userJoinNotify(event.getUser());
         }
     }
 
     @EventSubscriber
     public void onUnserLeave(UserLeaveEvent event) {
-        if (this.on) {
+        if (this.isEnabled) {
             this.userLeaveNotify(event.getUser());
         }
     }
 
     @EventSubscriber
     public void onUserBan(UserBanEvent event) {
-        if (this.on) {
+        if (this.isEnabled) {
             this.userBanNotify(event.getUser());
         }
     }
@@ -191,7 +188,7 @@ public class UserLog {
     }
 
     private void command_Userlog_Enable(final IMessage message) {
-        this.on = true;
+        this.isEnabled = true;
         if (jsonUserLog.has("on")) {
             jsonUserLog.remove("on");
         }
@@ -202,7 +199,7 @@ public class UserLog {
     }
 
     private void command_Userlog_Disable(final IMessage message) {
-        this.on = false;
+        this.isEnabled = false;
         if (jsonUserLog.has("on")) {
             jsonUserLog.remove("on");
         }

@@ -16,15 +16,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Rules {
+    private final static Path RULES_PATH = Paths.get("data/rules.json");
+    private final static Path CONFIG_PATH = Paths.get("config/config.json");
+
     private static final String MODULE_NAME = "Regeln";
     private static final char SEPARATOR = '⠀';
     private static final String COMMANDS =
                     "`regeln         " + SEPARATOR + "`  Schickt die Regeln dieses Servers" + '\n' +
                     "`rules          " + SEPARATOR + "`  Schickt die Regeln dieses Servers";
-    private final static Path RULES_PATH = Paths.get("data/rules.json");
-    private final static Path CONFIG_PATH = Paths.get("config/config.json");
-
-    private static IDiscordClient client;
 
     private final String prefix;
     private final String ownerID;
@@ -32,10 +31,9 @@ public class Rules {
     private JSONObject jsonWelcome;
     private String welcomeMessage;
     private String welcomeRules;
-    private boolean on;
+    private boolean isEnabled;
 
     public Rules(IDiscordClient dClient) {
-        client = dClient;
 
         // Prefix und Owner ID aus Config-Datei auslesen
         final String configFileContent = Util.readFile(CONFIG_PATH);
@@ -50,12 +48,12 @@ public class Rules {
 
         this.welcomeMessage = jsonWelcome.getString("welcome");
         this.welcomeRules = jsonWelcome.getString("rules");
-        this.on = jsonWelcome.getBoolean("on");
+        this.isEnabled = jsonWelcome.getBoolean("on");
     }
 
     @EventSubscriber
     public void onUserJoin(UserJoinEvent event) {
-        if (this.on) {
+        if (this.isEnabled) {
             final IUser user = event.getUser();
 
             Util.sendPM(user, welcomeMessage);
@@ -157,7 +155,7 @@ public class Rules {
     }
 
     private void command_Welcomeset_Enable(final IMessage message) {
-        this.on = true;
+        this.isEnabled = true;
         if (jsonWelcome.has("on")) {
             jsonWelcome.remove("on");
         }
@@ -168,7 +166,7 @@ public class Rules {
     }
 
     private void command_Welcomeset_Disable(final IMessage message) {
-        this.on = false;
+        this.isEnabled = false;
         if (jsonWelcome.has("on")) {
             jsonWelcome.remove("on");
         }

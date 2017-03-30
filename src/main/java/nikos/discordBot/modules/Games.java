@@ -24,6 +24,7 @@ import java.util.List;
 
 public class Games {
     private static IDiscordClient client;
+
     private final static Path GAMESTATS_PATH = Paths.get("data/gameStats.json");
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
