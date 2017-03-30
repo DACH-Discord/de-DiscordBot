@@ -16,13 +16,11 @@ import sx.blah.discord.util.EmbedBuilder;
 
 import org.apache.commons.lang3.StringUtils;
 
-
 import java.awt.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
 
 public class Games {
     private static IDiscordClient client;
@@ -53,7 +51,6 @@ public class Games {
 
     @EventSubscriber
     public void onStartUP(ReadyEvent event) {
-
         List<IUser> users = client.getUsers();
 
         for(IUser user : users) {
@@ -79,7 +76,7 @@ public class Games {
         }
     }
 
-    private void updateUserStatus(final IUser user) {
+    private synchronized void updateUserStatus(final IUser user) {
         if (user.isBot()) {
             return;
         }
@@ -92,22 +89,21 @@ public class Games {
             if (gameStatus.isPresent()) {
                 // User spielt (jetzt) ein Spiel
                 final String gameName = gameStatus.get().toLowerCase();
-                final String userName = user.getName() + "#" + user.getDiscriminator();
+                final String userID = user.getID();
 
                 if (!doesGameExist(gameName)) {
                     this.addGame(gameName);
                 }
-                if (!doesUserPlay(userName, gameName)) {
-                    this.addUser(gameName, userName);
+                if (!doesUserPlay(userID, gameName)) {
+                    this.addUser(gameName, userID);
                 }
             }
         }
     }
 
-    private void addUser(final String game, final String user) {
-        // TODO: User mit ID abspeichern
-        JSONArray gameArray = gameStatsJSON.getJSONArray(game);
-        gameArray.put(user);
+    private void addUser(final String gameName, final String userID) {
+        JSONArray gameArray = gameStatsJSON.getJSONArray(gameName);
+        gameArray.put(userID);
         saveJSON();
     }
 
@@ -121,13 +117,13 @@ public class Games {
             return gameStatsJSON.has(game);
     }
 
-    private boolean doesUserPlay(final String user, final String game) {
+    private boolean doesUserPlay(final String userID, final String game) {
         if (gameStatsJSON.has(game)) {
             // Spiel ist vorhanden
 
             JSONArray gameArray = gameStatsJSON.getJSONArray(game);
             for (int i = 0; i < gameArray.length(); i++) {
-                if (gameArray.getString(i).equals(user)) {
+                if (gameArray.getString(i).equals(userID)) {
                     // User ist in Array Vorhanden
                     return true;
                 }
@@ -154,6 +150,7 @@ public class Games {
 
         embedBuilder.withColor(new Color(114, 137, 218));
         embedBuilder.appendField(MODULE_NAME, COMMANDS, false);
+        embedBuilder.withFooterText("+++NEU+++ Jetzt mit Fuzzy Matching!");
 
         final EmbedObject embedObject = embedBuilder.build();
 
@@ -203,8 +200,11 @@ public class Games {
                     JSONArray gameArray = gameStatsJSON.getJSONArray(gameKey);
 
                     for (int i = 0; i < gameArray.length(); i++) {
-                        if (!usersPlayingAny.contains(gameArray.getString(i))) {    // No double names
-                            usersPlayingAny = usersPlayingAny + gameArray.getString(i) + '\n';
+                        final IUser user = client.getUserByID(gameArray.getString(i));
+                        final String userOutput = user.getName() + '#' + user.getDiscriminator();
+
+                        if (!usersPlayingAny.contains(userOutput)) {    // Keine doppelten Namen
+                            usersPlayingAny = usersPlayingAny + userOutput + '\n';
                         }
                     }
                 }

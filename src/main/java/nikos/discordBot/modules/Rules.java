@@ -46,7 +46,7 @@ public class Rules {
 
         // Welcome Nachricht auslesen
         final String welcomeFileContent = Util.readFile(RULES_PATH);
-        jsonWelcome = new JSONObject(welcomeFileContent);
+        this.jsonWelcome = new JSONObject(welcomeFileContent);
 
         this.welcomeMessage = jsonWelcome.getString("welcome");
         this.welcomeRules = jsonWelcome.getString("rules");
