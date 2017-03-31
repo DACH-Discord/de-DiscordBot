@@ -34,14 +34,12 @@ public class DiscordBot {
         try {
             EventDispatcher dispatcher = client.getDispatcher();
 
-            //dispatcher.registerListener(this);
-            //dispatcher.registerListener(new StandardCommands(client));
-            //dispatcher.registerListener(new Games(client));
-            //dispatcher.registerListener(new UserLog(client));
-            //dispatcher.registerListener(new Rules(client));
-            //dispatcher.registerListener(new RedditLinker(client));
-
-            dispatcher.registerListener(new AprilFools(client));
+            dispatcher.registerListener(this);
+            dispatcher.registerListener(new StandardCommands(client));
+            dispatcher.registerListener(new Games(client));
+            dispatcher.registerListener(new UserLog(client));
+            dispatcher.registerListener(new Rules(client));
+            dispatcher.registerListener(new RedditLinker(client));
         }
         catch (NullPointerException e) {
             System.err.println("[Error] Could not get EventDispatcher: " + '\n' + e.getMessage());
