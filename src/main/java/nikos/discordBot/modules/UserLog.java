@@ -55,7 +55,7 @@ public class UserLog {
         final String channelID = jsonUserLog.getString("channel");
         this.userLogChannel = client.getChannelByID(channelID);
         if (this.userLogChannel == null) {
-            System.err.print("[ERR] Invalid UserLog Channel!");
+            System.err.println("[ERR] Invalid UserLog Channel!");
         }
     }
 
