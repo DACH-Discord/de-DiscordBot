@@ -50,7 +50,7 @@ public class Util {
         }
     }
 
-    public static synchronized void sendPM(final IUser user, final String message) {
+    public static synchronized void sendPM(IUser user, final String message) {
         try {
             final IPrivateChannel channel = user.getOrCreatePMChannel();
             channel.sendMessage(message);

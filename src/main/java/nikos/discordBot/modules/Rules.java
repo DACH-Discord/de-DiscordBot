@@ -7,6 +7,7 @@ import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
+import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
@@ -23,14 +24,15 @@ public class Rules {
     private static final char SEPARATOR = '⠀';
     private static final String COMMANDS =
                     "`regeln         " + SEPARATOR + "`  Schickt die Regeln dieses Servers" + '\n' +
-                    "`rules          " + SEPARATOR + "`  Schickt die Regeln dieses Servers";
+                    "`rules          " + SEPARATOR + "`  Sends Rules of this server";
 
     private final String prefix;
     private final String ownerID;
 
     private JSONObject jsonWelcome;
     private String welcomeMessage;
-    private String welcomeRules;
+    private String rulesDE;
+    private String rulesEN;
     private boolean isEnabled;
 
     public Rules(IDiscordClient dClient) {
@@ -47,7 +49,8 @@ public class Rules {
         this.jsonWelcome = new JSONObject(welcomeFileContent);
 
         this.welcomeMessage = jsonWelcome.getString("welcome");
-        this.welcomeRules = jsonWelcome.getString("rules");
+        this.rulesDE = jsonWelcome.getString("rulesDE");
+        this.rulesEN = jsonWelcome.getString("rulesEN");
         this.isEnabled = jsonWelcome.getBoolean("on");
     }
 
@@ -57,12 +60,14 @@ public class Rules {
             final IUser user = event.getUser();
 
             Util.sendPM(user, welcomeMessage);
-            Util.sendPM(user, welcomeRules);
+            Util.sendPM(user, rulesDE);
+            Util.sendPM(user, "**If you don't speak german, use the command `" + prefix + "rules`.**");
         }
     }
 
     @EventSubscriber
     public void onMessageRecieved(MessageReceivedEvent event) {
+
         final IMessage message = event.getMessage();
         final String messageContent = message.getContent();
         final String messageContentLowerCase = messageContent.toLowerCase();
@@ -70,8 +75,10 @@ public class Rules {
         if (messageContentLowerCase.startsWith(prefix + "help")) {
             this.command_Help(message);
         }
-        else if (messageContentLowerCase.equals(prefix + "rules") ||
-                 messageContentLowerCase.equals(prefix + "regeln")) {
+        else if (messageContentLowerCase.equals(prefix + "regeln")) {
+            this.command_Regeln(message);
+        }
+        else if (messageContentLowerCase.equals(prefix + "rules")) {
             this.command_Rules(message);
         }
 
@@ -85,6 +92,9 @@ public class Rules {
         }
         else if (messageContentLowerCase.startsWith(prefix + "welcomeset welcome ")) {
             this.command_Welcomeset_Welcome(message);
+        }
+        else if (messageContentLowerCase.startsWith(prefix + "welcomeset regeln ")) {
+            this.command_Welcomeset_Regeln(message);
         }
         else if (messageContentLowerCase.startsWith(prefix + "welcomeset rules ")) {
             this.command_Welcomeset_Rules(message);
@@ -112,8 +122,16 @@ public class Rules {
         Util.sendEmbed(message.getChannel(), embedObject);
     }
 
+    private void command_Regeln(final IMessage message) {
+        Util.sendPM(message.getAuthor(), this.rulesDE);
+
+        if (!message.getChannel().isPrivate()) {
+            Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+        }
+    }
+
     private void command_Rules(final IMessage message) {
-        Util.sendPM(message.getAuthor(), this.welcomeRules);
+        Util.sendPM(message.getAuthor(), this.rulesEN);
 
         if (!message.getChannel().isPrivate()) {
             Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
@@ -121,13 +139,12 @@ public class Rules {
     }
 
     private void command_Welcomeset(final IMessage message) {
-        // Im Channel antworten
-        Util.sendMessage(message.getChannel(), this.welcomeMessage);
-        Util.sendMessage(message.getChannel(), this.welcomeRules);
-
         // Per PM antworten
         Util.sendPM(message.getAuthor(), this.welcomeMessage);
-        Util.sendPM(message.getAuthor(), this.welcomeRules);
+        Util.sendPM(message.getAuthor(), this.rulesDE);
+        Util.sendPM(message.getAuthor(), "**If you don't speak german, use the command `" +
+                prefix + "rules`.**");
+
     }
 
     private void command_Welcomeset_Welcome(final IMessage message) {
@@ -136,22 +153,34 @@ public class Rules {
             jsonWelcome.remove("welcome");
         }
         jsonWelcome.put("welcome", this.welcomeMessage);
-        this.saveRulesJSON();
+        this.saveJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Nachricht geändert");
         Util.sendMessage(message.getChannel(), welcomeMessage);
     }
 
     private void command_Welcomeset_Rules(final IMessage message) {
-        this.welcomeRules = Util.getContext(Util.getContext(message.getContent()));
-        if (jsonWelcome.has("rules")) {
-            jsonWelcome.remove("rules");
+        this.rulesEN = Util.getContext(Util.getContext(message.getContent()));
+        if (jsonWelcome.has("rulesEN")) {
+            jsonWelcome.remove("rulesEN");
         }
-        jsonWelcome.put("rules", this.welcomeRules);
-        this.saveRulesJSON();
+        jsonWelcome.put("rulesEN", this.rulesEN);
+        this.saveJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
-        Util.sendMessage(message.getChannel(), welcomeRules);
+        Util.sendMessage(message.getChannel(), rulesDE);
+    }
+
+    private void command_Welcomeset_Regeln(final IMessage message) {
+        this.rulesDE = Util.getContext(Util.getContext(message.getContent()));
+        if (jsonWelcome.has("rulesDE")) {
+            jsonWelcome.remove("rulesDE");
+        }
+        jsonWelcome.put("rulesDE", this.rulesDE);
+        this.saveJSON();
+
+        Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
+        Util.sendMessage(message.getChannel(), rulesDE);
     }
 
     private void command_Welcomeset_Enable(final IMessage message) {
@@ -160,7 +189,7 @@ public class Rules {
             jsonWelcome.remove("on");
         }
         jsonWelcome.put("on", true);
-        this.saveRulesJSON();
+        this.saveJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
     }
@@ -171,12 +200,12 @@ public class Rules {
             jsonWelcome.remove("on");
         }
         jsonWelcome.put("on", false);
-        this.saveRulesJSON();
+        this.saveJSON();
 
         Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
     }
 
-    private void saveRulesJSON() {
+    private void saveJSON() {
         final String jsonOutput = jsonWelcome.toString(4);
         Util.writeToFile(RULES_PATH, jsonOutput);
 
