@@ -11,6 +11,7 @@ import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
+import sx.blah.discord.util.RequestBuffer;
 
 import java.awt.*;
 import java.nio.file.Path;
@@ -59,9 +60,11 @@ public class Rules {
         if (this.isEnabled) {
             final IUser user = event.getUser();
 
-            Util.sendPM(user, welcomeMessage);
-            Util.sendPM(user, rulesDE);
-            Util.sendPM(user, "**If you don't speak german, use the command `" + prefix + "rules`.**");
+            RequestBuffer.request(() -> {
+                Util.sendPM(user, welcomeMessage);
+                Util.sendPM(user, rulesDE);
+                Util.sendPM(user, "**If you don't speak german, use the command `" + prefix + "rules`.**");
+            });
         }
     }
 

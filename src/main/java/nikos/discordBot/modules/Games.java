@@ -202,10 +202,11 @@ public class Games {
 
                     for (int i = 0; i < gameArray.length(); i++) {
                         final IUser user = client.getUserByID(gameArray.getString(i));
-                        final String userOutput = user.getName() + '#' + user.getDiscriminator();
-
-                        if (!usersPlayingAny.contains(userOutput)) {    // Keine doppelten Namen
-                            usersPlayingAny = usersPlayingAny + userOutput + '\n';
+                        if (user != null) {
+                            final String userOutput = user.getName() + '#' + user.getDiscriminator();
+                            if (!usersPlayingAny.contains(userOutput)) {    // Keine doppelten Namen
+                                usersPlayingAny = usersPlayingAny + userOutput + '\n';
+                            }
                         }
                     }
                 }
