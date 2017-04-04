@@ -1,23 +1,25 @@
 package nikos.discordBot.modules;
 
+import nikos.discordBot.util.Util;
 import org.json.JSONObject;
 import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventDispatcher;
 import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
-import sx.blah.discord.handle.obj.*;
-import sx.blah.discord.util.*;
+import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.handle.obj.IRole;
+import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.util.DiscordException;
+import sx.blah.discord.util.EmbedBuilder;
+import sx.blah.discord.util.MissingPermissionsException;
+import sx.blah.discord.util.RateLimitException;
 
 import java.awt.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-
-import nikos.discordBot.util.Util;
 
 /**
  * Standard Listeners
@@ -56,10 +58,6 @@ public class StandardCommands {
 
     @EventSubscriber
     public void onMessageRecieved(MessageReceivedEvent event) throws DiscordException, RateLimitException, MissingPermissionsException, InterruptedException {
-        if (!client.isReady()) {
-            System.out.println("[WARN] Bot not ready!");
-        }
-
         final IMessage message = event.getMessage();
         final String messageContent = message.getContent().toLowerCase();
 

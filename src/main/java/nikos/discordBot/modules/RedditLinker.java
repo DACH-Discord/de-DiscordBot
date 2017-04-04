@@ -4,11 +4,7 @@ import nikos.discordBot.util.Util;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
-import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class RedditLinker {
     private static IDiscordClient client;

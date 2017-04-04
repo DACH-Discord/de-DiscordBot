@@ -1,10 +1,9 @@
 package nikos.discordBot.modules;
 
 import nikos.discordBot.util.Util;
-
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
@@ -14,13 +13,12 @@ import sx.blah.discord.handle.impl.events.user.PresenceUpdateEvent;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.awt.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class Games {
     private static IDiscordClient client;

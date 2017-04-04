@@ -5,19 +5,15 @@ import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.MissingPermissionsException;
 import sx.blah.discord.util.RateLimitException;
-import sx.blah.discord.util.RequestBuffer;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 public class Util {
+
     /*
     RequestBuffer.request(() -> {
             // Stuff
@@ -28,11 +24,11 @@ public class Util {
         try {
             channel.sendMessage(message);
         } catch (RateLimitException e) {
-            System.err.println("[Error] Ratelimited!");
+            System.err.println("[ERR] Ratelimited!");
         } catch (MissingPermissionsException e) {
-            System.err.println("[Error] Missing Permissions");
+            System.err.println("[ERR] Missing Permissions");
         } catch (DiscordException e) {
-            System.err.println("[Error] " + e.getMessage());
+            System.err.println("[ERR] " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -41,25 +37,25 @@ public class Util {
         try {
             channel.sendMessage(embedObject);
         } catch (RateLimitException e) {
-            System.err.println("[Error] Ratelimited!");
+            System.err.println("[ERR] Ratelimited!");
         } catch (MissingPermissionsException e) {
-            System.err.println("[Error] Missing Permissions");
+            System.err.println("[ERR] Missing Permissions");
         } catch (DiscordException e) {
-            System.err.println("[Error] " + e.getMessage());
+            System.err.println("[ERR] " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    public static synchronized void sendPM(IUser user, final String message) {
+    public static synchronized void sendPM(final IUser user, final String message) {
         try {
             final IPrivateChannel channel = user.getOrCreatePMChannel();
             channel.sendMessage(message);
         } catch (RateLimitException e) {
-            System.err.println("[Error] Ratelimited!");
+            System.err.println("[ERR] Ratelimited!");
         } catch (MissingPermissionsException e) {
-            System.err.println("[Error] Missing Permissions");
+            System.err.println("[ERR] Missing Permissions");
         } catch (DiscordException e) {
-            System.err.println("[Error] " + e.getMessage());
+            System.err.println("[ERR] " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -90,7 +86,7 @@ public class Util {
             return new String(Files.readAllBytes(path));
         }
         catch (IOException e){
-            System.err.println("[Error] " + e.getMessage());
+            System.err.println("[ERR]  " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -101,7 +97,7 @@ public class Util {
             Files.write(file, text.getBytes(StandardCharsets.UTF_8));
         }
         catch (IOException e) {
-            System.err.println("[Error] " + e.getMessage());
+            System.err.println("[ERR] " + e.getMessage());
             e.printStackTrace();
         }
 
