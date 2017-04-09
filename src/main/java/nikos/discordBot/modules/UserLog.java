@@ -106,10 +106,7 @@ public class UserLog {
             this.command_Userlog_Disable(message);
         }
         else if (messageContent.equals(prefix + "userlog test")) {
-            final IUser user = message.getAuthor();
-            userJoinNotify(user);
-            userLeaveNotify(user);
-            userBanNotify(user);
+            command_Userlog_Test(message);
         }
     }
 
@@ -170,7 +167,9 @@ public class UserLog {
      **********/
 
     private void command_Userlog(final IMessage message) {
-        Util.sendMessage(message.getChannel(), "Kanal: <#" + userLogChannel.getID() + ">");
+        final String reply = "Kanal: <#" + userLogChannel.getID() + ">" + '\n' +
+                "Enabled: `" + isEnabled + '`';
+        Util.sendMessage(message.getChannel(), reply);
     }
 
     private void command_Userlog_Channel(final IMessage message) {
