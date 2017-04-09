@@ -16,6 +16,7 @@ import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
+import java.awt.Color;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -124,6 +125,7 @@ public class UserLog {
                         "**Discord beigetreten:** " + user.getCreationDate().format(discordJoinTimestampFormatter),
                 false);
         embedBuilder.withFooterText(LocalDateTime.now().format(serverJoinTimeStampFormatter));
+        embedBuilder.withColor(new Color(119, 178, 85));
 
         final EmbedObject embedObject = embedBuilder.build();
 
@@ -140,6 +142,7 @@ public class UserLog {
                 "**ID:** " + user.getID(),
                 false);
         embedBuilder.withFooterText(LocalDateTime.now().format(timeStampFormatter));
+        embedBuilder.withColor(new Color(221, 46, 68));
 
         final EmbedObject embedObject = embedBuilder.build();
 
