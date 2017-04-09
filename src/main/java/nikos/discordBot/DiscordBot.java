@@ -40,6 +40,7 @@ public class DiscordBot {
             dispatcher.registerListener(new UserLog(client));
             dispatcher.registerListener(new Rules(client));
             dispatcher.registerListener(new RedditLinker(client));
+            dispatcher.registerListener(new Poll(client));
         }
         catch (NullPointerException e) {
             System.err.println("[Error] Could not get EventDispatcher: " + '\n' + e.getMessage());

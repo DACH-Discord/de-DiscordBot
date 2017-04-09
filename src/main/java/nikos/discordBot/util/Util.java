@@ -20,9 +20,9 @@ public class Util {
         });
      */
 
-    public static synchronized void sendMessage(final IChannel channel, final String message) {
+    public static synchronized IMessage sendMessage(final IChannel channel, final String message) {
         try {
-            channel.sendMessage(message);
+            return channel.sendMessage(message);
         } catch (RateLimitException e) {
             System.err.println("[ERR] Ratelimited!");
         } catch (MissingPermissionsException e) {
@@ -31,11 +31,12 @@ public class Util {
             System.err.println("[ERR] " + e.getMessage());
             e.printStackTrace();
         }
+        return null;
     }
 
-    public static synchronized void sendEmbed(final IChannel channel, final EmbedObject embedObject) {
+    public static synchronized IMessage sendEmbed(final IChannel channel, final EmbedObject embedObject) {
         try {
-            channel.sendMessage(embedObject);
+            return channel.sendMessage(embedObject);
         } catch (RateLimitException e) {
             System.err.println("[ERR] Ratelimited!");
         } catch (MissingPermissionsException e) {
@@ -44,12 +45,13 @@ public class Util {
             System.err.println("[ERR] " + e.getMessage());
             e.printStackTrace();
         }
+        return null;
     }
 
-    public static synchronized void sendPM(final IUser user, final String message) {
+    public static synchronized IMessage sendPM(final IUser user, final String message) {
         try {
             final IPrivateChannel channel = user.getOrCreatePMChannel();
-            channel.sendMessage(message);
+            return channel.sendMessage(message);
         } catch (RateLimitException e) {
             System.err.println("[ERR] Ratelimited!");
         } catch (MissingPermissionsException e) {
@@ -58,6 +60,7 @@ public class Util {
             System.err.println("[ERR] " + e.getMessage());
             e.printStackTrace();
         }
+        return null;
     }
 
     public static String getContext(final String message) {
