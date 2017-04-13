@@ -223,19 +223,10 @@ public class Games {
             EmbedBuilder embedBuilder = new EmbedBuilder();
 
             if (!usersPlayingNow.isEmpty()) {
-                embedBuilder.appendField("Nutzer, die __**jetzt**__ " + game + " spielen", usersPlayingNow, false);
+                Util.sendMessage(message.getChannel(), "**Nutzer, die __jetzt__ _" + game + "_ spielen**" + '\n' + usersPlayingNow);
             }
             if (!usersPlayingAny.isEmpty()) {
-                embedBuilder.appendField("__**Alle**__ Nutzer, die " + game + " spielen", usersPlayingAny, false);
-            }
-
-            EmbedObject embedObject = embedBuilder.build();
-
-            if (!embedBuilder.doesExceedCharacterLimit()) {
-                Util.sendEmbed(message.getChannel(), embedObject);
-            }
-            else {
-                Util.sendMessage(message.getChannel(), ":x: Fehler: Embed exceeds character limit!");
+                Util.sendMessage(message.getChannel(), "**__Alle__ Nutzer, die _" + game + "_ spielen**" + '\n' + usersPlayingAny);
             }
         }
         else {  // Kein Spiel angegeben
