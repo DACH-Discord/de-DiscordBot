@@ -8,11 +8,15 @@ import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
-import sx.blah.discord.util.RequestBuffer;
 
 import java.awt.Color;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class Poll {
     private static IDiscordClient client;
@@ -22,6 +26,7 @@ public class Poll {
     private final static String MODULE_NAME = "Spiele";
     private final static char SEPARATOR = '⠀';
     private final static String COMMANDS = "`poll           " + SEPARATOR + "`  startet eine Abstimmung";
+    private final static String SYNTAX = "poll Frage;Option 1;Option 2;Option n;Dauer (in Sekunden)`";
 
     private final String prefix;
 
@@ -55,7 +60,7 @@ public class Poll {
 
         embedBuilder.withColor(new Color(114, 137, 218));
         embedBuilder.appendField(MODULE_NAME, COMMANDS, false);
-        embedBuilder.withFooterText("Syntax: " + prefix + "poll Frage;Option 1;Option 2;Option n;Dauer in Sekunden`");
+        embedBuilder.withFooterText("Syntax: " + prefix + SYNTAX);
 
         final EmbedObject embedObject = embedBuilder.build();
 
@@ -71,62 +76,83 @@ public class Poll {
                 context.matches(".+;.+;.+;.+;.+;[0-9]+") || context.matches(".+;.+;.+;.+;.+;.+;[0-9]+")) {
 
             final String[] pollArgs = context.split(";");
-            final int optionsCount = pollArgs.length-2;
-            final int pollSeconds = Integer.parseInt(pollArgs[pollArgs.length-1]);
-            final int pollMilliSeconds = (pollSeconds * 1000);
 
-            if (optionsCount > 5) {
+            // Argumente des Befehls auslesen
+            final String pollQuestion = pollArgs[0];
+            final String[] pollOptions = Arrays.copyOfRange(pollArgs, 1, pollArgs.length-1);
+            final int pollOptionsCount = pollOptions.length;
+            if (pollOptionsCount > 5) {
                 Util.sendMessage(channel, "Maximal 5 Optionen!");
+                return;
+            }
+            final int pollSeconds;
+            try {
+                pollSeconds = Integer.parseInt(pollArgs[pollArgs.length - 1]);
+            }
+            catch (NumberFormatException e) {
+                Util.sendMessage(channel, "Ungültige Dauer angegeben! (Maximal 24 Stunden)");
                 return;
             }
 
             if (pollSeconds > 86400) {
-                Util.sendMessage(channel, "Maximal 24 Stunden!");
+                Util.sendMessage(channel, "Ungültige Dauer angegeben! (Maximal 24 Stunden)");
                 return;
             }
-            final String timeString = makeTimeString(pollSeconds);
 
+            // Poll Nachricht
             final EmbedBuilder pollBuilder = new EmbedBuilder();
-            pollBuilder.appendField(":question: __" + pollArgs[0] + "__", makeOptionString(pollArgs, optionsCount), false);
-            pollBuilder.withFooterText("Abstimmen mithilfe der Emotes! Dauer: " + timeString);
+            pollBuilder.appendField(":question: __" + pollArgs[0] + "__", makeOptionString(pollOptions), false);
+            pollBuilder.withFooterText("Abstimmen mithilfe der Reactions! Dauer: " + makeTimeString(pollSeconds));
             final EmbedObject pollObject = pollBuilder.build();
 
             final IMessage pollMessage = Util.sendEmbed(channel, pollObject);
 
-            addPollReactions(pollMessage, optionsCount);
+            addPollReactions(pollMessage, pollOptionsCount);
 
-            Thread.sleep(pollMilliSeconds);
+            // warten
+            Thread.sleep(pollSeconds*1000);
 
-            pollMessage.removeAllReactions();
-
-            String voteResult = "";
-
-            voteResult = voteResult + "__" + pollArgs[1] + "__: **" +
-                         (pollMessage.getReactionByName("\uD83C\uDDE6").getCount()-1) + "** Stimmen" + '\n';
-            voteResult = voteResult + "__" + pollArgs[2] + "__: **" +
-                         (pollMessage.getReactionByName("\uD83C\uDDE7").getCount()-1) + "** Stimmen" + '\n';
-            if (optionsCount >= 3) {
-                voteResult = voteResult + "__" + pollArgs[3] + "__: **" +
-                             (pollMessage.getReactionByName("\uD83C\uDDE8").getCount()-1) + "** Stimmen" + '\n';
+            try {
+                pollMessage.removeAllReactions();
             }
-            if (optionsCount >= 4) {
-                voteResult = voteResult + "__" + pollArgs[4] + "__: **" +
-                             (pollMessage.getReactionByName("\uD83C\uDDE9").getCount()-1) + "** Stimmen" + '\n';
+            catch (NullPointerException e) {
+                System.err.println("[ERR] Could not remove reactions! " + '\n' + e.getMessage());
+                e.printStackTrace();
             }
-            if (optionsCount >= 5) {
-                voteResult = voteResult + "__" + pollArgs[5] + "__: **" +
-                             (pollMessage.getReactionByName("\uD83C\uDDEA").getCount()-1) + "** Stimmen" ;
+
+            final StringBuilder resultStringBuilder = new StringBuilder();
+            try {
+                resultStringBuilder.append("__" + pollArgs[1] + "__: **" +
+                        (pollMessage.getReactionByName("\uD83C\uDDE6").getCount() - 1) + "** Stimmen" + '\n');
+                resultStringBuilder.append("__" + pollArgs[2] + "__: **" +
+                        (pollMessage.getReactionByName("\uD83C\uDDE7").getCount() - 1) + "** Stimmen" + '\n');
+                if (pollOptionsCount >= 3) {
+                    resultStringBuilder.append("__" + pollArgs[3] + "__: **" +
+                            (pollMessage.getReactionByName("\uD83C\uDDE8").getCount() - 1) + "** Stimmen" + '\n');
+                }
+                if (pollOptionsCount >= 4) {
+                    resultStringBuilder.append("__" + pollArgs[4] + "__: **" +
+                            (pollMessage.getReactionByName("\uD83C\uDDE9").getCount() - 1) + "** Stimmen" + '\n');
+                }
+                if (pollOptionsCount >= 5) {
+                    resultStringBuilder.append("__" + pollArgs[5] + "__: **" +
+                            (pollMessage.getReactionByName("\uD83C\uDDEA").getCount() - 1) + "** Stimmen");
+                }
+            }
+            catch (NullPointerException e) {
+                resultStringBuilder.append("**Error:** Reaction nicht gefunden!");
+                System.err.println("[ERR] Reaction not found!");
             }
 
             final EmbedBuilder resultBuilder = new EmbedBuilder();
-            resultBuilder.appendField("__Ergebnis:__", voteResult, false);
+            resultBuilder.appendField("__Ergebnis:__", resultStringBuilder.toString(), false);
             resultBuilder.withFooterText(pollArgs[0]);
             final EmbedObject resultObject = resultBuilder.build();
 
             Util.sendEmbed(channel, resultObject);
         }
         else {
-            Util.sendMessage(channel, "Syntax: `" + prefix + "poll Frage;Option 1;Option 2;Option n;Dauer in Sekunden`");
+            Util.sendMessage(channel, "Syntax: `" + prefix + SYNTAX);
         }
     }
 
@@ -157,24 +183,26 @@ public class Poll {
         return builder.toString();
     }
 
-    private static String makeOptionString(final String[] pollArgs, final int optionCount) {
-        String options = "";
+    private static String makeOptionString(final String[] pollOptions) {
 
-        for (int i = 1; i <= optionCount; i++) {
+        final StringBuilder optionStringBuilder = new StringBuilder();
+        for (int i = 0; i < pollOptions.length; i++) {
             String letterEmoji = "-";
             switch (i) {
-                case 1: letterEmoji = ":regional_indicator_a:"; break;
-                case 2: letterEmoji = ":regional_indicator_b:"; break;
-                case 3: letterEmoji = ":regional_indicator_c:"; break;
-                case 4: letterEmoji = ":regional_indicator_d:"; break;
-                case 5: letterEmoji = ":regional_indicator_e:"; break;
+                case 0: letterEmoji = ":regional_indicator_a:"; break;
+                case 1: letterEmoji = ":regional_indicator_b:"; break;
+                case 2: letterEmoji = ":regional_indicator_c:"; break;
+                case 3: letterEmoji = ":regional_indicator_d:"; break;
+                case 4: letterEmoji = ":regional_indicator_e:"; break;
             }
 
-            String option = pollArgs[i];
-            options = options + letterEmoji + "  " + option + '\n';
+            optionStringBuilder.append(letterEmoji);
+            optionStringBuilder.append(" ");
+            optionStringBuilder.append(pollOptions[i]);
+            optionStringBuilder.append('\n');
         }
 
-        return options;
+        return optionStringBuilder.toString();
     }
 
     private static void addPollReactions(final IMessage message, final int optionCount) throws InterruptedException {
