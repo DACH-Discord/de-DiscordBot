@@ -8,18 +8,19 @@ import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
+import sx.blah.discord.util.RequestBuffer;
 
 import java.awt.Color;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class Poll {
-    private static IDiscordClient client;
+    private final static String EMOJI_A = "\uD83C\uDDE6"; // A
+    private final static String EMOJI_B = "\uD83C\uDDE7"; // B
+    private final static String EMOJI_C = "\uD83C\uDDE8"; // C
+    private final static String EMOJI_D = "\uD83C\uDDE9"; // D
+    private final static String EMOJI_E = "\uD83C\uDDEA"; // E
 
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
@@ -31,8 +32,6 @@ public class Poll {
     private final String prefix;
 
     public Poll(IDiscordClient dClient) {
-        client = dClient;
-
         // Prefix und Owner ID aus Config-Datei auslesen
         final String configFileContent = Util.readFile(CONFIG_PATH);
         if (configFileContent == null) {
@@ -207,26 +206,26 @@ public class Poll {
 
     private static void addPollReactions(final IMessage message, final int optionCount) throws InterruptedException {
             for (int i = 0; i < optionCount; i++) {
-
                 final String emoji;
-                switch (i) {
 
-                    case 0: emoji = "\uD83C\uDDE6"; // A
+                switch (i) {
+                    case 0: emoji = EMOJI_A;
                             break;
-                    case 1: emoji = "\uD83C\uDDE7"; // B
+                    case 1: emoji = EMOJI_B;
                             break;
-                    case 2: emoji = "\uD83C\uDDE8"; // C
+                    case 2: emoji = EMOJI_C;
                             break;
-                    case 3: emoji = "\uD83C\uDDE9"; // D
+                    case 3: emoji = EMOJI_D;
                             break;
-                    case 4: emoji = "\uD83C\uDDEA"; // E
+                    case 4: emoji = EMOJI_E;
                             break;
                     default: emoji = "";
                 }
 
-                message.addReaction(emoji);
-
-                Thread.sleep(80);
+                RequestBuffer.request( () -> {
+                    message.addReaction(emoji);
+                } );
             }
     }
+
 }

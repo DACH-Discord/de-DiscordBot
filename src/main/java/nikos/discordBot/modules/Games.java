@@ -220,8 +220,6 @@ public class Games {
                 return;
             }
 
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-
             if (!usersPlayingNow.isEmpty()) {
                 Util.sendMessage(message.getChannel(), "**Nutzer, die __jetzt__ _" + game + "_ spielen**" + '\n' + usersPlayingNow);
             }

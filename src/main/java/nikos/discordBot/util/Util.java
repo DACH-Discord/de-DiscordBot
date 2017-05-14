@@ -21,15 +21,21 @@ public class Util {
      */
 
     public static synchronized IMessage sendMessage(final IChannel channel, final String message) {
-        try {
-            return channel.sendMessage(message);
-        } catch (RateLimitException e) {
-            System.err.println("[ERR] Ratelimited!");
-        } catch (MissingPermissionsException e) {
-            System.err.println("[ERR] Missing Permissions");
-        } catch (DiscordException e) {
-            System.err.println("[ERR] " + e.getMessage());
-            e.printStackTrace();
+        if (message.length() <= 2000 ) {
+            try {
+                return channel.sendMessage(message);
+            } catch (RateLimitException e) {
+                System.err.println("[ERR] Ratelimited!");
+            } catch (MissingPermissionsException e) {
+                System.err.println("[ERR] Missing Permissions");
+            } catch (DiscordException e) {
+                System.err.println("[ERR] " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        else {
+            sendMessage(channel, message.substring(0,1999));
+            sendMessage(channel, message.substring(2000));
         }
         return null;
     }

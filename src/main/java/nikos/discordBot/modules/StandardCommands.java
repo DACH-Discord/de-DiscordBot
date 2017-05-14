@@ -35,7 +35,8 @@ public class StandardCommands {
             "`help           " + SEPARATOR + "`  Zeigt diese Hilfe" + '\n' +
             "`quote <ID>     " + SEPARATOR + "`  Zitiert die Nachricht mit der angegebenen ID" + '\n' +
             "`ping           " + SEPARATOR + "`  Pong" + '\n' +
-            "`uptime         " + SEPARATOR + "`  Zeigt seit wann der Bot online ist";
+            "`uptime         " + SEPARATOR + "`  Zeigt seit wann der Bot online ist" + '\n' +
+            "`git            " + SEPARATOR + "`  Quellcode des Bots";
 
     private final LocalDateTime startupTimestamp;
     private final String prefix;
@@ -78,6 +79,9 @@ public class StandardCommands {
         }
         else if (messageContent.startsWith(prefix + "setusername")) {
             command_SetUsername(message);
+        }
+        else if (messageContent.startsWith(prefix + "git")) {
+            command_Git(message);
         }
     }
 
@@ -170,5 +174,9 @@ public class StandardCommands {
         }
 
         System.exit(0);
+    }
+
+    private void command_Git(final IMessage message) {
+        Util.sendMessage(message.getChannel(), "https://github.com/Nikos410/de-DiscordBot/");
     }
 }
