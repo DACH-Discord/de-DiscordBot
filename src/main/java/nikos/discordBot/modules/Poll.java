@@ -24,7 +24,7 @@ public class Poll {
 
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
-    private final static String MODULE_NAME = "Spiele";
+    private final static String MODULE_NAME = "Poll";
     private final static char SEPARATOR = '⠀';
     private final static String COMMANDS = "`poll           " + SEPARATOR + "`  startet eine Abstimmung";
     private final static String SYNTAX = "poll Frage;Option 1;Option 2;Option n;Dauer (in Sekunden)`";
@@ -111,14 +111,6 @@ public class Poll {
             // warten
             Thread.sleep(pollSeconds*1000);
 
-            try {
-                pollMessage.removeAllReactions();
-            }
-            catch (NullPointerException e) {
-                System.err.println("[ERR] Could not remove reactions! " + '\n' + e.getMessage());
-                e.printStackTrace();
-            }
-
             final StringBuilder resultStringBuilder = new StringBuilder();
             try {
                 resultStringBuilder.append("__" + pollArgs[1] + "__: **" +
@@ -149,6 +141,14 @@ public class Poll {
             final EmbedObject resultObject = resultBuilder.build();
 
             Util.sendEmbed(channel, resultObject);
+
+            try {
+                pollMessage.removeAllReactions();
+            }
+            catch (NullPointerException e) {
+                System.err.println("[ERR] Could not remove reactions! " + '\n' + e.getMessage());
+                e.printStackTrace();
+            }
         }
         else {
             Util.sendMessage(channel, "Syntax: `" + prefix + SYNTAX);
