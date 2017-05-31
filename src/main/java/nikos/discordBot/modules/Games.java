@@ -160,7 +160,7 @@ public class Games {
         final String content = message.getContent();
         final String game = Util.getContext(content);
 
-        if (game.isEmpty()) {  // Spiel angegeben
+        if (game.isEmpty()) {  // Kein Spiel angegeben
             Util.sendMessage(message.getChannel(), "Kein Spiel angegeben!");
             return;
         }
