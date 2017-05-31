@@ -160,75 +160,76 @@ public class Games {
         final String content = message.getContent();
         final String game = Util.getContext(content);
 
-        if (!game.isEmpty()) {  // Spiel angegeben
-            IGuild guild = message.getGuild();
-            final List<IUser> users = guild.getUsers();
+        if (game.isEmpty()) {  // Spiel angegeben
+            Util.sendMessage(message.getChannel(), "Kein Spiel angegeben!");
+            return;
+        }
 
-            final int levDistTreshold = 2 + StringUtils.countMatches(game, " ");
+        IGuild guild = message.getGuild();
+        final List<IUser> users = guild.getUsers();
 
-            /*
-             * Nutzer, die gerade das Spiel spielen
-             */
-            String usersPlayingNow = "";
-            for (IUser user : users) {
-                final Optional<String> playing = user.getPresence().getPlayingText();
+        final int levDistTreshold = 2 + StringUtils.countMatches(game, " ");
 
-                if (playing.isPresent() && StringUtils.getLevenshteinDistance( game.toLowerCase(),
-                        playing.get().toLowerCase() ) < levDistTreshold)  {
-                    usersPlayingNow = usersPlayingNow + user.getName() + '#' + user.getDiscriminator() + '\n';
-                }
+        /*
+         * Nutzer, die gerade das Spiel spielen
+         */
+        String usersPlayingNow = "";
+        for (IUser user : users) {
+            final Optional<String> playing = user.getPresence().getPlayingText();
+
+            if (playing.isPresent() && StringUtils.getLevenshteinDistance( game.toLowerCase(),
+                    playing.get().toLowerCase() ) < levDistTreshold)  {
+                usersPlayingNow = usersPlayingNow + user.getName() + '#' + user.getDiscriminator() + '\n';
             }
+        }
 
-            /*
-             * Nutzer, die jemals das Spiel gespielt haben
-             */
+        /*
+         * Nutzer, die jemals das Spiel gespielt haben
+         */
 
-            // Alle Spiele in der Liste, die zu dem Input passen
-            List<String> gameKeys = new ArrayList<>(1);
-            for (Object obj : gameStatsJSON.keySet()) {
-                final String gameKey = obj.toString();
-                if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), game.toLowerCase()) < levDistTreshold) {
-                    gameKeys.add(gameKey.toLowerCase());
-                }
+        // Alle Spiele in der Liste, die zu dem Input passen
+        List<String> gameKeys = new ArrayList<>(1);
+        for (Object obj : gameStatsJSON.keySet()) {
+            final String gameKey = obj.toString();
+            if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), game.toLowerCase()) < levDistTreshold) {
+                gameKeys.add(gameKey.toLowerCase());
             }
+        }
 
-            String usersPlayingAny = "";
-            for (String gameKey : gameKeys) {
+        String usersPlayingAny = "";
+        for (String gameKey : gameKeys) {
 
-                if (gameStatsJSON.has(gameKey)) {
-                    JSONArray gameArray = gameStatsJSON.getJSONArray(gameKey);
+            if (gameStatsJSON.has(gameKey)) {
+                JSONArray gameArray = gameStatsJSON.getJSONArray(gameKey);
 
-                    for (int i = 0; i < gameArray.length(); i++) {
-                        final IUser user = client.getUserByID(gameArray.getString(i));
-                        if (user != null) {
-                            final String userOutput = user.getName() + '#' + user.getDiscriminator();
-                            if (!usersPlayingAny.contains(userOutput)) {    // Keine doppelten Namen
-                                usersPlayingAny = usersPlayingAny + userOutput + '\n';
-                            }
+                for (int i = 0; i < gameArray.length(); i++) {
+                    final IUser user = client.getUserByID(gameArray.getString(i));
+                    if (user != null) {
+                        final String userOutput = user.getName() + '#' + user.getDiscriminator();
+                        if (!usersPlayingAny.contains(userOutput)) {    // Keine doppelten Namen
+                            usersPlayingAny = usersPlayingAny + userOutput + '\n';
                         }
                     }
                 }
-
             }
 
-            /*
-             * Ausgabe
-             */
-            if (usersPlayingNow.isEmpty() && usersPlayingAny.isEmpty()) {
-                // Keine Nutzer spielen gerade oder haben jemals gespielt
-                Util.sendMessage(message.getChannel(), "Niemand auf diesem Server spielt `" + game + "`.");
-                return;
-            }
-
-            if (!usersPlayingNow.isEmpty()) {
-                Util.sendMessage(message.getChannel(), "**Nutzer, die __jetzt__ _" + game + "_ spielen**" + '\n' + usersPlayingNow);
-            }
-            if (!usersPlayingAny.isEmpty()) {
-                Util.sendMessage(message.getChannel(), "**__Alle__ Nutzer, die _" + game + "_ spielen**" + '\n' + usersPlayingAny);
-            }
         }
-        else {  // Kein Spiel angegeben
-            Util.sendMessage(message.getChannel(), "Kein Spiel angegeben!");
+
+
+        /*
+         * Ausgabe
+         */
+        if (usersPlayingNow.isEmpty() && usersPlayingAny.isEmpty()) {
+            // Keine Nutzer spielen gerade oder haben jemals gespielt
+            Util.sendMessage(message.getChannel(), "Niemand auf diesem Server spielt **" + game + "**.");
+            return;
         }
+
+        if (usersPlayingNow.isEmpty()) {
+            usersPlayingNow = "_niemand_";
+        }
+
+        Util.sendMessage(message.getChannel(), "**Nutzer, die __jetzt__ _" + game + "_ spielen**" + '\n' + usersPlayingNow);
+        Util.sendMessage(message.getChannel(), "**__Alle__ Nutzer, die _" + game + "_ spielen**" + '\n' + usersPlayingAny);
     }
 }

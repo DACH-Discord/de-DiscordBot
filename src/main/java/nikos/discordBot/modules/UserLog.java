@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 public class UserLog {
     static IDiscordClient client;
@@ -111,17 +112,27 @@ public class UserLog {
     }
 
     private void userJoinNotify(final IUser user) {
-        final EmbedBuilder embedBuilder = new EmbedBuilder();
-        final DateTimeFormatter serverJoinTimeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
-        final DateTimeFormatter discordJoinTimestampFormatter = DateTimeFormatter.ofPattern("dd.MM.YYYY | HH:mm");
+        final LocalDateTime joinTimeStamp = user.getCreationDate();
+        int joinedDays = (int)joinTimeStamp.until(LocalDateTime.now(), ChronoUnit.DAYS);
 
-        embedBuilder.withThumbnail(user.getAvatarURL());
-        embedBuilder.appendField(":white_check_mark: Nutzer ist dem Server beigetreten!",
-                        "**Name:** " + user.getName() + '#' + user.getDiscriminator() + '\n' +
-                        "**ID:** " + user.getID() + '\n' +
-                        "**Discord beigetreten:** " + user.getCreationDate().format(discordJoinTimestampFormatter),
+        final String joinedString = convertTotalDays(joinedDays);
+
+        // String für Embed
+        String embedString = "**Name:** " + user.getName() + '#' + user.getDiscriminator() + '\n' +
+                "**ID:** " + user.getID() + '\n' +
+                "**Discord beigetreten:** vor " + joinedString;
+
+        if (joinedDays <= 1) {
+            embedString = embedString + '\n' + ":exclamation: Neuer Nutzer! :exclamation:";
+        }
+
+        // Embed
+        final EmbedBuilder embedBuilder = new EmbedBuilder();
+
+        embedBuilder.appendField(":white_check_mark: Nutzer ist dem Server beigetreten!", embedString,
                 false);
-        embedBuilder.withFooterText(LocalDateTime.now().format(serverJoinTimeStampFormatter));
+        embedBuilder.withThumbnail(user.getAvatarURL());
+        embedBuilder.withFooterText(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM. | HH:mm")));
         embedBuilder.withColor(new Color(119, 178, 85));
 
         final EmbedObject embedObject = embedBuilder.build();
@@ -225,5 +236,37 @@ public class UserLog {
         Util.writeToFile(USERLOG_PATH, jsonOutput);
 
         jsonUserLog = new JSONObject(jsonOutput);
+    }
+
+    private static String convertTotalDays(int days) {
+        final int years = days / 365;
+        days = days % 365;
+        final int months = days / 30;
+        days = days % 30;
+
+        String result;
+
+        if (days == 1) {
+            result = "1 Tag";
+        }
+        else {
+            result = days + " Tagen";
+        }
+
+        if (months == 1) {
+            result = result + ", 1 Monat";
+        }
+        else if (months > 1) {
+            result = result + ", " + months + " Monaten";
+        }
+
+        if (years == 1) {
+            result = result + ", 1 Jahr";
+        }
+        else if (years > 1) {
+            result = result + ", " + years + " Jahren";
+        }
+
+        return result;
     }
 }
