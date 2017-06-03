@@ -21,8 +21,8 @@ import java.util.stream.IntStream;
 public class Roll {
     private final static String MODULE_NAME = "Roll";
     private final static String SEPARATOR = "⠀";
-    private final static String COMMANDS = "`roll           " + SEPARATOR + "`  startet eine Abstimmung";
-    private final static String SYNTAX = "roll AnzahlWuerfel [AugenJeWuerfel=6]";
+    private final static String COMMANDS = "`roll           " + SEPARATOR + "`  Würfeln";
+    private final static String SYNTAX = "roll AnzahlWuerfel;[AugenJeWuerfel=6]";
     private final static int DEFAULT_DOT_COUNT = 6;
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
@@ -76,9 +76,9 @@ public class Roll {
         final String context = Util.getContext(messageContent);
 
         final EmbedBuilder outputBuilder = new EmbedBuilder();
-        if (context.matches("^[0-9]+ [0-9]*")) {
+        if (context.matches("^[0-9]+;?[0-9]*")) {
             try {
-                final String[] args = context.split(SEPARATOR);
+                final String[] args = context.split(";");
                 final int diceCount = Integer.parseInt(args[0]);
                 final int dotCount = args.length > 1 ? Integer.parseInt(args[1]) : DEFAULT_DOT_COUNT;
                 if (diceCount < 1 || dotCount < 1) {
@@ -94,7 +94,7 @@ public class Roll {
                         });
                 resultBuilder.append(MessageFormat.format("Sum: {0}", sum));
                 outputBuilder.appendField(
-                        MessageFormat.format("Rolling {0} dice with a maximum of {1} dots!", diceCount, DEFAULT_DOT_COUNT),
+                        MessageFormat.format("Rolling {0} dice with a maximum of {1} dots!", diceCount, dotCount),
                         resultBuilder.toString(),
                         false
                 );
@@ -104,7 +104,7 @@ public class Roll {
                 Util.sendMessage(channel, MessageFormat.format("Could not parse input '{0}'. Make sure both dice and dot count are integer numbers > 0!", context));
             }
         } else {
-            Util.sendMessage(channel, "Syntax: `" + prefix + SYNTAX);
+            Util.sendMessage(channel, "Syntax: `" + prefix + SYNTAX + "`");
         }
     }
 }
