@@ -5,6 +5,7 @@ import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.MissingPermissionsException;
 import sx.blah.discord.util.RateLimitException;
+import sx.blah.discord.util.RequestBuffer;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -42,9 +43,11 @@ public class Util {
         return null;
     }
 
-    public static synchronized IMessage sendEmbed(final IChannel channel, final EmbedObject embedObject) {
+    public static void sendBufferedEmbed(final IChannel channel, final EmbedObject embedObject) {
         try {
-            return channel.sendMessage(embedObject);
+            RequestBuffer.request(() -> {
+                channel.sendMessage(embedObject);
+            });
         } catch (RateLimitException e) {
             System.err.println("[ERR] Ratelimited!");
         } catch (MissingPermissionsException e) {
@@ -53,7 +56,6 @@ public class Util {
             System.err.println("[ERR] " + e.getMessage());
             e.printStackTrace();
         }
-        return null;
     }
 
     public static synchronized IMessage sendPM(final IUser user, final String message) {
@@ -72,11 +74,20 @@ public class Util {
     }
 
     public static String getContext(final String message) {
-        if (message.contains(" ")) {
-            return message.substring(message.indexOf(' ') + 1);
+        return getContext(message, 1);
+    }
+
+    public static String getContext(final String message, final int level) {
+        if (level == 1) {
+            if (message.contains(" ")) {
+                return message.substring(message.indexOf(' ') + 1);
+            }
+            else {
+                return "";
+            }
         }
         else {
-            return "";
+            return getContext(getContext(message, level-1));
         }
     }
 
@@ -92,6 +103,21 @@ public class Util {
         return topRole;
     }
 
+    public static boolean hasRole(final IUser user, final IRole role, final IGuild guild) {
+        return hasRoleByID(user, role.getID(), guild);
+    }
+
+    public static boolean hasRoleByID(final IUser user, final String roleID, final IGuild guild) {
+        final List<IRole> roles = user.getRolesForGuild(guild);
+
+        for (IRole role : roles) {
+            if (roleID.equals(role.getID())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String readFile(Path path) {
         try {
             return new String(Files.readAllBytes(path));
@@ -99,8 +125,8 @@ public class Util {
         catch (IOException e){
             System.err.println("[ERR]  " + e.getMessage());
             e.printStackTrace();
+            return null;
         }
-        return null;
     }
 
     public static void writeToFile(Path file, String text) {

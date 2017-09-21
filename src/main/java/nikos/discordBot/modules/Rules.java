@@ -118,7 +118,7 @@ public class Rules {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(message.getChannel(), embedObject);
+        Util.sendBufferedEmbed(message.getChannel(), embedObject);
     }
 
     private void command_Regeln(final IMessage message) {

@@ -153,7 +153,7 @@ public class Games {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(message.getChannel(), embedObject);
+        Util.sendBufferedEmbed(message.getChannel(), embedObject);
     }
 
     private void command_Playing(final IMessage message) {

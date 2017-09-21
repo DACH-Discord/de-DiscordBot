@@ -7,8 +7,7 @@ import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.*;
-import sx.blah.discord.util.EmbedBuilder;
-import sx.blah.discord.util.RequestBuffer;
+import sx.blah.discord.util.*;
 
 import java.awt.Color;
 import java.nio.file.Path;
@@ -63,7 +62,7 @@ public class Poll {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(message.getChannel(), embedObject);
+        Util.sendBufferedEmbed(message.getChannel(), embedObject);
     }
 
     private void command_Poll(final IMessage commandMessage) throws InterruptedException {
@@ -104,7 +103,20 @@ public class Poll {
             pollBuilder.withFooterText("Abstimmen mithilfe der Reactions! Dauer: " + makeTimeString(pollSeconds));
             final EmbedObject pollObject = pollBuilder.build();
 
-            final IMessage pollMessage = Util.sendEmbed(channel, pollObject);
+            final IMessage pollMessage;
+            try {
+                pollMessage = channel.sendMessage(pollObject);
+            } catch (RateLimitException e) {
+                System.err.println("[ERR] Ratelimited!");
+                return;
+            } catch (MissingPermissionsException e) {
+                System.err.println("[ERR] Missing Permissions");
+                return;
+            } catch (DiscordException e) {
+                System.err.println("[ERR] " + e.getMessage());
+                e.printStackTrace();
+                return;
+            }
 
             addPollReactions(pollMessage, pollOptionsCount);
 
@@ -140,7 +152,7 @@ public class Poll {
             resultBuilder.withFooterText(pollArgs[0]);
             final EmbedObject resultObject = resultBuilder.build();
 
-            Util.sendEmbed(channel, resultObject);
+            Util.sendBufferedEmbed(channel, resultObject);
 
             try {
                 pollMessage.removeAllReactions();

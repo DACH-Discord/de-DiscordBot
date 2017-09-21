@@ -97,7 +97,7 @@ public class StandardCommands {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(message.getChannel(), embedObject);
+        Util.sendBufferedEmbed(message.getChannel(), embedObject);
     }
 
     private void command_Quote(final IMessage commandMessage) {
@@ -129,7 +129,7 @@ public class StandardCommands {
 
         EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(commandMessage.getChannel(), embedObject);
+        Util.sendBufferedEmbed(commandMessage.getChannel(), embedObject);
     }
 
     private void command_Ping(final IMessage message) {

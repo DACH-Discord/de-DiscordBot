@@ -67,7 +67,7 @@ public class Roll {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(message.getChannel(), embedObject);
+        Util.sendBufferedEmbed(message.getChannel(), embedObject);
     }
 
     private void command_Roll(final IMessage commandMessage) throws InterruptedException {
@@ -99,7 +99,7 @@ public class Roll {
                         false
                 );
                 EmbedObject rollObject = outputBuilder.build();
-                Util.sendEmbed(channel, rollObject);
+                Util.sendBufferedEmbed(channel, rollObject);
             } catch (NumberFormatException ex) {
                 Util.sendMessage(channel, MessageFormat.format("Could not parse input '{0}'. Make sure both dice and dot count are integer numbers > 0!", context));
             }

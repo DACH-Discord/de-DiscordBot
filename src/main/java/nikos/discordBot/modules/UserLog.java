@@ -137,7 +137,7 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(userLogChannel, embedObject);
+        Util.sendBufferedEmbed(userLogChannel, embedObject);
     }
 
     private void userLeaveNotify(final IUser user) {
@@ -154,7 +154,7 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(userLogChannel, embedObject);
+        Util.sendBufferedEmbed(userLogChannel, embedObject);
     }
 
     private void userBanNotify(final IUser user) {
@@ -170,7 +170,7 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendEmbed(userLogChannel, embedObject);
+        Util.sendBufferedEmbed(userLogChannel, embedObject);
     }
 
     /**********

@@ -43,6 +43,7 @@ public class DiscordBot {
             dispatcher.registerListener(new Poll(client));
             dispatcher.registerListener(new WapBapRemover(client));
             dispatcher.registerListener(new Roll(client));
+            dispatcher.registerListener(new Mod(client));
         }
         catch (NullPointerException e) {
             System.err.println("[Error] Could not get EventDispatcher: " + '\n' + e.getMessage());
