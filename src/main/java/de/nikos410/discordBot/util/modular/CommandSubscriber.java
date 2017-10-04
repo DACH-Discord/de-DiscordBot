@@ -11,4 +11,5 @@ public @interface CommandSubscriber {
     String command();
     String help();
     boolean pmAllowed();
+    int permissionLevel();
 }

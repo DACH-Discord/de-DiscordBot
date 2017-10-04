@@ -8,11 +8,13 @@ public class Command {
 
     public final String help;
     public final boolean pmAllowed;
+    public final int permissionLevel;
 
-    public Command(final Object object, final Method method, final String help, final boolean pmAllowed) {
+    public Command(final Object object, final Method method, final String help, final boolean pmAllowed, final int permissionLevel) {
         this.object = object;
         this.method = method;
         this.help = help;
         this.pmAllowed = pmAllowed;
+        this.permissionLevel = permissionLevel;
     }
 }

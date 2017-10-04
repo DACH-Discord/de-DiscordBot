@@ -6,6 +6,7 @@ import de.nikos410.discordBot.util.general.Authorization;
 import de.nikos410.discordBot.util.general.Util;
 import de.nikos410.discordBot.util.modular.Command;
 import de.nikos410.discordBot.util.modular.CommandModule;
+import de.nikos410.discordBot.util.modular.CommandPermissions;
 import de.nikos410.discordBot.util.modular.CommandSubscriber;
 
 import java.lang.reflect.Method;
@@ -21,7 +22,9 @@ import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
 public class DiscordBot {
@@ -32,6 +35,10 @@ public class DiscordBot {
 
     private final IDiscordClient client;
     private final String prefix;
+
+    private final String modRoleID;
+    private final String adminRoleID;
+    private final String ownerID;
 
     /**
      * Richtet den Bot ein, lädt Konfiguration etc.
@@ -44,6 +51,10 @@ public class DiscordBot {
         this.client = Authorization.createClient(token, true);
 
         this.prefix = json.getString("prefix");
+
+        this.modRoleID = json.getString("modRole");
+        this.adminRoleID = json.getString("adminRole");
+        this.ownerID = json.getString("owner");
 
         try {
             this.client.getDispatcher().registerListener(this);
@@ -82,17 +93,16 @@ public class DiscordBot {
             if (method.isAnnotationPresent(CommandSubscriber.class)) {
                 numberOfCommands++;
 
-                method.setAccessible(true); // Evtl entfernen da nutzlos
-
                 final CommandSubscriber[] annotations = method.getDeclaredAnnotationsByType(CommandSubscriber.class);
 
                 final String command = annotations[0].command();
                 final String help = annotations[0].help();
                 final boolean pmAllowed = annotations[0].pmAllowed();
+                final int permissionLevel = annotations[0].permissionLevel();
 
-                final Command cmd = new Command(module, method, help, pmAllowed);
+                final Command cmd = new Command(module, method, help, pmAllowed, permissionLevel);
 
-                this.commands.put(command, cmd);
+                this.commands.put(command.toLowerCase(), cmd);
             }
         }
 
@@ -117,7 +127,7 @@ public class DiscordBot {
      * @param event Das Event der erhaltenen Nachricht
      */
     @EventSubscriber
-    public void onMessageRecieved(final MessageReceivedEvent event) {
+    public void onMessageReceived(final MessageReceivedEvent event) {
         final IMessage message = event.getMessage();
         final String messageContent = message.getContent();
 
@@ -126,11 +136,11 @@ public class DiscordBot {
             return;
         }
 
-        String messageCommand = messageContent.contains(" ") ?
+        final String messageCommand = (messageContent.contains(" ") ?
                 messageContent.substring(this.prefix.length(), messageContent.indexOf(' ')) :   // Message has Arguments
-                messageContent.substring(this.prefix.length());                                 // Message doesn't have arguments
+                messageContent.substring(this.prefix.length())).                                // Message doesn't have arguments
+                toLowerCase();
 
-        messageCommand = messageCommand.toLowerCase();
 
         if (messageCommand.equalsIgnoreCase("help")) {
             this.command_help(message);
@@ -139,8 +149,13 @@ public class DiscordBot {
 
         if (commands.containsKey(messageCommand)) {
             final Command command = commands.get(messageCommand);
-            final Object object = command.object;
-            final Method method = command.method;
+
+            final int userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
+            if (userPermissionLevel < command.permissionLevel) {
+                Util.sendMessage(message.getChannel(), "Dieser Befehl ist für deine Gruppe (" +
+                        CommandPermissions.getPermissionLevelName(userPermissionLevel) + ") nicht verfügbar.");
+                return;
+            }
 
             if (message.getChannel().isPrivate() && !command.pmAllowed) {
                 Util.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
@@ -148,12 +163,27 @@ public class DiscordBot {
             }
 
             try {
-                method.invoke(object, message);
+                command.method.invoke(command.object, message);
             } catch (Exception e) {
                 Util.error(e, message);
             }
         }
 
+    }
+
+    private int getUserPermissionLevel(final IUser user, final IGuild guild) {
+        if (user.getStringID().equals(this.ownerID)) {
+            return CommandPermissions.OWNER;
+        }
+        else if (Util.hasRoleByID(user, this.adminRoleID, guild)) {
+            return CommandPermissions.ADMIN;
+        }
+        else if (Util.hasRoleByID(user, this.modRoleID, guild)) {
+            return CommandPermissions.MODERATOR;
+        }
+        else {
+            return CommandPermissions.EVERYONE;
+        }
     }
 
     private void command_help(final IMessage message) {
