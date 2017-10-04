@@ -1,4 +1,4 @@
-package nikos.discordBot.util;
+package de.nikos410.discordBot.util.general;
 
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
@@ -18,8 +18,7 @@ public class Authorization {
                 return clientBuilder.build(); // Creates the client instance but it doesn't log the client in yet, you would have to call client.login() yourself
             }
         } catch (DiscordException e) { // This is thrown if there was a problem building the client
-            System.err.println(e.getLocalizedMessage());
-            e.printStackTrace();
+            Util.error(e);
             return null;
         }
     }

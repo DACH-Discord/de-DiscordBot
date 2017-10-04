@@ -1,18 +1,14 @@
-package nikos.discordBot.util;
+package de.nikos410.discordBot.util.general;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.*;
-import sx.blah.discord.util.DiscordException;
-import sx.blah.discord.util.MissingPermissionsException;
-import sx.blah.discord.util.RateLimitException;
-import sx.blah.discord.util.RequestBuffer;
+import sx.blah.discord.util.*;
 
+import java.awt.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public class Util {
@@ -23,10 +19,10 @@ public class Util {
         });
      */
 
-    public static synchronized IMessage sendMessage(final IChannel channel, final String message) {
+    public static synchronized void sendMessage(final IChannel channel, final String message) {
         if (message.length() <= 2000 ) {
             try {
-                return channel.sendMessage(message);
+                channel.sendMessage(message);
             } catch (RateLimitException e) {
                 System.err.println("[ERR] Ratelimited!");
             } catch (MissingPermissionsException e) {
@@ -40,7 +36,6 @@ public class Util {
             sendMessage(channel, message.substring(0,1999));
             sendMessage(channel, message.substring(2000));
         }
-        return null;
     }
 
     public static void sendBufferedEmbed(final IChannel channel, final EmbedObject embedObject) {
@@ -53,24 +48,32 @@ public class Util {
         } catch (MissingPermissionsException e) {
             System.err.println("[ERR] Missing Permissions");
         } catch (DiscordException e) {
-            System.err.println("[ERR] " + e.getMessage());
-            e.printStackTrace();
+            error(e);
         }
     }
 
-    public static synchronized IMessage sendPM(final IUser user, final String message) {
-        try {
-            final IPrivateChannel channel = user.getOrCreatePMChannel();
-            return channel.sendMessage(message);
-        } catch (RateLimitException e) {
-            System.err.println("[ERR] Ratelimited!");
-        } catch (MissingPermissionsException e) {
-            System.err.println("[ERR] Missing Permissions");
-        } catch (DiscordException e) {
-            System.err.println("[ERR] " + e.getMessage());
-            e.printStackTrace();
+    public static synchronized void sendPM(final IUser user, final String message) {
+        final IPrivateChannel channel = user.getOrCreatePMChannel();
+        sendPM(channel, message);
+    }
+
+    private static synchronized void sendPM(final IPrivateChannel channel, final String message) {
+        if (message.length() <= 2000 ) {
+            try {
+                channel.sendMessage(message);
+            } catch (RateLimitException e) {
+                System.err.println("[ERR] Ratelimited!");
+            } catch (MissingPermissionsException e) {
+                System.err.println("[ERR] Missing Permissions");
+            } catch (DiscordException e) {
+                System.err.println("[ERR] " + e.getMessage());
+                e.printStackTrace();
+            }
         }
-        return null;
+        else {
+            sendPM(channel, message.substring(0,1999));
+            sendPM(channel, message.substring(2000));
+        }
     }
 
     public static String getContext(final String message) {
@@ -104,14 +107,14 @@ public class Util {
     }
 
     public static boolean hasRole(final IUser user, final IRole role, final IGuild guild) {
-        return hasRoleByID(user, role.getID(), guild);
+        return hasRoleByID(user, role.getStringID(), guild);
     }
 
     public static boolean hasRoleByID(final IUser user, final String roleID, final IGuild guild) {
         final List<IRole> roles = user.getRolesForGuild(guild);
 
         for (IRole role : roles) {
-            if (roleID.equals(role.getID())) {
+            if (roleID.equals(role.getStringID())) {
                 return true;
             }
         }
@@ -123,20 +126,35 @@ public class Util {
             return new String(Files.readAllBytes(path));
         }
         catch (IOException e){
-            System.err.println("[ERR]  " + e.getMessage());
-            e.printStackTrace();
+            error(e);
             return null;
         }
     }
 
-    public static void writeToFile(Path file, String text) {
+    public static Path writeToFile(Path file, String text) {
         try {
-            Files.write(file, text.getBytes(StandardCharsets.UTF_8));
+            return Files.write(file, text.getBytes(StandardCharsets.UTF_8));
         }
         catch (IOException e) {
-            System.err.println("[ERR] " + e.getMessage());
-            e.printStackTrace();
+            error(e);
+            return null;
         }
+    }
 
+    public static void error(final Exception e, final IMessage message) {
+        final EmbedBuilder embedBuilder = new EmbedBuilder();
+
+        embedBuilder.withColor(new Color(255, 42, 50));
+        embedBuilder.appendField("Fehler aufgetreten", e.toString() + '\n' + e.getMessage(), false);
+        embedBuilder.withFooterText("Mehr Infos in der Konsole");
+
+        sendBufferedEmbed(message.getChannel(), embedBuilder.build());
+
+        error(e);
+    }
+
+    public static void error(final Exception e) {
+        System.err.println(e.toString() + '\n' + e.getMessage() + '\n');
+        e.printStackTrace(System.err);
     }
 }
