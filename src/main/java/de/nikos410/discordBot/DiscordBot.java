@@ -79,6 +79,7 @@ public class DiscordBot {
         this.addModule(new GameStats(this));
         this.addModule(new ModStuff(this));
         this.addModule(new Roll(this));
+        this.addModule(new Rules(this));
     }
 
     /**
