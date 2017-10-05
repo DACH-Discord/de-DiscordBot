@@ -1,15 +1,15 @@
 package de.nikos410.discordBot.util.general;
 
-import sx.blah.discord.api.internal.json.objects.EmbedObject;
-import sx.blah.discord.handle.obj.*;
-import sx.blah.discord.util.*;
-
 import java.awt.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+
+import sx.blah.discord.api.internal.json.objects.EmbedObject;
+import sx.blah.discord.handle.obj.*;
+import sx.blah.discord.util.*;
 
 public class Util {
 
@@ -36,6 +36,20 @@ public class Util {
             sendMessage(channel, message.substring(0,1999));
             sendMessage(channel, message.substring(2000));
         }
+    }
+
+    public static synchronized IMessage sendSingleMessage(final IChannel channel, final String message) {
+        try {
+            return channel.sendMessage(message);
+        } catch (RateLimitException e) {
+            System.err.println("[ERR] Ratelimited!");
+        } catch (MissingPermissionsException e) {
+            System.err.println("[ERR] Missing Permissions");
+        } catch (DiscordException e) {
+            System.err.println("[ERR] " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static void sendBufferedEmbed(final IChannel channel, final EmbedObject embedObject) {
@@ -141,14 +155,14 @@ public class Util {
         }
     }
 
-    public static void error(final Exception e, final IMessage message) {
+    public static void error(final Exception e, final IChannel channel) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
         embedBuilder.withColor(new Color(255, 42, 50));
         embedBuilder.appendField("Fehler aufgetreten", e.toString() + '\n' + e.getMessage(), false);
         embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
-        sendBufferedEmbed(message.getChannel(), embedBuilder.build());
+        sendBufferedEmbed(channel, embedBuilder.build());
 
         error(e);
     }

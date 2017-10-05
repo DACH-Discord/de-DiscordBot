@@ -1,38 +1,40 @@
 package de.nikos410.discordBot;
 
-
-import de.nikos410.discordBot.modules.ExampleModule;
+import de.nikos410.discordBot.modules.BotSetup;
+import de.nikos410.discordBot.modules.GeneralCommands;
 import de.nikos410.discordBot.util.general.Authorization;
 import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.Command;
-import de.nikos410.discordBot.util.modular.CommandModule;
-import de.nikos410.discordBot.util.modular.CommandPermissions;
-import de.nikos410.discordBot.util.modular.CommandSubscriber;
+import de.nikos410.discordBot.util.modular.*;
 
+import java.awt.*;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
 
-import org.json.JSONObject;
-
+import org.json.JSONArray;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
+import org.json.JSONObject;
+
 public class DiscordBot {
-    private final static Path CONFIG_FILE = Paths.get("config/config.json");
+    private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
     private final HashMap<String, Command> commands = new HashMap<>();
-    private final LinkedList<Object> modules = new LinkedList<>();
+    private final HashMap<String, Object> unloadedModules = new HashMap<>();
+    private final HashMap<String, Object> loadedModules = new HashMap<>();
 
+    private JSONObject json;
     private final IDiscordClient client;
     private final String prefix;
 
@@ -44,8 +46,8 @@ public class DiscordBot {
      * Richtet den Bot ein, lädt Konfiguration etc.
      */
     private DiscordBot() {
-        final String configFileContent = Util.readFile(CONFIG_FILE);
-        final JSONObject json = new JSONObject(configFileContent);
+        final String configFileContent = Util.readFile(CONFIG_PATH);
+        json = new JSONObject(configFileContent);
 
         final String token = json.getString("token");
         this.client = Authorization.createClient(token, true);
@@ -65,13 +67,17 @@ public class DiscordBot {
         }
 
         this.addModules();
+        this.makeCommandMap();
+        System.out.println("Loaded " + this.loadedModules.size() + " module(s) with " + this.commands.size() + " command(s).");
     }
 
     /**
      * Module werden dem Bot hinzugefügt
      */
     private void addModules() {
-        this.addModule(new ExampleModule());
+        this.addModule(new GeneralCommands(this));
+        this.addModule(new BotSetup(this));
+
     }
 
     /**
@@ -85,40 +91,57 @@ public class DiscordBot {
             return;
         }
 
-        this.modules.add(module);
+        final CommandModule moduleAnnotation = module.getClass().getDeclaredAnnotationsByType(CommandModule.class)[0];
+        final String moduleName = moduleAnnotation.moduleName();
 
-        int numberOfCommands = 0;
-        for (Method method : module.getClass().getMethods()) {
 
-            if (method.isAnnotationPresent(CommandSubscriber.class)) {
-                numberOfCommands++;
-
-                final CommandSubscriber[] annotations = method.getDeclaredAnnotationsByType(CommandSubscriber.class);
-
-                final String command = annotations[0].command();
-                final String help = annotations[0].help();
-                final boolean pmAllowed = annotations[0].pmAllowed();
-                final int permissionLevel = annotations[0].permissionLevel();
-
-                final Command cmd = new Command(module, method, help, pmAllowed, permissionLevel);
-
-                this.commands.put(command.toLowerCase(), cmd);
+        final JSONArray jsonUnloadedModules = this.json.getJSONArray("unloadedModules");
+        for (int i = 0; i < jsonUnloadedModules.length(); i++) {
+            final String unloadedModuleName = jsonUnloadedModules.getString(i);
+            if (moduleName.equals(unloadedModuleName)) {
+                // Modul ist in der Liste der deaktivierten Module enthalten -> ist deaktiviert
+                this.unloadedModules.put(moduleName, module);
+                return;
             }
         }
 
-        final CommandModule[] annotations = module.getClass().getDeclaredAnnotationsByType(CommandModule.class);
+        // Modul ist nicht deaktiviert
+        this.loadedModules.put(moduleName, module);
+    }
 
-        if (!annotations[0].commandOnly()) {
-            try {
-                this.client.getDispatcher().registerListener(module);
+    private void makeCommandMap() {
+        this.commands.clear();
+
+        for (final String key : this.loadedModules.keySet()) {
+            Object module = this.loadedModules.get(key);
+
+            for (Method method : module.getClass().getMethods()) {
+
+                if (method.isAnnotationPresent(CommandSubscriber.class)) {
+
+                    final CommandSubscriber[] annotations = method.getDeclaredAnnotationsByType(CommandSubscriber.class);
+
+                    final String command = annotations[0].command();
+                    final String help = annotations[0].help();
+                    final boolean pmAllowed = annotations[0].pmAllowed();
+                    final int permissionLevel = annotations[0].permissionLevel();
+
+                    final Command cmd = new Command(module, method, help, pmAllowed, permissionLevel);
+
+                    this.commands.put(command.toLowerCase(), cmd);
+                }
             }
-            catch (NullPointerException e) {
-                System.err.println("[Error] Could not get EventDispatcher: ");
-                Util.error(e);
+
+            final CommandModule moduleAnnotation = module.getClass().getDeclaredAnnotationsByType(CommandModule.class)[0];
+            if (!moduleAnnotation.commandOnly()) {
+                try {
+                    this.client.getDispatcher().registerListener(module);
+                } catch (NullPointerException e) {
+                    System.err.println("[Error] Could not get EventDispatcher: ");
+                    Util.error(e);
+                }
             }
         }
-
-        System.out.println("Loaded module \"" + annotations[0].moduleName() + "\" with " + numberOfCommands + " command(s).");
     }
 
     /**
@@ -165,7 +188,18 @@ public class DiscordBot {
             try {
                 command.method.invoke(command.object, message);
             } catch (Exception e) {
-                Util.error(e, message);
+                final Throwable cause = e.getCause();
+
+                cause.printStackTrace(System.err);
+                System.err.println(cause.getMessage());
+
+                final EmbedBuilder embedBuilder = new EmbedBuilder();
+
+                embedBuilder.withColor(new Color(255, 42, 50));
+                embedBuilder.appendField("Fehler aufgetreten", cause.toString() + '\n' + cause.getMessage(), false);
+                embedBuilder.withFooterText("Mehr Infos in der Konsole");
+
+                Util.sendBufferedEmbed(message.getChannel(), embedBuilder.build());
             }
         }
 
@@ -189,7 +223,10 @@ public class DiscordBot {
     private void command_help(final IMessage message) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        for (Object module : this.modules) {
+        for (final String key : this.loadedModules.keySet()) {
+            Object module = this.loadedModules.get(key);
+
+
             String moduleHelp = "";
 
             for (Method method : module.getClass().getMethods()) {
@@ -225,6 +262,128 @@ public class DiscordBot {
     public void onStartup(final ReadyEvent event) {
         System.out.println("[INFO] Bot ready. Prefix: " + this.prefix);
         client.changePlayingText(this.prefix + "help | WIP");
+    }
+
+    public void listModules(final IChannel channel) {
+        String loadedModulesString = "";
+        for (final String key : this.loadedModules.keySet()) {
+            loadedModulesString = loadedModulesString + key + '\n';
+        }
+        if (loadedModulesString.isEmpty()) {
+            loadedModulesString = "_keine_";
+        }
+
+        String unloadedModulesString = "";
+        for (final String key : this.unloadedModules.keySet()) {
+            unloadedModulesString = unloadedModulesString + key + '\n';
+        }
+        if (unloadedModulesString.isEmpty()) {
+            unloadedModulesString = "_keine_";
+        }
+
+        final EmbedBuilder builder = new EmbedBuilder();
+
+        builder.appendField("Aktivierte Module", loadedModulesString, true);
+        builder.appendField("Deaktivierte Module", unloadedModulesString, true);
+
+        Util.sendBufferedEmbed(channel, builder.build());
+    }
+
+    public void loadModule(final String moduleName, final IChannel channel) {
+        if (moduleName.isEmpty()) {
+            Util.sendMessage(channel, "Fehler! Kein Modul angegeben.");
+            return;
+        }
+        if (!this.unloadedModules.containsKey(moduleName)) {
+            Util.sendMessage(channel, "Fehler! Modul `" + moduleName + "` ist bereits aktiviert oder existiert nicht.");
+            return;
+        }
+
+        // Modul in andere Map übertragen und entfernen
+        final Object module = this.unloadedModules.get(moduleName);
+        this.loadedModules.put(moduleName, module);
+        this.unloadedModules.remove(moduleName);
+        this.makeCommandMap();
+
+        // Modul aus JSON-Array entfernen
+        final JSONArray jsonUnloadedModules = this.json.getJSONArray("unloadedModules");
+        for (int i = 0; i < jsonUnloadedModules.length(); i++) {
+            final String unloadedModuleName = jsonUnloadedModules.getString(i);
+            if (unloadedModuleName.equals(moduleName)) {
+                jsonUnloadedModules.remove(i);
+            }
+        }
+        this.saveJSON();
+
+        // EventListener aktivieren
+        final CommandModule moduleAnnotation = module.getClass().getDeclaredAnnotationsByType(CommandModule.class)[0];
+        if (!moduleAnnotation.commandOnly()) {
+            try {
+                this.client.getDispatcher().registerListener(module);
+            } catch (NullPointerException e) {
+                System.err.println("[Error] Could not get EventDispatcher: ");
+                Util.error(e, channel);
+            }
+        }
+
+        Util.sendMessage(channel, ":white_check_mark: Modul `" + moduleName + "` aktiviert.");
+    }
+
+    public void unloadModule(final String moduleName, final IChannel channel) {
+        if (moduleName.isEmpty()) {
+            Util.sendMessage(channel, "Fehler! Kein Modul angegeben.");
+            return;
+        }
+        if (!this.loadedModules.containsKey(moduleName)) {
+            Util.sendMessage(channel, "Fehler! Modul `" + moduleName + "` ist bereits deaktiviert oder existiert nicht.");
+            return;
+        }
+
+        // Modul in andere Map übertragen und entfernen
+        final Object module = this.loadedModules.get(moduleName);
+        if (module.getClass().isAnnotationPresent(AlwaysLoaded.class)) {
+            Util.sendMessage(channel, "Dieses Modul kann nicht deaktiviert werden.");
+            return;
+        }
+        this.unloadedModules.put(moduleName, module);
+        this.loadedModules.remove(moduleName);
+        this.makeCommandMap();
+
+        // Modul in JSON-Array speichern
+        final JSONArray jsonUnloadedModules = this.json.getJSONArray("unloadedModules");
+        jsonUnloadedModules.put(moduleName);
+        this.saveJSON();
+
+        // EventListener deaktivieren
+        final CommandModule moduleAnnotation = module.getClass().getDeclaredAnnotationsByType(CommandModule.class)[0];
+        if (!moduleAnnotation.commandOnly()) {
+            try {
+                this.client.getDispatcher().unregisterListener(module);
+            } catch (NullPointerException e) {
+                System.err.println("[Error] Could not get EventDispatcher: ");
+                Util.error(e, channel);
+            }
+        }
+
+        Util.sendMessage(channel, ":x: Modul `" + moduleName + "` deaktiviert.");
+
+    }
+
+    public void shutdown() throws InterruptedException{
+        this.client.logout();
+
+        while (this.client.isLoggedIn()) {
+            TimeUnit.SECONDS.sleep(1);
+        }
+
+        System.exit(0);
+    }
+
+    private void saveJSON() {
+        final String jsonOutput = this.json.toString(4);
+        Util.writeToFile(CONFIG_PATH, jsonOutput);
+
+        this.json = new JSONObject(jsonOutput);
     }
 
     public static void main(String[] args) {
