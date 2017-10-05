@@ -12,20 +12,15 @@ import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IRole;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
-import sx.blah.discord.util.RateLimitException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @CommandModule(moduleName = "Allgemeine Befehle", commandOnly = true)
 public class GeneralCommands {
-    private final DiscordBot bot;
-
     private final LocalDateTime startupTimestamp;
 
     public GeneralCommands (final DiscordBot bot) {
-        this.bot = bot;
-
         startupTimestamp = LocalDateTime.now();
     }
 

@@ -1,6 +1,7 @@
 package de.nikos410.discordBot;
 
 import de.nikos410.discordBot.modules.BotSetup;
+import de.nikos410.discordBot.modules.GameStats;
 import de.nikos410.discordBot.modules.GeneralCommands;
 import de.nikos410.discordBot.util.general.Authorization;
 import de.nikos410.discordBot.util.general.Util;
@@ -11,7 +12,6 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -26,17 +26,17 @@ import sx.blah.discord.util.EmbedBuilder;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
-import sx.blah.discord.util.RateLimitException;
 
 public class DiscordBot {
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
+
+    public final IDiscordClient client;
 
     private final HashMap<String, Command> commands = new HashMap<>();
     private final HashMap<String, Object> unloadedModules = new HashMap<>();
     private final HashMap<String, Object> loadedModules = new HashMap<>();
 
     private JSONObject json;
-    private final IDiscordClient client;
     private final String prefix;
 
     private final String modRoleID;
@@ -78,7 +78,7 @@ public class DiscordBot {
     private void addModules() {
         this.addModule(new GeneralCommands(this));
         this.addModule(new BotSetup(this));
-
+        this.addModule(new GameStats(this));
     }
 
     /**
@@ -368,26 +368,6 @@ public class DiscordBot {
 
         Util.sendMessage(channel, ":x: Modul `" + moduleName + "` deaktiviert.");
 
-    }
-
-    public void setUserName(final String newUserName, final IChannel channel) {
-        try {
-            this.client.changeUsername(newUserName);
-            Util.sendMessage(channel, ":white_check_mark: Neuer Username gesetzt: `" + newUserName + "`");
-        }
-        catch (RateLimitException e) {
-            Util.error(e, channel);
-        }
-    }
-
-    public void shutdown() throws InterruptedException{
-        this.client.logout();
-
-        while (this.client.isLoggedIn()) {
-            TimeUnit.SECONDS.sleep(1);
-        }
-
-        System.exit(0);
     }
 
     private void saveJSON() {
