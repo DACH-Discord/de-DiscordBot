@@ -235,19 +235,23 @@ public class DiscordBot {
             for (Method method : module.getClass().getMethods()) {
 
                 if (method.isAnnotationPresent(CommandSubscriber.class)) {
-                    final CommandSubscriber[] annotations = method.getDeclaredAnnotationsByType(CommandSubscriber.class);
+                    final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
 
-                    final String command = annotations[0].command();
-                    final String help = annotations[0].help();
+                    if (this.getUserPermissionLevel(message.getAuthor(), message.getGuild()) >= annotation.permissionLevel()) {
+                        final String command = annotation.command();
+                        final String help = annotation.help();
 
-                    moduleHelp = moduleHelp + "`" + command + "` " + help + '\n';
+                        moduleHelp = moduleHelp + "`" + command + "` " + help + '\n';
+                    }
                 }
             }
 
             final CommandModule[] annotations = module.getClass().getDeclaredAnnotationsByType(CommandModule.class);
             final String moduleName = annotations[0].moduleName();
 
-            embedBuilder.appendField(moduleName, moduleHelp, false);
+            if (!moduleHelp.isEmpty()) {
+                embedBuilder.appendField(moduleName, moduleHelp, false);
+            }
         }
 
         final EmbedObject embedObject = embedBuilder.build();
