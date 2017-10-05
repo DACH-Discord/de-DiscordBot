@@ -26,6 +26,7 @@ import sx.blah.discord.util.EmbedBuilder;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
+import sx.blah.discord.util.RateLimitException;
 
 public class DiscordBot {
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
@@ -367,6 +368,16 @@ public class DiscordBot {
 
         Util.sendMessage(channel, ":x: Modul `" + moduleName + "` deaktiviert.");
 
+    }
+
+    public void setUserName(final String newUserName, final IChannel channel) {
+        try {
+            this.client.changeUsername(newUserName);
+            Util.sendMessage(channel, ":white_check_mark: Neuer Username gesetzt: `" + newUserName + "`");
+        }
+        catch (RateLimitException e) {
+            Util.error(e, channel);
+        }
     }
 
     public void shutdown() throws InterruptedException{

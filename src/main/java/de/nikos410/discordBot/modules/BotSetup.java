@@ -32,6 +32,12 @@ public class BotSetup {
         }
     }
 
+    @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", pmAllowed = true, permissionLevel = CommandPermissions.OWNER)
+    public void command_SetUsername(final IMessage message) {
+        final String newUserName = Util.getContext(message.getContent());
+        this.bot.setUserName(newUserName, message.getChannel());
+    }
+
     @CommandSubscriber(command = "modules", help = "Alle Module anzeigen", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
     public void command_ListModules(final IMessage message) {
         bot.listModules(message.getChannel());
