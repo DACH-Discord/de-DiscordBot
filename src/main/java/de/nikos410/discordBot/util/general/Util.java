@@ -28,8 +28,7 @@ public class Util {
             } catch (MissingPermissionsException e) {
                 System.err.println("[ERR] Missing Permissions");
             } catch (DiscordException e) {
-                System.err.println("[ERR] " + e.getMessage());
-                e.printStackTrace();
+                error(e, channel);
             }
         }
         else {
@@ -46,8 +45,7 @@ public class Util {
         } catch (MissingPermissionsException e) {
             System.err.println("[ERR] Missing Permissions");
         } catch (DiscordException e) {
-            System.err.println("[ERR] " + e.getMessage());
-            e.printStackTrace();
+            error(e, channel);
         }
         return null;
     }
@@ -62,7 +60,7 @@ public class Util {
         } catch (MissingPermissionsException e) {
             System.err.println("[ERR] Missing Permissions");
         } catch (DiscordException e) {
-            error(e);
+            error(e, channel);
         }
     }
 
@@ -80,8 +78,7 @@ public class Util {
             } catch (MissingPermissionsException e) {
                 System.err.println("[ERR] Missing Permissions");
             } catch (DiscordException e) {
-                System.err.println("[ERR] " + e.getMessage());
-                e.printStackTrace();
+                error(e, channel);
             }
         }
         else {

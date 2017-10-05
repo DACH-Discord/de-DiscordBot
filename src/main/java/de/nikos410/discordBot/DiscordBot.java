@@ -3,6 +3,7 @@ package de.nikos410.discordBot;
 import de.nikos410.discordBot.modules.BotSetup;
 import de.nikos410.discordBot.modules.GameStats;
 import de.nikos410.discordBot.modules.GeneralCommands;
+import de.nikos410.discordBot.modules.ModStuff;
 import de.nikos410.discordBot.util.general.Authorization;
 import de.nikos410.discordBot.util.general.Util;
 import de.nikos410.discordBot.util.modular.*;
@@ -29,19 +30,19 @@ import org.json.JSONArray;
 
 public class DiscordBot {
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
-
-    public final IDiscordClient client;
+    private JSONObject json;
 
     private final HashMap<String, Command> commands = new HashMap<>();
     private final HashMap<String, Object> unloadedModules = new HashMap<>();
     private final HashMap<String, Object> loadedModules = new HashMap<>();
 
-    private JSONObject json;
-    private final String prefix;
+    public final IDiscordClient client;
 
-    private final String modRoleID;
-    private final String adminRoleID;
-    private final String ownerID;
+    public final String prefix;
+
+    public final String modRoleID;
+    public final String adminRoleID;
+    public final String ownerID;
 
     /**
      * Richtet den Bot ein, lädt Konfiguration etc.
@@ -79,6 +80,7 @@ public class DiscordBot {
         this.addModule(new GeneralCommands(this));
         this.addModule(new BotSetup(this));
         this.addModule(new GameStats(this));
+        this.addModule(new ModStuff(this));
     }
 
     /**
@@ -206,7 +208,7 @@ public class DiscordBot {
 
     }
 
-    private int getUserPermissionLevel(final IUser user, final IGuild guild) {
+    public int getUserPermissionLevel(final IUser user, final IGuild guild) {
         if (user.getStringID().equals(this.ownerID)) {
             return CommandPermissions.OWNER;
         }
