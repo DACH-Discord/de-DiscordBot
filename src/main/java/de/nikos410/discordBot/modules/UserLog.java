@@ -1,13 +1,14 @@
-package nikos.discordBot.modules;
+package de.nikos410.discordBot.modules;
 
-
-import nikos.discordBot.util.Util;
+import de.nikos410.discordBot.DiscordBot;
+import de.nikos410.discordBot.util.general.Util;
+import de.nikos410.discordBot.util.modular.CommandModule;
+import de.nikos410.discordBot.util.modular.CommandPermissions;
+import de.nikos410.discordBot.util.modular.CommandSubscriber;
 import org.json.JSONObject;
-import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserLeaveEvent;
@@ -16,34 +17,25 @@ import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
-import java.awt.Color;
+import java.awt.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
+@CommandModule(moduleName = "Userlog", commandOnly = false)
 public class UserLog {
-    static IDiscordClient client;
-
     private final static Path USERLOG_PATH = Paths.get("data/userLog.json");
-    private final static Path CONFIG_PATH = Paths.get("config/config.json");
 
-    private final String prefix;
-    private final String ownerID;
+    private final DiscordBot bot;
 
     private JSONObject jsonUserLog;
     private IChannel userLogChannel;
     private boolean isEnabled;
 
-    public UserLog(final IDiscordClient dClient) {
-        client = dClient;
-
-        // Prefix und Owner ID aus Config-Datei auslesen
-        final String configFileContent = Util.readFile(CONFIG_PATH);
-        final JSONObject jsonConfig = new JSONObject(configFileContent);
-        this.prefix = jsonConfig.getString("prefix");
-        this.ownerID = jsonConfig.getString("owner");
+    public UserLog (final DiscordBot bot) {
+        this.bot = bot;
     }
 
     @EventSubscriber
@@ -57,7 +49,7 @@ public class UserLog {
 
         this.isEnabled = jsonUserLog.getBoolean("on");
         final String channelID = jsonUserLog.getString("channel");
-        this.userLogChannel = client.getChannelByID(channelID);
+        this.userLogChannel = this.bot.client.getChannelByID(Long.parseLong(channelID));
         if (this.userLogChannel == null) {
             System.err.println("[ERR] Invalid UserLog Channel!");
         }
@@ -84,43 +76,14 @@ public class UserLog {
         }
     }
 
-    @EventSubscriber
-    public void onMessageRecieved(MessageReceivedEvent event) {
-        final IMessage message = event.getMessage();
-        if (!message.getAuthor().getID().equals(ownerID)) {
-            return;
-        }
-
-        final String messageContent = message.getContent();
-        final String messageContentLowerCase = messageContent.toLowerCase();
-
-        if (messageContent.equalsIgnoreCase(prefix + "userlog")) {
-            this.command_Userlog(message);
-        }
-        else if (messageContentLowerCase.startsWith(prefix + "userlog channel")) {
-            this.command_Userlog_Channel(message);
-        }
-        else if (messageContent.toLowerCase().startsWith(prefix + "userlog enable")) {
-            this.command_Userlog_Enable(message);
-        }
-        else if (messageContent.toLowerCase().startsWith(prefix + "userlog disable")) {
-            this.command_Userlog_Disable(message);
-        }
-        else if (messageContent.equals(prefix + "userlog test")) {
-            command_Userlog_Test(message);
-        }
-    }
-
     private void userJoinNotify(final IUser user) {
         final LocalDateTime joinTimeStamp = user.getCreationDate();
         int joinedDays = (int)joinTimeStamp.until(LocalDateTime.now(), ChronoUnit.DAYS);
 
-        final String joinedString = convertTotalDays(joinedDays);
-
         // String für Embed
         String embedString = "**Name:** " + user.getName() + '#' + user.getDiscriminator() + '\n' +
-                "**ID:** " + user.getID() + '\n' +
-                "**Discord beigetreten:** vor " + joinedString;
+                "**ID:** " + user.getStringID() + '\n' +
+                "**Discord beigetreten:** vor " + joinedDays + " Tagen";
 
         if (joinedDays <= 1) {
             embedString = embedString + '\n' + ":exclamation: Neuer Nutzer! :exclamation:";
@@ -147,7 +110,7 @@ public class UserLog {
         embedBuilder.withThumbnail(user.getAvatarURL());
         embedBuilder.appendField(":x: Nutzer hat den Server verlassen!",
                 "**Name:** " + user.getName() + '#' + user.getDiscriminator() + '\n' +
-                "**ID:** " + user.getID(),
+                        "**ID:** " + user.getStringID(),
                 false);
         embedBuilder.withFooterText(LocalDateTime.now().format(timeStampFormatter));
         embedBuilder.withColor(new Color(221, 46, 68));
@@ -164,7 +127,7 @@ public class UserLog {
         embedBuilder.withThumbnail(user.getAvatarURL());
         embedBuilder.appendField(":hammer: Nutzer gebannt!",
                 "**Name:** " + user.getName() + '#' + user.getDiscriminator() + '\n' +
-                "**ID:** " + user.getID(),
+                        "**ID:** " + user.getStringID(),
                 false);
         embedBuilder.withFooterText(LocalDateTime.now().format(timeStampFormatter));
 
@@ -173,36 +136,36 @@ public class UserLog {
         Util.sendBufferedEmbed(userLogChannel, embedObject);
     }
 
-    /**********
-     * COMMANDS
-     **********/
 
-    private void command_Userlog(final IMessage message) {
-        final String reply = "Kanal: <#" + userLogChannel.getID() + ">" + '\n' +
+    @CommandSubscriber(command = "userlog", help = "Zeigt Userlog-Konfuguration an", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    public void command_Userlog(final IMessage message) {
+        final String reply = "Kanal: <#" + userLogChannel.getStringID() + ">" + '\n' +
                 "Enabled: `" + isEnabled + '`';
         Util.sendMessage(message.getChannel(), reply);
     }
 
-    private void command_Userlog_Channel(final IMessage message) {
-        final String channelID = Util.getContext(Util.getContext(message.getContent()));
+    @CommandSubscriber(command = "userlog_channel", help = "Kanal für Userlog ändern", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    public void command_Userlog_Channel(final IMessage message) {
+        final String channelID = Util.getContext(message.getContent());
         if (jsonUserLog.has("channel")) {
             jsonUserLog.remove("channel");
         }
         jsonUserLog.put("channel", channelID);
         saveUserLogJSON();
 
-        this.userLogChannel = client.getChannelByID(channelID);
+        this.userLogChannel = this.bot.client.getChannelByID(Long.parseLong(channelID));
         if (userLogChannel == null) {
             System.err.print("[ERR] Invalid UserLog Channel!");
             Util.sendMessage(message.getChannel(), ":x: Kanal mit der ID `" + channelID + "` nicht gefunden!");
         }
         else {
             Util.sendMessage(message.getChannel(), ":white_check_mark: Neuer Kanal: " +
-                    "<#" + userLogChannel.getID() + ">");
+                    "<#" + userLogChannel.getStringID() + ">");
         }
     }
 
-    private void command_Userlog_Enable(final IMessage message) {
+    @CommandSubscriber(command = "userlog_enable", help = "Userlog aktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    public void command_Userlog_Enable(final IMessage message) {
         this.isEnabled = true;
         if (jsonUserLog.has("on")) {
             jsonUserLog.remove("on");
@@ -213,7 +176,8 @@ public class UserLog {
         Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
     }
 
-    private void command_Userlog_Disable(final IMessage message) {
+    @CommandSubscriber(command = "userlog_disable", help = "Userlog deaktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    public void command_Userlog_Disable(final IMessage message) {
         this.isEnabled = false;
         if (jsonUserLog.has("on")) {
             jsonUserLog.remove("on");
@@ -224,7 +188,8 @@ public class UserLog {
         Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
     }
 
-    private void command_Userlog_Test(final IMessage message) {
+    @CommandSubscriber(command = "userlog_test", help = "Userlog-Ausgabe testen", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    public void command_Userlog_Test(final IMessage message) {
         final IUser user = message.getAuthor();
         userJoinNotify(user);
         userLeaveNotify(user);
@@ -236,37 +201,5 @@ public class UserLog {
         Util.writeToFile(USERLOG_PATH, jsonOutput);
 
         jsonUserLog = new JSONObject(jsonOutput);
-    }
-
-    private static String convertTotalDays(int days) {
-        final int years = days / 365;
-        days = days % 365;
-        final int months = days / 30;
-        days = days % 30;
-
-        String result;
-
-        if (days == 1) {
-            result = "1 Tag";
-        }
-        else {
-            result = days + " Tagen";
-        }
-
-        if (months == 1) {
-            result = result + ", 1 Monat";
-        }
-        else if (months > 1) {
-            result = result + ", " + months + " Monaten";
-        }
-
-        if (years == 1) {
-            result = result + ", 1 Jahr";
-        }
-        else if (years > 1) {
-            result = result + ", " + years + " Jahren";
-        }
-
-        return result;
     }
 }
