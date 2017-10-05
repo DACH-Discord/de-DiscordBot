@@ -156,7 +156,7 @@ public class Util {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
         embedBuilder.withColor(new Color(255, 42, 50));
-        embedBuilder.appendField("Fehler aufgetreten", e.toString() + '\n' + e.getMessage(), false);
+        embedBuilder.appendField("Fehler aufgetreten", e.toString(), false);
         embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
         sendBufferedEmbed(channel, embedBuilder.build());
@@ -165,7 +165,7 @@ public class Util {
     }
 
     public static void error(final Exception e) {
-        System.err.println(e.toString() + '\n' + e.getMessage() + '\n');
+        System.err.println(e.toString() + '\n');
         e.printStackTrace(System.err);
     }
 }

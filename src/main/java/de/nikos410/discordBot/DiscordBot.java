@@ -1,9 +1,6 @@
 package de.nikos410.discordBot;
 
-import de.nikos410.discordBot.modules.BotSetup;
-import de.nikos410.discordBot.modules.GameStats;
-import de.nikos410.discordBot.modules.GeneralCommands;
-import de.nikos410.discordBot.modules.ModStuff;
+import de.nikos410.discordBot.modules.*;
 import de.nikos410.discordBot.util.general.Authorization;
 import de.nikos410.discordBot.util.general.Util;
 import de.nikos410.discordBot.util.modular.*;
@@ -81,6 +78,7 @@ public class DiscordBot {
         this.addModule(new BotSetup(this));
         this.addModule(new GameStats(this));
         this.addModule(new ModStuff(this));
+        this.addModule(new Roll(this));
     }
 
     /**
@@ -199,7 +197,7 @@ public class DiscordBot {
                 final EmbedBuilder embedBuilder = new EmbedBuilder();
 
                 embedBuilder.withColor(new Color(255, 42, 50));
-                embedBuilder.appendField("Fehler aufgetreten", cause.toString() + '\n' + cause.getMessage(), false);
+                embedBuilder.appendField("Fehler aufgetreten", cause.toString(), false);
                 embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
                 Util.sendBufferedEmbed(message.getChannel(), embedBuilder.build());
