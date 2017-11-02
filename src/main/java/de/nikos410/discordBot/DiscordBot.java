@@ -9,6 +9,8 @@ import java.awt.*;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
 import sx.blah.discord.api.IDiscordClient;
@@ -16,6 +18,7 @@ import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.MessageUpdateEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
@@ -154,7 +157,34 @@ public class DiscordBot {
      */
     @EventSubscriber
     public void onMessageReceived(final MessageReceivedEvent event) {
-        final IMessage message = event.getMessage();
+        handleMessage(event.getMessage());
+    }
+
+    /**
+     * Wird bei jeder geänderten Nachricht aufgerufen
+     *
+     * @param event Das Event der geänderten Nachricht
+     */
+    @EventSubscriber
+    public void onMessageEdited(final MessageUpdateEvent event) {
+        final IMessage message = event.getNewMessage();
+
+        if (message.getEditedTimestamp().isPresent()) {
+            final LocalDateTime messageTimestamp = message.getTimestamp();
+            final LocalDateTime editTimestamp = message.getEditedTimestamp().get();
+
+            final long seconds = messageTimestamp.until(editTimestamp, ChronoUnit.SECONDS);
+
+            if (seconds < 20) {
+                handleMessage(message);
+            }
+        }
+    }
+
+    /**
+     *  Erhaltene/geänderte Nachricht verarbeiten
+     */
+    public void handleMessage(final IMessage message) {
         final String messageContent = message.getContent();
 
         // Message doesn't start with the prefix
