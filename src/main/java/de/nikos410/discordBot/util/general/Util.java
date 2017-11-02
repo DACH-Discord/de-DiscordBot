@@ -134,7 +134,7 @@ public class Util {
 
     public static String readFile(Path path) {
         try {
-            return new String(Files.readAllBytes(path));
+            return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
         }
         catch (IOException e){
             error(e);

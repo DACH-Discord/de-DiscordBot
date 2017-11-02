@@ -1,26 +1,40 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
 apply plugin: 'application'
+
+// Hack to correctly apply system file encoding
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
 
 version = 1.0
 sourceCompatibility = 1.8
 mainClassName = 'de.nikos410.discordBot.DiscordBot'
 
 jar {
-  manifest {
-    attributes 'Main-Class': mainClassName
-    attributes 'Implementation-Title': '/r/de Discord-Bot',
-               'Implementation-Version': version
-  }
+    manifest {
+        attributes 'Main-Class': mainClassName
+        attributes 'Implementation-Title': '/r/de Discord-Bot', 'Implementation-Version': version
+    }
 }
 
 dependencies {
-  compile "com.github.austinv11:Discord4J:2.9"
-  compile "org.json:json:20160810"
+    compile "com.github.austinv11:Discord4J:2.9"
+    compile "org.json:json:20160810"
 }
 
 repositories {
-  jcenter()
-  maven {
-    url  "https://jitpack.io"
-  }
+    jcenter()
+    maven {
+        url    "https://jitpack.io"
+    }
 }
