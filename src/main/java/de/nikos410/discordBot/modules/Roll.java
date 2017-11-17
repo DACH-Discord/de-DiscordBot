@@ -1,10 +1,9 @@
 package de.nikos410.discordBot.modules;
 
-import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.CommandModule;
+import de.nikos410.discordBot.util.modular.annotations.CommandModule;
 import de.nikos410.discordBot.util.modular.CommandPermissions;
-import de.nikos410.discordBot.util.modular.CommandSubscriber;
+import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
@@ -25,8 +24,6 @@ public class Roll {
         buffer.putLong(System.currentTimeMillis());
         rng = new SecureRandom(buffer.array());
     }
-
-    public Roll(DiscordBot bot) {}
 
     @CommandSubscriber(command = "roll",help = "Würfeln. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`",
             pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)

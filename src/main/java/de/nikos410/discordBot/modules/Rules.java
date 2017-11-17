@@ -3,18 +3,16 @@ package de.nikos410.discordBot.modules;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.CommandModule;
+import de.nikos410.discordBot.util.modular.annotations.CommandModule;
 import de.nikos410.discordBot.util.modular.CommandPermissions;
-import de.nikos410.discordBot.util.modular.CommandSubscriber;
+import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 import org.json.JSONObject;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.handle.obj.IUser;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 
 @CommandModule(moduleName = "Regeln", commandOnly = false)
 public class Rules {

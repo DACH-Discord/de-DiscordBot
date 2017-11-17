@@ -2,13 +2,14 @@ package de.nikos410.discordBot.modules;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.CommandModule;
+import de.nikos410.discordBot.util.modular.annotations.CommandModule;
 import de.nikos410.discordBot.util.modular.CommandPermissions;
-import de.nikos410.discordBot.util.modular.CommandSubscriber;
+import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 import org.json.JSONObject;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserLeaveEvent;
@@ -33,6 +34,9 @@ public class UserLog {
     private JSONObject jsonUserLog;
     private IChannel userLogChannel;
     private boolean isEnabled;
+
+    private IMessage purgeCommandMessage;
+
 
     public UserLog (final DiscordBot bot) {
         this.bot = bot;
@@ -194,6 +198,42 @@ public class UserLog {
         userJoinNotify(user);
         userLeaveNotify(user);
         userBanNotify(user);
+    }
+
+    @CommandSubscriber(command = "purge", help = "Nutzer vom Server kicken die seit 30 oder mehr Tagen offline waren",
+            pmAllowed = false, permissionLevel = CommandPermissions.ADMIN)
+    public void command_Purge(final IMessage message) {
+        this.purgeCommandMessage = message;
+
+        Util.sendSingleMessage(message.getChannel(), message.getGuild().getUsersToBePruned(30) +
+                " Nutzer werden entfernt. Fortfahren? (y/n)");
+    }
+
+    @EventSubscriber
+    public void onMessageReceived(final MessageReceivedEvent event) {
+        if (this.purgeCommandMessage != null) {
+            final IMessage inputMessage = event.getMessage();
+
+            if (inputMessage.getAuthor().getLongID() == this.purgeCommandMessage.getAuthor().getLongID()) {
+                final String inputMessageContent = inputMessage.getContent();
+
+                if (inputMessage.getChannel().getLongID() == this.purgeCommandMessage.getChannel().getLongID()) {
+                    if (inputMessageContent.equalsIgnoreCase("y")) {
+                        // Purge
+                        this.isEnabled = false;
+
+                        final int userCount = this.purgeCommandMessage.getGuild().getUsersToBePruned(30);
+                        this.purgeCommandMessage.getGuild().pruneUsers(30);
+                        Util.sendMessage(this.purgeCommandMessage.getChannel(), userCount + " Nutzer entfernt. " + ":white_check_mark: ");
+
+                        this.isEnabled = true;
+                    }
+                    else if (inputMessageContent.equalsIgnoreCase("n")) {
+                        Util.sendMessage(this.purgeCommandMessage.getChannel(), ":white_check_mark:");
+                    }
+                }
+            }
+        }
     }
 
     private void saveUserLogJSON() {

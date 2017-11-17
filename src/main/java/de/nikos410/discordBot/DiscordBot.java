@@ -1,18 +1,23 @@
 package de.nikos410.discordBot;
 
-import de.nikos410.discordBot.modules.*;
 import de.nikos410.discordBot.util.general.Authorization;
 import de.nikos410.discordBot.util.general.Util;
 import de.nikos410.discordBot.util.modular.*;
 
 import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.Set;
 
+import de.nikos410.discordBot.util.modular.annotations.AlwaysLoaded;
+import de.nikos410.discordBot.util.modular.annotations.CommandModule;
+import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
+import org.reflections.Reflections;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
@@ -77,13 +82,26 @@ public class DiscordBot {
      * Module werden dem Bot hinzugefügt
      */
     private void addModules() {
-        this.addModule(new GeneralCommands(this));
-        this.addModule(new BotSetup(this));
-        this.addModule(new GameStats(this));
-        this.addModule(new ModStuff(this));
-        this.addModule(new Roll(this));
-        this.addModule(new Rules(this));
-        this.addModule(new UserLog(this));
+        Reflections reflections = new Reflections("de.nikos410.discordBot.modules");
+        Set<Class<?>> moduleClasses = reflections.getTypesAnnotatedWith(CommandModule.class);
+
+        for (Class<?> moduleClass : moduleClasses) {
+            try {
+                Object moduleObject = null;
+                try {
+                    moduleObject = moduleClass.getDeclaredConstructor(DiscordBot.class).newInstance(this);
+                }
+                catch (NoSuchMethodException e) {
+                    moduleObject = moduleClass.newInstance();
+                }
+
+                this.addModule(moduleObject);
+            }
+            catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                System.err.println("Error loading module from class " + moduleClass.getName() + '\n' + e + " " + e.getMessage());
+            }
+
+        }
     }
 
     /**
@@ -161,7 +179,8 @@ public class DiscordBot {
     }
 
     /**
-     * Wird bei jeder geänderten Nachricht aufgerufen
+     * Wird bei jeder geänderten Nachricht aufgerufen, bearbeitete Nachrichten die jünger als 20 Sekunden sind
+     * werden auch als Befehl interpretiert
      *
      * @param event Das Event der geänderten Nachricht
      */

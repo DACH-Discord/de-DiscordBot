@@ -3,9 +3,9 @@ package de.nikos410.discordBot.modules;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.CommandModule;
+import de.nikos410.discordBot.util.modular.annotations.CommandModule;
 import de.nikos410.discordBot.util.modular.CommandPermissions;
-import de.nikos410.discordBot.util.modular.CommandSubscriber;
+import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 

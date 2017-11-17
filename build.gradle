@@ -30,6 +30,7 @@ jar {
 dependencies {
     compile "com.github.austinv11:Discord4J:2.9"
     compile "org.json:json:20160810"
+    compile group: 'org.reflections', name: 'reflections', version: '0.9.10'
 }
 
 repositories {
