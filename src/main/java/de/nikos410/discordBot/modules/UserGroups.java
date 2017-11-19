@@ -42,6 +42,7 @@ public class UserGroups {
         role.changeMentionable(true);
 
         usergroupsJSON.put(groupname, role.getLongID());
+        saveJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Gruppe `" + groupname + "` erstellt.");
     }
@@ -57,7 +58,9 @@ public class UserGroups {
 
         final IRole role = message.getGuild().getRoleByID(usergroupsJSON.getLong(groupname));
         role.delete();
+
         usergroupsJSON.remove(groupname);
+        saveJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Gruppe `" + groupname + "` entfernt.");
     }
@@ -113,7 +116,5 @@ public class UserGroups {
     private void saveJSON() {
         final String jsonOutput = usergroupsJSON.toString(4);
         Util.writeToFile(USERGROUPS_PATH, jsonOutput);
-
-        usergroupsJSON = new JSONObject(jsonOutput);
     }
 }

@@ -52,8 +52,8 @@ public class UserLog {
         jsonUserLog = new JSONObject(userLogFileContent);
 
         this.isEnabled = jsonUserLog.getBoolean("on");
-        final String channelID = jsonUserLog.getString("channel");
-        this.userLogChannel = this.bot.client.getChannelByID(Long.parseLong(channelID));
+        final long channelID = jsonUserLog.getLong("channel");
+        this.userLogChannel = bot.client.getChannelByID(channelID);
         if (this.userLogChannel == null) {
             System.err.println("[ERR] Invalid UserLog Channel!");
         }

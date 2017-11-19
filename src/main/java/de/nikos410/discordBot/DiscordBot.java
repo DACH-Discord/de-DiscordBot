@@ -45,9 +45,9 @@ public class DiscordBot {
 
     public final String prefix;
 
-    public final String modRoleID;
-    public final String adminRoleID;
-    public final String ownerID;
+    public final long modRoleID;
+    public final long adminRoleID;
+    public final long ownerID;
 
     /**
      * Richtet den Bot ein, lädt Konfiguration etc.
@@ -61,9 +61,9 @@ public class DiscordBot {
 
         this.prefix = json.getString("prefix");
 
-        this.modRoleID = json.getString("modRole");
-        this.adminRoleID = json.getString("adminRole");
-        this.ownerID = json.getString("owner");
+        this.modRoleID = json.getLong("modRole");
+        this.adminRoleID = json.getLong("adminRole");
+        this.ownerID = json.getLong("owner");
 
         try {
             this.client.getDispatcher().registerListener(this);
@@ -258,7 +258,7 @@ public class DiscordBot {
     }
 
     public int getUserPermissionLevel(final IUser user, final IGuild guild) {
-        if (user.getStringID().equals(this.ownerID)) {
+        if (user.getLongID() == this.ownerID) {
             return CommandPermissions.OWNER;
         }
         else if (Util.hasRoleByID(user, this.adminRoleID, guild)) {

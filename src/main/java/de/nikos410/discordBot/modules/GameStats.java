@@ -85,7 +85,7 @@ public class GameStats {
                 JSONArray gameArray = gameStatsJSON.getJSONArray(gameKey);
 
                 for (int i = 0; i < gameArray.length(); i++) {
-                    final IUser user = client.getUserByID(Long.parseLong(gameArray.getString(i)));
+                    final IUser user = client.getUserByID(gameArray.getLong(i));
                     if (user != null) {
                         final String userOutput = user.getName() + '#' + user.getDiscriminator();
                         if (!usersPlayingAny.contains(userOutput)) {    // Keine doppelten Namen
@@ -142,7 +142,7 @@ public class GameStats {
             if (gameStatus.isPresent()) {
                 // User spielt (jetzt) ein Spiel
                 final String gameName = gameStatus.get().toLowerCase();
-                final String userID = user.getStringID();
+                final long userID = user.getLongID();
 
                 if (!doesGameExist(gameName)) {
                     this.addGame(gameName);
@@ -154,7 +154,7 @@ public class GameStats {
         }
     }
 
-    private void addUser(final String gameName, final String userID) {
+    private void addUser(final String gameName, final long userID) {
         JSONArray gameArray = gameStatsJSON.getJSONArray(gameName);
         gameArray.put(userID);
         saveJSON();
@@ -170,13 +170,13 @@ public class GameStats {
         return gameStatsJSON.has(game);
     }
 
-    private boolean doesUserPlay(final String userID, final String game) {
+    private boolean doesUserPlay(final long userID, final String game) {
         if (gameStatsJSON.has(game)) {
             // Spiel ist vorhanden
 
             JSONArray gameArray = gameStatsJSON.getJSONArray(game);
             for (int i = 0; i < gameArray.length(); i++) {
-                if (gameArray.getString(i).equals(userID)) {
+                if (gameArray.getLong(i) == userID) {
                     // User ist in Array Vorhanden
                     return true;
                 }
