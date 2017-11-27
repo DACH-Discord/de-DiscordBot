@@ -46,7 +46,7 @@ public class ModStuff {
             }
 
             final String kickMessage = "**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten)" +
-                    "\n Hinweis: _" + customMessage;
+                    "\nHinweis: _" + customMessage + '_';
 
             Util.sendPM(kickUser, kickMessage);
             message.getGuild().kickUser(kickUser);
@@ -83,7 +83,7 @@ public class ModStuff {
                 customMessage = "kein";
             }
 
-            final String banMessage = "**Du wurdest gebannt!** \n Hinweis: _" + customMessage;
+            final String banMessage = "**Du wurdest gebannt!** \nHinweis: _" + customMessage + '_';
 
             Util.sendPM(banUser, banMessage);
             message.getGuild().kickUser(banUser);
