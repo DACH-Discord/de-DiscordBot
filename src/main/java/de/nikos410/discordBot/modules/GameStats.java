@@ -48,71 +48,95 @@ public class GameStats {
         }
 
         IGuild guild = message.getGuild();
-        final List<IUser> users = guild.getUsers();
-
-        final int levDistTreshold = 2 + StringUtils.countMatches(game, " ");
 
         /*
          * Nutzer, die gerade das Spiel spielen
          */
-        String usersPlayingNow = "";
-        for (IUser user : users) {
+        List<IUser> usersPlayingNow = new ArrayList<>();
+        for (IUser user : guild.getUsers()) {
             final Optional<String> playing = user.getPresence().getPlayingText();
 
-            if (playing.isPresent() && StringUtils.getLevenshteinDistance( game.toLowerCase(),
-                    playing.get().toLowerCase() ) < levDistTreshold)  {
-                usersPlayingNow = usersPlayingNow + user.getName() + '#' + user.getDiscriminator() + '\n';
+            if (playing.isPresent() && playing.get().equalsIgnoreCase(game)) {
+                usersPlayingNow.add(user);
             }
         }
 
         /*
          * Nutzer, die jemals das Spiel gespielt haben
          */
+        List<IUser> usersPlayingAny = new ArrayList<>();
+        if (gameStatsJSON.has(game)) {
+            JSONArray gameArray = gameStatsJSON.getJSONArray(game);
 
-        // Alle Spiele in der Liste, die zu dem Input passen
-        List<String> gameKeys = new ArrayList<>(1);
-        for (Object obj : gameStatsJSON.keySet()) {
-            final String gameKey = obj.toString();
-            if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), game.toLowerCase()) < levDistTreshold) {
-                gameKeys.add(gameKey.toLowerCase());
-            }
-        }
+            for (int i = 0; i < gameArray.length(); i++) {
+                final IUser user = client.getUserByID(gameArray.getLong(i));
+                if (user != null) {
 
-        String usersPlayingAny = "";
-        for (String gameKey : gameKeys) {
-
-            if (gameStatsJSON.has(gameKey)) {
-                JSONArray gameArray = gameStatsJSON.getJSONArray(gameKey);
-
-                for (int i = 0; i < gameArray.length(); i++) {
-                    final IUser user = client.getUserByID(gameArray.getLong(i));
-                    if (user != null) {
-                        final String userOutput = user.getName() + '#' + user.getDiscriminator();
-                        if (!usersPlayingAny.contains(userOutput)) {    // Keine doppelten Namen
-                            usersPlayingAny = usersPlayingAny + userOutput + '\n';
-                        }
+                    // Nutzer nur hinzufügen wenn er nicht schon in der anderen Liste enthalten ist
+                    if (!usersPlayingNow.contains(user)) {
+                        usersPlayingAny.add(user);
                     }
                 }
             }
 
         }
 
-
         /*
          * Ausgabe
          */
+
+        // Ähnliche Spiele
+        String similarGames = "";
+        for (String s : findSimilarKeys(game)) {
+            similarGames = similarGames + s + '\n';
+        }
+
+        // Keine Nutzer spielen gerade oder haben jemals gespielt
         if (usersPlayingNow.isEmpty() && usersPlayingAny.isEmpty()) {
-            // Keine Nutzer spielen gerade oder haben jemals gespielt
-            Util.sendMessage(message.getChannel(), "Niemand auf diesem Server spielt **" + game + "**.");
+            Util.sendMessage(message.getChannel(), "**Niemand auf diesem Server spielt _" + game + "_**.");
+            if (!similarGames.isEmpty()) {
+                Util.sendMessage(message.getChannel(), "**Meintest du...** \n" + similarGames);
+            }
+
             return;
         }
 
-        if (usersPlayingNow.isEmpty()) {
-            usersPlayingNow = "_niemand_";
+        Util.sendMessage(message.getChannel(), "**Nutzer, die __jetzt__ _" + game + "_ spielen**\n" +
+                userListToString(usersPlayingNow, guild));
+        Util.sendMessage(message.getChannel(), "**__Alle anderen__ Nutzer, die _" + game + "_ spielen**\n" +
+                userListToString(usersPlayingAny, guild));
+        if (!similarGames.isEmpty()) {
+            Util.sendMessage(message.getChannel(), "**Ähnliche Spiele:** \n" + similarGames);
+        }
+    }
+
+    private List<String> findSimilarKeys (final String inputKey) {
+        final int levDistTreshold = 2 + StringUtils.countMatches(inputKey, " ");
+
+        // Alle Spiele in der Liste, die zu dem Input passen
+        List<String> similarKeys = new ArrayList<>();
+        for (Object obj : gameStatsJSON.keySet()) {
+            final String gameKey = obj.toString();
+            if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), inputKey.toLowerCase()) <= levDistTreshold) {
+                similarKeys.add(gameKey.toLowerCase());
+            }
         }
 
-        Util.sendMessage(message.getChannel(), "**Nutzer, die __jetzt__ _" + game + "_ spielen**" + '\n' + usersPlayingNow);
-        Util.sendMessage(message.getChannel(), "**__Alle__ Nutzer, die _" + game + "_ spielen**" + '\n' + usersPlayingAny);
+        return similarKeys;
+    }
+
+    private String userListToString (final List<IUser> userList, final IGuild guild) {
+        String userListString = "";
+
+        for (IUser user : userList) {
+            userListString = userListString + Util.makeUserString(user, guild) + '\n';
+        }
+
+        if (userListString.isEmpty()) {
+            userListString = "_niemand_";
+        }
+
+        return userListString;
     }
 
     @EventSubscriber
@@ -122,6 +146,8 @@ public class GameStats {
         for(IUser user : users) {
             this.updateUserStatus(user);
         }
+
+        System.out.println("[Info] Gamestats finished initializing.");
     }
 
     @EventSubscriber

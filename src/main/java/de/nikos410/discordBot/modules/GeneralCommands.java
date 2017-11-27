@@ -63,28 +63,15 @@ public class GeneralCommands {
         EmbedBuilder embedBuilder = new EmbedBuilder();
 
         embedBuilder.withAuthorIcon(quoteAuthor.getAvatarURL());
-        embedBuilder.withAuthorName(makeUserString(quoteAuthor, guild));
+        embedBuilder.withAuthorName(Util.makeUserString(quoteAuthor, guild));
         embedBuilder.withDesc(quoteMessage.getContent());
         embedBuilder.withColor(quoteAuthorTopRole.getColor());
 
         final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("dd.MM.YYYY, HH:mm");
         final String timestampString = quoteMessage.getTimestamp().format(timestampFormatter);
 
-        embedBuilder.withFooterText(timestampString + " | Zitiert von: " + makeUserString(commandAuthor, guild));
+        embedBuilder.withFooterText(timestampString + " | Zitiert von: " + Util.makeUserString(commandAuthor, guild));
 
         Util.sendBufferedEmbed(commandMessage.getChannel(), embedBuilder.build());
-    }
-
-    private static String makeUserString(final IUser user, final IGuild guild) {
-        final String name = user.getName();
-        final String displayName = user.getDisplayName(guild);
-
-        if (name.equals(displayName)) {
-            return name;
-        }
-        else {
-            return String.format("%s (%s#%s)", displayName, name, user.getDiscriminator());
-        }
-
     }
 }

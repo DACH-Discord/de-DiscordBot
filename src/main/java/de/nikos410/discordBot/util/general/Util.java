@@ -168,4 +168,17 @@ public class Util {
         System.err.println(e.toString() + '\n');
         e.printStackTrace(System.err);
     }
+
+    public static String makeUserString(final IUser user, final IGuild guild) {
+        final String name = user.getName();
+        final String displayName = user.getDisplayName(guild);
+
+        if (name.equals(displayName)) {
+            return name;
+        }
+        else {
+            return String.format("%s (%s#%s)", displayName, name, user.getDiscriminator());
+        }
+
+    }
 }
