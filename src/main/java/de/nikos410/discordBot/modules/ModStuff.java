@@ -90,7 +90,7 @@ public class ModStuff {
             Util.sendMessage(message.getChannel(), ":hammer:");
         }
         else {
-            message.getGuild().kickUser(message.getAuthor());
+            message.getGuild().banUser(message.getAuthor());
             Util.sendMessage(message.getChannel(), ":tja:");
             Util.sendPM(message.getAuthor(), "Netter Versuch ;)");
         }
