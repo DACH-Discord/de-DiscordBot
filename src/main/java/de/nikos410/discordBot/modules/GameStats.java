@@ -117,7 +117,8 @@ public class GameStats {
         List<String> similarKeys = new ArrayList<>();
         for (Object obj : gameStatsJSON.keySet()) {
             final String gameKey = obj.toString();
-            if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), inputKey.toLowerCase()) <= levDistTreshold) {
+            if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), inputKey.toLowerCase()) <= levDistTreshold &&
+                    !gameKey.equalsIgnoreCase(inputKey)) {
                 similarKeys.add(gameKey.toLowerCase());
             }
         }
