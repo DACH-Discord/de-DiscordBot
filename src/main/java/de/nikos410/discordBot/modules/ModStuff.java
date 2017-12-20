@@ -55,7 +55,6 @@ public class ModStuff {
         else {
             message.getGuild().kickUser(message.getAuthor());
             Util.sendMessage(message.getChannel(), ":tja:");
-            Util.sendPM(message.getAuthor(), "Netter Versuch ;)");
         }
     }
 
@@ -86,13 +85,12 @@ public class ModStuff {
             final String banMessage = "**Du wurdest gebannt!** \nHinweis: _" + customMessage + '_';
 
             Util.sendPM(banUser, banMessage);
-            message.getGuild().kickUser(banUser);
-            Util.sendMessage(message.getChannel(), ":hammer:");
+            message.getGuild().banUser(banUser);
+            Util.sendMessage(message.getChannel(), ":door::arrow_left: :hammer:");
         }
         else {
-            message.getGuild().banUser(message.getAuthor());
+            message.getGuild().kickUser(message.getAuthor());
             Util.sendMessage(message.getChannel(), ":tja:");
-            Util.sendPM(message.getAuthor(), "Netter Versuch ;)");
         }
     }
 }
