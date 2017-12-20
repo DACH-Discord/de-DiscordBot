@@ -104,7 +104,7 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendBufferedEmbed(userLogChannel, embedObject);
+        Util.sendEmbed(userLogChannel, embedObject);
     }
 
     private void userLeaveNotify(final IUser user) {
@@ -121,7 +121,7 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendBufferedEmbed(userLogChannel, embedObject);
+        Util.sendEmbed(userLogChannel, embedObject);
     }
 
     private void userBanNotify(final IUser user) {
@@ -137,7 +137,7 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        Util.sendBufferedEmbed(userLogChannel, embedObject);
+        Util.sendEmbed(userLogChannel, embedObject);
     }
 
 
@@ -205,7 +205,7 @@ public class UserLog {
     public void command_Purge(final IMessage message) {
         this.purgeCommandMessage = message;
 
-        Util.sendSingleMessage(message.getChannel(), message.getGuild().getUsersToBePruned(30) +
+        Util.sendMessage(message.getChannel(), message.getGuild().getUsersToBePruned(30) +
                 " Nutzer werden entfernt. Fortfahren? (y/n)");
     }
 

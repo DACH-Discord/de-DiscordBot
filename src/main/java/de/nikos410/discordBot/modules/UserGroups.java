@@ -12,7 +12,6 @@ import sx.blah.discord.util.EmbedBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.EnumSet;
 
 @CommandModule(moduleName = "Nutzergruppen", commandOnly = true)
 public class UserGroups {
@@ -110,7 +109,7 @@ public class UserGroups {
 
         embedBuilder.withFooterText("Weise dir mit '" + bot.prefix + "group <Gruppe>' selbst eine dieser Gruppen zu");
 
-        Util.sendBufferedEmbed(message.getChannel(), embedBuilder.build());
+        Util.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void saveJSON() {

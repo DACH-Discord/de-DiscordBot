@@ -72,6 +72,6 @@ public class GeneralCommands {
 
         embedBuilder.withFooterText(timestampString + " | Zitiert von: " + Util.makeUserString(commandAuthor, guild));
 
-        Util.sendBufferedEmbed(commandMessage.getChannel(), embedBuilder.build());
+        Util.sendEmbed(commandMessage.getChannel(), embedBuilder.build());
     }
 }

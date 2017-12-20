@@ -101,6 +101,8 @@ public class GameStats {
             return;
         }
 
+        // TODO: Nachricht in einzelnen Zeilen übergeben um saubereren Zeilenumbruch zu gewährleisten
+
         Util.sendMessage(message.getChannel(), "**Nutzer, die __jetzt__ _" + game + "_ spielen**\n" +
                 userListToString(usersPlayingNow, guild));
         Util.sendMessage(message.getChannel(), "**__Alle anderen__ Nutzer, die _" + game + "_ spielen**\n" +

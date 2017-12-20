@@ -56,7 +56,7 @@ public class Roll {
                         false
                 );
                 EmbedObject rollObject = outputBuilder.build();
-                Util.sendBufferedEmbed(channel, rollObject);
+                Util.sendEmbed(channel, rollObject);
             } catch (NumberFormatException ex) {
                 Util.sendMessage(channel, MessageFormat.format("Konnte Eingabe '{0}' nicht verarbeiten." +
                         "Bitte sicherstellen, dass sowohl die Würfelanzahl als auch die maximale Augenzahl Integer-Zahlen > 0 sind!", context));

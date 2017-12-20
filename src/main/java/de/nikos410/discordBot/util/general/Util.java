@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.*;
@@ -13,78 +15,110 @@ import sx.blah.discord.util.*;
 
 public class Util {
 
-    /*
-    RequestBuffer.request(() -> {
-            // Stuff
-        });
+    /**
+     * Eine Nachricht senden. Wenn die Nachricht zu lang (>2000 Zeichen) ist, wird sie in mehrere kürzere
+     * Nachrichten aufgeteilt.
+     *
+     * @param channel der Kanal in dem die Nachricht gesendet werden soll
+     * @param lines die Zeilen der Nachricht
+     * @return Die gesendete(n) Nachricht(en)
      */
+    public static synchronized List<IMessage> sendMessage(final IChannel channel, final List<String> lines) {
+        final List<IMessage> sentMessages = new ArrayList<>();
 
-    public static synchronized void sendMessage(final IChannel channel, final String message) {
-        if (message.length() <= 2000 ) {
-            try {
-                channel.sendMessage(message);
-            } catch (RateLimitException e) {
-                System.err.println("[ERR] Ratelimited!");
-            } catch (MissingPermissionsException e) {
-                System.err.println("[ERR] Missing Permissions");
-            } catch (DiscordException e) {
-                error(e, channel);
+        StringBuilder builder = new StringBuilder();
+        for (String line : lines) {
+            if (builder.length() + line.length() <= 2000) {
+                // Zeile passt
+                builder.append(line);
+            }
+            else {
+                // Zeile passt nicht
+                sentMessages.add(sendSingleMessage(channel, builder.toString()));
+                builder = new StringBuilder();
             }
         }
+
+        return sentMessages;
+    }
+
+    /**
+     * Eine Nachricht senden. Wenn die Nachricht zu lang (>2000 Zeichen) ist, wird sie in mehrere kürzere
+     * Nachrichten umgebrochen
+     *
+     * @param channel der Kanal in dem die Nachricht gesendet werden soll
+     * @param message der Inhalt der Nachricht
+     * @return Die gesendete(n) Nachricht(en)
+     */
+    public static synchronized List<IMessage> sendMessage(final IChannel channel, final String message) {
+        if (message.length() <= 2000 ) {
+            // Nachricht ist maximal 2000 Zeichen lang
+            final List<IMessage> sentMessages = new ArrayList<>();
+            sentMessages.add(sendSingleMessage(channel, message));
+            return sentMessages;
+        }
         else {
-            sendMessage(channel, message.substring(0,1999));
-            sendMessage(channel, message.substring(2000));
+            // Nachricht ist länger als 2000 Zeichen -> umbrechen und aufteilen
+            final List<IMessage> sentMessages = new ArrayList<>();
+            sentMessages.add(sendSingleMessage(channel, message.substring(0,1999)));
+            sentMessages.addAll(sendMessage(channel, message.substring(2000)));
+            return sentMessages;
         }
     }
 
-    public static synchronized IMessage sendSingleMessage(final IChannel channel, final String message) {
+    private static synchronized IMessage sendSingleMessage(final IChannel channel, final String message){
+        return sendSingleMessage(channel, message, 0);
+    }
+
+    private static synchronized IMessage sendSingleMessage(final IChannel channel, final String message, final int tries){
         try {
             return channel.sendMessage(message);
-        } catch (RateLimitException e) {
-            System.err.println("[ERR] Ratelimited!");
-        } catch (MissingPermissionsException e) {
-            System.err.println("[ERR] Missing Permissions");
-        } catch (DiscordException e) {
-            error(e, channel);
         }
+        catch (RateLimitException e) {
+            // 20 Versuche im Abstand von 0,5 Sekunden
+            if (tries < 20) {
+                sleep(500);
+                sendSingleMessage(channel, message, tries+1);
+            }
+            else {
+                System.err.println("[ERR] Ratelimited");
+            }
+        }
+        catch (DiscordException e) {
+            error(e);
+        }
+
         return null;
     }
 
-    public static void sendBufferedEmbed(final IChannel channel, final EmbedObject embedObject) {
+    public static synchronized IMessage sendEmbed(final IChannel channel, final EmbedObject embedObject) {
+        return sendEmbed(channel, embedObject, 0);
+    }
+
+    public static IMessage sendEmbed(final IChannel channel, final EmbedObject embedObject, final int tries) {
         try {
-            RequestBuffer.request(() -> {
-                channel.sendMessage(embedObject);
-            });
-        } catch (RateLimitException e) {
-            System.err.println("[ERR] Ratelimited!");
-        } catch (MissingPermissionsException e) {
-            System.err.println("[ERR] Missing Permissions");
-        } catch (DiscordException e) {
-            error(e, channel);
+            return channel.sendMessage(embedObject);
         }
+        catch (RateLimitException e) {
+            // 20 Versuche im Abstand von 0,5 Sekunden
+            if (tries < 20) {
+                sleep(500);
+                sendEmbed(channel, embedObject, tries+1);
+            }
+            else {
+                System.err.println("[ERR] Ratelimited");
+            }
+        }
+        catch (DiscordException e) {
+            error(e);
+        }
+
+        return null;
     }
 
     public static synchronized void sendPM(final IUser user, final String message) {
         final IPrivateChannel channel = user.getOrCreatePMChannel();
-        sendPM(channel, message);
-    }
-
-    private static synchronized void sendPM(final IPrivateChannel channel, final String message) {
-        if (message.length() <= 2000 ) {
-            try {
-                channel.sendMessage(message);
-            } catch (RateLimitException e) {
-                System.err.println("[ERR] Ratelimited!");
-            } catch (MissingPermissionsException e) {
-                System.err.println("[ERR] Missing Permissions");
-            } catch (DiscordException e) {
-                error(e, channel);
-            }
-        }
-        else {
-            sendPM(channel, message.substring(0,1999));
-            sendPM(channel, message.substring(2000));
-        }
+        sendMessage(channel, message);
     }
 
     public static String getContext(final String message) {
@@ -159,7 +193,7 @@ public class Util {
         embedBuilder.appendField("Fehler aufgetreten", e.toString(), false);
         embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
-        sendBufferedEmbed(channel, embedBuilder.build());
+        sendEmbed(channel, embedBuilder.build());
 
         error(e);
     }
@@ -180,5 +214,14 @@ public class Util {
             return String.format("%s (%s#%s)", displayName, name, user.getDiscriminator());
         }
 
+    }
+
+    public static void sleep (int milliseconds) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(milliseconds);
+        }
+        catch (InterruptedException e) {
+            error(e);
+        }
     }
 }

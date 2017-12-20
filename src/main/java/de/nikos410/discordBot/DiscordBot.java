@@ -251,7 +251,7 @@ public class DiscordBot {
                 embedBuilder.appendField("Fehler aufgetreten", cause.toString(), false);
                 embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
-                Util.sendBufferedEmbed(message.getChannel(), embedBuilder.build());
+                Util.sendEmbed(message.getChannel(), embedBuilder.build());
             }
         }
 
@@ -304,7 +304,7 @@ public class DiscordBot {
         }
 
         final EmbedObject embedObject = embedBuilder.build();
-        Util.sendBufferedEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
+        Util.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
 
         if (!message.getChannel().isPrivate()) {
             Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
@@ -342,7 +342,7 @@ public class DiscordBot {
         builder.appendField("Aktivierte Module", loadedModulesString, true);
         builder.appendField("Deaktivierte Module", unloadedModulesString, true);
 
-        Util.sendBufferedEmbed(channel, builder.build());
+        Util.sendEmbed(channel, builder.build());
     }
 
     public void loadModule(final String moduleName, final IChannel channel) {
