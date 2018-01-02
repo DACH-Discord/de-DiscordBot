@@ -95,8 +95,11 @@ public class DiscordBot {
 
                 this.addModule(moduleObject);
             }
-            catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            catch (InstantiationException | IllegalAccessException e) {
                 System.err.println("Error loading module from class " + moduleClass.getName() + '\n' + e + " " + e.getMessage());
+            }
+            catch (InvocationTargetException e) {
+                System.err.println("Error loading module from class " + moduleClass.getName() + '\n' + e + " " + e.getCause().getMessage());
             }
 
         }
