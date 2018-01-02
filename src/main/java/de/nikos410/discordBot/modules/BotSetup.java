@@ -56,7 +56,7 @@ public class BotSetup {
         }
     }
 
-    @CommandSubscriber(command = "modules", help = "Alle Module anzeigen", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "modules", help = "Alle Module anzeigen", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
     public void command_ListModules(final IMessage message) {
         bot.listModules(message.getChannel());
     }
@@ -72,4 +72,5 @@ public class BotSetup {
         final String messageContext = Util.getContext(message.getContent());
         this.bot.unloadModule(messageContext, message.getChannel());
     }
+
 }
