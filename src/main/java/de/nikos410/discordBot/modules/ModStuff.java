@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONObject;
 import sx.blah.discord.api.IDiscordClient;
@@ -39,8 +41,6 @@ public class ModStuff {
     public ModStuff (final DiscordBot bot) {
         this.bot = bot;
         final IDiscordClient client = bot.client;
-
-        System.out.println("Test");
 
         this.muteRoleID = bot.configJSON.getLong("muteRole");
     }
@@ -150,8 +150,16 @@ public class ModStuff {
         };
 
         String muteDurationInput = Util.getContext(message.getContent(), 2);
-        int muteDuration = Integer.parseInt(muteDurationInput.substring(0, muteDurationInput.indexOf(' ')));
-        String muteDurationUnit = muteDurationInput.substring( muteDurationInput.indexOf(' ')+1 );
+
+        Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd])");
+        Matcher matcher = pattern.matcher(muteDurationInput);
+
+        if (!matcher.matches()) {
+            Util.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
+            return;
+        }
+        int muteDuration = Integer.parseInt(matcher.group(1));
+        String muteDurationUnit = matcher.group(2);
 
         TimeUnit muteDurationTimeUnit = null;
         switch (muteDurationUnit) {
