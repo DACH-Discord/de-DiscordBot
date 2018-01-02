@@ -107,7 +107,7 @@ public class UserGroups {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.appendField("Verfügbare Gruppen:", stringBuilder.toString(), false);
 
-        embedBuilder.withFooterText("Weise dir mit '" + bot.prefix + "group <Gruppe>' selbst eine dieser Gruppen zu");
+        embedBuilder.withFooterText("Weise dir mit '" + bot.configJSON.getString("prefix") + "group <Gruppe>' selbst eine dieser Gruppen zu");
 
         Util.sendEmbed(message.getChannel(), embedBuilder.build());
     }

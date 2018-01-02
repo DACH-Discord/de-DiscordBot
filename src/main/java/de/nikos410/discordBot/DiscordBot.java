@@ -34,36 +34,34 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 
 public class DiscordBot {
-    private final static Path CONFIG_PATH = Paths.get("config/config.json");
-    private JSONObject json;
-
     private final HashMap<String, Command> commands = new HashMap<>();
     private final HashMap<String, Object> unloadedModules = new HashMap<>();
     private final HashMap<String, Object> loadedModules = new HashMap<>();
 
     public final IDiscordClient client;
 
-    public final String prefix;
+    private final static Path CONFIG_PATH = Paths.get("config/config.json");
+    public JSONObject configJSON;
 
-    public final long modRoleID;
-    public final long adminRoleID;
-    public final long ownerID;
+    private final String prefix;
+    private final long modRoleID;
+    private final long adminRoleID;
+    private final long ownerID;
 
     /**
      * Richtet den Bot ein, lädt Konfiguration etc.
      */
     private DiscordBot() {
         final String configFileContent = Util.readFile(CONFIG_PATH);
-        json = new JSONObject(configFileContent);
+        this.configJSON = new JSONObject(configFileContent);
 
-        final String token = json.getString("token");
+        final String token = configJSON.getString("token");
         this.client = Authorization.createClient(token, true);
 
-        this.prefix = json.getString("prefix");
-
-        this.modRoleID = json.getLong("modRole");
-        this.adminRoleID = json.getLong("adminRole");
-        this.ownerID = json.getLong("owner");
+        this.prefix = configJSON.getString("prefix");
+        this.modRoleID = configJSON.getLong("modRole");
+        this.adminRoleID = configJSON.getLong("adminRole");
+        this.ownerID = configJSON.getLong("owner");
 
         try {
             this.client.getDispatcher().registerListener(this);
@@ -119,7 +117,7 @@ public class DiscordBot {
         final String moduleName = moduleAnnotation.moduleName();
 
 
-        final JSONArray jsonUnloadedModules = this.json.getJSONArray("unloadedModules");
+        final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
         for (int i = 0; i < jsonUnloadedModules.length(); i++) {
             final String unloadedModuleName = jsonUnloadedModules.getString(i);
             if (moduleName.equals(unloadedModuleName)) {
@@ -362,7 +360,7 @@ public class DiscordBot {
         this.makeCommandMap();
 
         // Modul aus JSON-Array entfernen
-        final JSONArray jsonUnloadedModules = this.json.getJSONArray("unloadedModules");
+        final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
         for (int i = 0; i < jsonUnloadedModules.length(); i++) {
             final String unloadedModuleName = jsonUnloadedModules.getString(i);
             if (unloadedModuleName.equals(moduleName)) {
@@ -406,7 +404,7 @@ public class DiscordBot {
         this.makeCommandMap();
 
         // Modul in JSON-Array speichern
-        final JSONArray jsonUnloadedModules = this.json.getJSONArray("unloadedModules");
+        final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
         jsonUnloadedModules.put(moduleName);
         this.saveJSON();
 
@@ -426,10 +424,10 @@ public class DiscordBot {
     }
 
     private void saveJSON() {
-        final String jsonOutput = this.json.toString(4);
+        final String jsonOutput = this.configJSON.toString(4);
         Util.writeToFile(CONFIG_PATH, jsonOutput);
 
-        this.json = new JSONObject(jsonOutput);
+        this.configJSON = new JSONObject(jsonOutput);
     }
 
     public static void main(String[] args) {

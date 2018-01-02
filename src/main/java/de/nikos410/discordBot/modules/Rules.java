@@ -44,7 +44,8 @@ public class Rules {
     @EventSubscriber
     public void onUserJoin(UserJoinEvent event) {
         if (this.isEnabled) {
-            Util.sendPM(event.getUser(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter, this.bot.prefix));
+            Util.sendPM(event.getUser(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter,
+                    bot.configJSON.getString("prefix")));
         }
     }
 
@@ -68,7 +69,8 @@ public class Rules {
 
     @CommandSubscriber(command = "welcomeset_test", help = "Begrüßungsnachricht testen", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
     public void command_Welcomeset_Test(final IMessage message) {
-        Util.sendPM(message.getAuthor(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter, this.bot.prefix));
+        Util.sendPM(message.getAuthor(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter,
+                bot.configJSON.getString("prefix")));
     }
 
     @CommandSubscriber(command = "welcomeset_enable", help = "Begrüßungsnachricht aktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
@@ -145,7 +147,8 @@ public class Rules {
         this.saveJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Footer geändert");
-        Util.sendMessage(message.getChannel(), String.format(this.welcomeFooter, this.bot.prefix));
+        Util.sendMessage(message.getChannel(), String.format(this.welcomeFooter,
+                bot.configJSON.getString("prefix")));
     }
 
     private void saveJSON() {
