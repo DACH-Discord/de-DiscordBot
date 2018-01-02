@@ -35,7 +35,7 @@ public class GeneralCommands {
 
     @CommandSubscriber(command = "git", help = "Quellcode des Bots", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
     public void command_Git(final IMessage message) {
-        Util.sendMessage(message.getChannel(), "https://github.com/Nikos410/de-DiscordBot/");
+        Util.sendMessage(message.getChannel(), "https://github.com/DACH-Discord/de-DiscordBot/");
     }
 
     @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID", pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
