@@ -37,7 +37,8 @@ public class GameStats {
         this.gameStatsJSON = new JSONObject(jsonContent);
     }
 
-    @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen",
+            pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
     public void command_Playing(final IMessage message) {
         final String content = message.getContent();
         final String game = Util.getContext(content);
@@ -144,13 +145,9 @@ public class GameStats {
 
     @EventSubscriber
     public void onStartUP(ReadyEvent event) {
-        List<IUser> users = this.bot.client.getUsers();
-
-        for(IUser user : users) {
+        for(IUser user : bot.client.getUsers()) {
             this.updateUserStatus(user);
         }
-
-        System.out.println("[Info] Gamestats finished initializing.");
     }
 
     @EventSubscriber
