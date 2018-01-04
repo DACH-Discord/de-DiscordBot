@@ -21,6 +21,7 @@ import org.json.JSONObject;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
+import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IRole;
 import sx.blah.discord.handle.obj.IUser;
@@ -29,6 +30,9 @@ import sx.blah.discord.handle.obj.IUser;
 public class ModStuff {
     private final DiscordBot bot;
 
+    private final long modlogChannelID;
+    private final long muteRoleID;
+
     private final static Path MUTED_PATH = Paths.get("data/muted.json");
     private JSONObject mutedJSON;
 
@@ -36,13 +40,12 @@ public class ModStuff {
 
     private List<String> mutedUsers = new LinkedList<>();
 
-    private final long muteRoleID;
-
     public ModStuff (final DiscordBot bot) {
         this.bot = bot;
         final IDiscordClient client = bot.client;
 
         this.muteRoleID = bot.configJSON.getLong("muteRole");
+        this.modlogChannelID = bot.configJSON.getLong("modLogChannelID");
     }
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
@@ -77,6 +80,12 @@ public class ModStuff {
             Util.sendPM(kickUser, kickMessage);
             message.getGuild().kickUser(kickUser);
             Util.sendMessage(message.getChannel(), ":door::arrow_left:");
+
+            // Modlog
+            IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gekickt**. \nHinweis: _%s_", Util.makeUserString(message.getAuthor(), message.getGuild()),
+                    Util.makeUserString(kickUser, message.getGuild()),  customMessage);
+            Util.sendMessage(modLogChannel, modLogMessage);
         }
         else {
             message.getGuild().kickUser(message.getAuthor());
@@ -113,6 +122,12 @@ public class ModStuff {
             Util.sendPM(banUser, banMessage);
             message.getGuild().banUser(banUser);
             Util.sendMessage(message.getChannel(), ":door::arrow_left: :hammer:");
+
+            // Modlog
+            IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gebannt**. \nHinweis: _%s_", Util.makeUserString(message.getAuthor(), message.getGuild()),
+                    Util.makeUserString(banUser, message.getGuild()),  customMessage);
+            Util.sendMessage(modLogChannel, modLogMessage);
         }
         else {
             message.getGuild().kickUser(message.getAuthor());
@@ -151,15 +166,16 @@ public class ModStuff {
 
         String muteDurationInput = Util.getContext(message.getContent(), 2);
 
-        Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd])");
+        Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd])\\s?(.*)");
         Matcher matcher = pattern.matcher(muteDurationInput);
 
         if (!matcher.matches()) {
             Util.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
             return;
         }
-        int muteDuration = Integer.parseInt(matcher.group(1));
-        String muteDurationUnit = matcher.group(2);
+        final int muteDuration = Integer.parseInt(matcher.group(1));
+        final String muteDurationUnit = matcher.group(2);
+        String customMessage = matcher.group(3);
 
         TimeUnit muteDurationTimeUnit = null;
         switch (muteDurationUnit) {
@@ -189,8 +205,26 @@ public class ModStuff {
         scheduler.schedule(unmuteTask, muteDuration, muteDurationTimeUnit);
 
         Util.sendMessage(message.getChannel(), "Nutzer für " + muteDuration + ' ' + muteDurationUnit + " gemuted.");
+
+        if (customMessage.isEmpty()) {
+            customMessage = "kein";
+        }
+
+        final String muteMessage = "**Du wurdest für " + muteDuration + ' ' + muteDurationUnit +
+                " gemuted!** \nHinweis: _" + customMessage + '_';
+
+        if (!muteUser.isBot()) {
+            Util.sendPM(muteUser, muteMessage);
+        }
+
         System.out.println("Muted user " + muteUser.getName() + '#' + muteUser.getDiscriminator() + " for " + muteDuration +
         ' ' + muteDurationUnit);
+
+        // Modlog
+        IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
+        final String modLogMessage = String.format("**%s** hat Nutzer **%s** für %s %s **gemuted**. \nHinweis: _%s_", Util.makeUserString(message.getAuthor(), message.getGuild()),
+                Util.makeUserString(muteUser, message.getGuild()), muteDuration, muteDurationUnit, customMessage);
+        Util.sendMessage(modLogChannel, modLogMessage);
     }
 
     @EventSubscriber
