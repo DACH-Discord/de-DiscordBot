@@ -226,6 +226,7 @@ public class UserLog {
                         this.purgeCommandMessage.getGuild().pruneUsers(30);
                         Util.sendMessage(this.purgeCommandMessage.getChannel(), userCount + " Nutzer entfernt. " + ":white_check_mark: ");
 
+                        // TODO: Enable only when all users have been pruned
                         this.isEnabled = true;
                     }
                     else if (inputMessageContent.equalsIgnoreCase("n")) {
