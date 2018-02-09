@@ -222,9 +222,72 @@ public class ModStuff {
 
         // Modlog
         IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-        final String modLogMessage = String.format("**%s** hat Nutzer **%s** für %s %s **gemuted**. \nHinweis: _%s_", Util.makeUserString(message.getAuthor(), message.getGuild()),
+        final String modLogMessage = String.format("**%s** hat Nutzer **%s** für %s %s **gemuted**. \nHinweis: _%s_",
+                Util.makeUserString(message.getAuthor(), message.getGuild()),
                 Util.makeUserString(muteUser, message.getGuild()), muteDuration, muteDurationUnit, customMessage);
         Util.sendMessage(modLogChannel, modLogMessage);
+    }
+
+    @CommandSubscriber(command = "selfmute", help = "Mute dich selber für die angegebene Zeit", pmAllowed = false,
+            permissionLevel = CommandPermissions.EVERYONE)
+    public void command_Selfmute(final IMessage message) {
+        final IUser muteUser = message.getAuthor();
+
+        final IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
+
+        Runnable unmuteTask = () -> {
+            mutedUsers.remove(muteUser.getStringID());
+            muteUser.removeRole(muteRole);
+            System.out.println("Unmuted user " + muteUser.getName() + '#' + muteUser.getDiscriminator() + ".");
+        };
+
+        String muteDurationInput = Util.getContext(message.getContent(), 1);
+
+        Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd]).*");
+        Matcher matcher = pattern.matcher(muteDurationInput);
+
+        if (!matcher.matches()) {
+            Util.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
+            return;
+        }
+        final int muteDuration = Integer.parseInt(matcher.group(1));
+        final String muteDurationUnit = matcher.group(2);
+
+        TimeUnit muteDurationTimeUnit = null;
+        switch (muteDurationUnit) {
+            case "S": muteDurationTimeUnit = TimeUnit.SECONDS;
+                break;
+            case "s": muteDurationTimeUnit = TimeUnit.SECONDS;
+                break;
+
+            case "M": muteDurationTimeUnit = TimeUnit.MINUTES;
+                break;
+            case "m": muteDurationTimeUnit = TimeUnit.MINUTES;
+                break;
+
+            case "H": muteDurationTimeUnit = TimeUnit.HOURS;
+                break;
+            case "h": muteDurationTimeUnit = TimeUnit.HOURS;
+                break;
+
+            case "D": muteDurationTimeUnit = TimeUnit.DAYS;
+                break;
+            case "d": muteDurationTimeUnit = TimeUnit.DAYS;
+                break;
+
+            default: muteDurationTimeUnit = TimeUnit.SECONDS;
+        }
+
+        muteUser.addRole(muteRole);
+        mutedUsers.add(muteUser.getStringID());
+
+        scheduler.schedule(unmuteTask, muteDuration, muteDurationTimeUnit);
+
+        Util.sendMessage(message.getChannel(), "Du wurdest für " + muteDuration + ' ' + muteDurationUnit + " gemuted.");
+
+        System.out.println("User " + muteUser.getName() + '#' + muteUser.getDiscriminator() + " muted themself for " + muteDuration +
+                ' ' + muteDurationUnit);
+
     }
 
     @EventSubscriber
