@@ -12,6 +12,7 @@ import sx.blah.discord.util.EmbedBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.*;
 
 @CommandModule(moduleName = "Nutzergruppen", commandOnly = true)
 public class UserGroups {
@@ -94,7 +95,11 @@ public class UserGroups {
     public void command_groups(final IMessage message) {
         final StringBuilder stringBuilder = new StringBuilder();
 
-        for (String key : usergroupsJSON.keySet()) {
+        final List<String> keyList = new LinkedList<>();
+        keyList.addAll(usergroupsJSON.keySet());
+        Collections.sort(keyList);
+
+        for (String key : keyList) {
             if (stringBuilder.length() != 0) {
                 stringBuilder.append('\n');
             }
