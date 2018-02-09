@@ -5,10 +5,7 @@ import de.nikos410.discordBot.util.modular.annotations.CommandModule;
 import de.nikos410.discordBot.util.modular.CommandPermissions;
 import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.handle.obj.IRole;
-import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 
 import java.time.LocalDateTime;
