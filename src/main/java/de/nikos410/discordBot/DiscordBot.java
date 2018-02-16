@@ -477,10 +477,6 @@ public class DiscordBot {
     }
 
     public static void main(String[] args) {
-        DiscordBot bot = new DiscordBot();
-
-        for (String s : bot.parseParameters("%%test dies sind params", 5)) {
-            System.out.println(s);
-        }
+        new DiscordBot();
     }
 }
