@@ -228,7 +228,7 @@ public class ModStuff {
         Util.sendMessage(modLogChannel, modLogMessage);
     }
 
-    @CommandSubscriber(command = "selfmute", help = "Mute dich selber für die angegebene Zeit", pmAllowed = false,
+    @CommandSubscriber(command = "selfmute", help = "Mute dich selber für die angegebene Zeit", pmAllowed = true,
             permissionLevel = CommandPermissions.EVERYONE)
     public void command_Selfmute(final IMessage message) {
         final IUser muteUser = message.getAuthor();
