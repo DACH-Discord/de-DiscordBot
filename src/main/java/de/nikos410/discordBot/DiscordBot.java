@@ -4,13 +4,14 @@ import de.nikos410.discordBot.util.general.Authorization;
 import de.nikos410.discordBot.util.general.Util;
 import de.nikos410.discordBot.util.modular.*;
 
-import java.awt.*;
+import java.awt.Color;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -24,7 +25,6 @@ import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageUpdateEvent;
-import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
@@ -150,10 +150,17 @@ public class DiscordBot {
                     final String help = annotations[0].help();
                     final boolean pmAllowed = annotations[0].pmAllowed();
                     final int permissionLevel = annotations[0].permissionLevel();
+                    final int parameterCount = method.getParameterCount();
 
-                    final Command cmd = new Command(module, method, help, pmAllowed, permissionLevel);
+                    // Mindestens 1 (message), max 6 (message + 5 parameter)
+                    if (parameterCount > 0 && parameterCount <= 6) {
+                        final Command cmd = new Command(module, method, help, pmAllowed, permissionLevel, parameterCount-1);
+                        this.commands.put(command.toLowerCase(), cmd);
+                    }
+                    else {
+                        System.err.println("Ungültige Anzahl Parameter bei Befehl " + command);
+                    }
 
-                    this.commands.put(command.toLowerCase(), cmd);
                 }
             }
 
@@ -204,7 +211,7 @@ public class DiscordBot {
     /**
      *  Erhaltene/geänderte Nachricht verarbeiten
      */
-    public void handleMessage(final IMessage message) {
+    private void handleMessage(final IMessage message) {
         final String messageContent = message.getContent();
 
         // Message doesn't start with the prefix
@@ -239,8 +246,41 @@ public class DiscordBot {
             }
 
             try {
-                command.method.invoke(command.object, message);
-            } catch (Exception e) {
+                final int parameterCount = command.parameterCount;
+                ArrayList<String> params = parseParameters(messageContent, parameterCount);
+                switch (parameterCount) {
+                    case 0: {
+                        command.method.invoke(command.object, message);
+                        break;
+                    }
+                    case 1: {
+                        command.method.invoke(command.object, message, params.get(0));
+                        break;
+                    }
+                    case 2: {
+                        command.method.invoke(command.object, message, params.get(0), params.get(1));
+                        break;
+                    }
+                    case 3: {
+                        command.method.invoke(command.object, message, params.get(0), params.get(1), params.get(2));
+                        break;
+                    }
+                    case 4: {
+                        command.method.invoke(command.object, message, params.get(0), params.get(1), params.get(2), params.get(3));
+                        break;
+                    }
+                    case 5: {
+                        command.method.invoke(command.object, message, params.get(0), params.get(1), params.get(2), params.get(3), params.get(4));
+                        break;
+                    }
+                    default: {
+                        Util.error(new RuntimeException("Invalid number of parameters!"), message.getChannel());
+                    }
+
+                }
+
+            }
+            catch (Exception e) {
                 final Throwable cause = e.getCause();
 
                 cause.printStackTrace(System.err);
@@ -256,6 +296,31 @@ public class DiscordBot {
             }
         }
 
+    }
+
+    private ArrayList<String> parseParameters(String messageContent, int parameterCount) {
+        final int prefixLength = prefix.length();
+        final String content = messageContent.substring(prefixLength);
+        final String parameterContent = content.substring(content.indexOf(' ')+1);
+        final ArrayList<String> parameters = new ArrayList<>();
+        parseParameters(parameterContent, parameters, parameterCount);
+        return parameters;
+    }
+
+    private void parseParameters(String parameterContent, ArrayList<String> parameters, int parameterCount) {
+        if (parameterCount == 0) {
+            return;
+        }
+
+        if (!parameterContent.contains(" ")) {
+            parameters.add(parameterContent);
+            parseParameters("", parameters, parameterCount-1);
+        }
+        else {
+            final int index = parameterContent.indexOf(' ');
+            parameters.add(parameterContent.substring(0, index));
+            parseParameters(parameterContent.substring(index + 1), parameters, parameterCount - 1);
+        }
     }
 
     public int getUserPermissionLevel(final IUser user, final IGuild guild) {
@@ -321,39 +386,19 @@ public class DiscordBot {
         client.changePlayingText(this.prefix + "help | WIP");
     }
 
-    public void listModules(final IChannel channel) {
-        String loadedModulesString = "";
-        for (final String key : this.loadedModules.keySet()) {
-            loadedModulesString = loadedModulesString + key + '\n';
-        }
-        if (loadedModulesString.isEmpty()) {
-            loadedModulesString = "_keine_";
-        }
-
-        String unloadedModulesString = "";
-        for (final String key : this.unloadedModules.keySet()) {
-            unloadedModulesString = unloadedModulesString + key + '\n';
-        }
-        if (unloadedModulesString.isEmpty()) {
-            unloadedModulesString = "_keine_";
-        }
-
-        final EmbedBuilder builder = new EmbedBuilder();
-
-        builder.appendField("Aktivierte Module", loadedModulesString, true);
-        builder.appendField("Deaktivierte Module", unloadedModulesString, true);
-
-        Util.sendEmbed(channel, builder.build());
+    public HashMap<String, Object> getLoadedModules() {
+        return loadedModules;
+    }
+    public HashMap<String, Object> getUnloadedModules() {
+        return unloadedModules;
     }
 
-    public void loadModule(final String moduleName, final IChannel channel) {
+    public String loadModule(final String moduleName) throws NullPointerException {
         if (moduleName.isEmpty()) {
-            Util.sendMessage(channel, "Fehler! Kein Modul angegeben.");
-            return;
+            return "Fehler! Kein Modul angegeben.";
         }
         if (!this.unloadedModules.containsKey(moduleName)) {
-            Util.sendMessage(channel, "Fehler! Modul `" + moduleName + "` ist bereits aktiviert oder existiert nicht.");
-            return;
+            return "Fehler! Modul `" + moduleName + "` ist bereits aktiviert oder existiert nicht.";
         }
 
         // Modul in andere Map übertragen und entfernen
@@ -377,30 +422,28 @@ public class DiscordBot {
         if (!moduleAnnotation.commandOnly()) {
             try {
                 this.client.getDispatcher().registerListener(module);
-            } catch (NullPointerException e) {
-                System.err.println("[Error] Could not get EventDispatcher: ");
-                Util.error(e, channel);
+            }
+            catch (NullPointerException e) {
+                System.err.println("[Error] Could not get EventDispatcher!");
+                throw e;
             }
         }
 
-        Util.sendMessage(channel, ":white_check_mark: Modul `" + moduleName + "` aktiviert.");
+        return ":white_check_mark: Modul `" + moduleName + "` aktiviert.";
     }
 
-    public void unloadModule(final String moduleName, final IChannel channel) {
+    public String unloadModule(final String moduleName) throws NullPointerException{
         if (moduleName.isEmpty()) {
-            Util.sendMessage(channel, "Fehler! Kein Modul angegeben.");
-            return;
+            return "Fehler! Kein Modul angegeben.";
         }
         if (!this.loadedModules.containsKey(moduleName)) {
-            Util.sendMessage(channel, "Fehler! Modul `" + moduleName + "` ist bereits deaktiviert oder existiert nicht.");
-            return;
+            return "Fehler! Modul `" + moduleName + "` ist bereits deaktiviert oder existiert nicht.";
         }
 
         // Modul in andere Map übertragen und entfernen
         final Object module = this.loadedModules.get(moduleName);
         if (module.getClass().isAnnotationPresent(AlwaysLoaded.class)) {
-            Util.sendMessage(channel, "Dieses Modul kann nicht deaktiviert werden.");
-            return;
+            return "Dieses Modul kann nicht deaktiviert werden.";
         }
         this.unloadedModules.put(moduleName, module);
         this.loadedModules.remove(moduleName);
@@ -416,14 +459,14 @@ public class DiscordBot {
         if (!moduleAnnotation.commandOnly()) {
             try {
                 this.client.getDispatcher().unregisterListener(module);
-            } catch (NullPointerException e) {
-                System.err.println("[Error] Could not get EventDispatcher: ");
-                Util.error(e, channel);
+            }
+            catch (NullPointerException e) {
+                System.err.println("[Error] Could not get EventDispatcher!");
+                throw e;
             }
         }
 
-        Util.sendMessage(channel, ":x: Modul `" + moduleName + "` deaktiviert.");
-
+        return  ":x: Modul `" + moduleName + "` deaktiviert.";
     }
 
     private void saveJSON() {
@@ -434,6 +477,10 @@ public class DiscordBot {
     }
 
     public static void main(String[] args) {
-        new DiscordBot();
+        DiscordBot bot = new DiscordBot();
+
+        for (String s : bot.parseParameters("%%test dies sind params", 5)) {
+            System.out.println(s);
+        }
     }
 }

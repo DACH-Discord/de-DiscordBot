@@ -121,10 +121,12 @@ public class Util {
         sendMessage(channel, message);
     }
 
+    @Deprecated
     public static String getContext(final String message) {
         return getContext(message, 1);
     }
 
+    @Deprecated
     public static String getContext(final String message, final int level) {
         if (level == 1) {
             if (message.contains(" ")) {

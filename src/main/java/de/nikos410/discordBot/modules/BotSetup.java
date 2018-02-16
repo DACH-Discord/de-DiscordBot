@@ -9,6 +9,7 @@ import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
 
 import java.util.concurrent.TimeUnit;
@@ -58,19 +59,52 @@ public class BotSetup {
 
     @CommandSubscriber(command = "modules", help = "Alle Module anzeigen", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
     public void command_ListModules(final IMessage message) {
-        bot.listModules(message.getChannel());
+        String loadedModulesString = "";
+        for (final String key : bot.getLoadedModules().keySet()) {
+            loadedModulesString = loadedModulesString + key + '\n';
+        }
+        if (loadedModulesString.isEmpty()) {
+            loadedModulesString = "_keine_";
+        }
+
+        String unloadedModulesString = "";
+        for (final String key : bot.getUnloadedModules().keySet()) {
+            unloadedModulesString = unloadedModulesString + key + '\n';
+        }
+        if (unloadedModulesString.isEmpty()) {
+            unloadedModulesString = "_keine_";
+        }
+
+        final EmbedBuilder builder = new EmbedBuilder();
+
+        builder.appendField("Aktivierte Module", loadedModulesString, true);
+        builder.appendField("Deaktivierte Module", unloadedModulesString, true);
+
+        Util.sendEmbed(message.getChannel(), builder.build());
     }
 
     @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
     public void command_LoadModule(final IMessage message) {
         final String messageContext = Util.getContext(message.getContent());
-        this.bot.loadModule(messageContext, message.getChannel());
+        try {
+            String msg = bot.loadModule(messageContext);
+            Util.sendMessage(message.getChannel(), msg);
+        }
+        catch (NullPointerException e) {
+            Util.error(e, message.getChannel());
+        }
     }
 
     @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
     public void command_UnloadModule(final IMessage message) {
         final String messageContext = Util.getContext(message.getContent());
-        this.bot.unloadModule(messageContext, message.getChannel());
+        try {
+            String msg = bot.unloadModule(messageContext);
+            Util.sendMessage(message.getChannel(), msg);
+        }
+        catch (NullPointerException e) {
+            Util.error(e, message.getChannel());
+        }
     }
 
 }

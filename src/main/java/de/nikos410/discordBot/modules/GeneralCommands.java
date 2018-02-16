@@ -36,19 +36,19 @@ public class GeneralCommands {
     }
 
     @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID", pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
-    public void command_Quote(final IMessage commandMessage) {
-        if (!commandMessage.getContent().contains(" ")) {
+    public void command_Quote(final IMessage commandMessage, final String id) {
+        if (id.isEmpty()) {
             Util.sendMessage(commandMessage.getChannel(), "Keine ID angegeben!");
             return;
         }
 
         final IUser commandAuthor = commandMessage.getAuthor();
         final IGuild guild = commandMessage.getGuild();
-        final long quoteID = Long.parseLong(Util.getContext(commandMessage.getContent()));
-        final IMessage quoteMessage = guild.getMessageByID(quoteID);
+        final long quoteMessageID = Long.parseLong(id);
+        final IMessage quoteMessage = guild.getMessageByID(quoteMessageID);
 
         if (quoteMessage == null) {
-            Util.sendMessage(commandMessage.getChannel(), "Nachricht mit der ID `" + quoteID + "` nicht gefunden!");
+            Util.sendMessage(commandMessage.getChannel(), "Nachricht mit der ID `" + quoteMessageID + "` nicht gefunden!");
             return;
         }
 
