@@ -49,7 +49,7 @@ public class Rules {
         }
     }
 
-    @CommandSubscriber(command = "regeln", help = "Die Regeln dieses Servers", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "regeln", help = "Die Regeln dieses Servers")
     public void command_Regeln(final IMessage message) {
         Util.sendPM(message.getAuthor(), this.rulesDE);
 
@@ -58,7 +58,7 @@ public class Rules {
         }
     }
 
-    @CommandSubscriber(command = "rules", help = "The rules of this server", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "rules", help = "The rules of this server")
     public void command_Rules(final IMessage message) {
         Util.sendPM(message.getAuthor(), this.rulesEN);
 
@@ -67,13 +67,13 @@ public class Rules {
         }
     }
 
-    @CommandSubscriber(command = "welcomeset_test", help = "Begrüßungsnachricht testen", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "welcomeset_test", help = "Begrüßungsnachricht testen", permissionLevel = CommandPermissions.ADMIN)
     public void command_Welcomeset_Test(final IMessage message) {
         Util.sendPM(message.getAuthor(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter,
                 bot.configJSON.getString("prefix")));
     }
 
-    @CommandSubscriber(command = "welcomeset_enable", help = "Begrüßungsnachricht aktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "welcomeset_enable", help = "Begrüßungsnachricht aktivieren", permissionLevel = CommandPermissions.ADMIN)
     public void command_Welcomeset_Enable(final IMessage message) {
         this.isEnabled = true;
         if (jsonWelcome.has("on")) {
@@ -85,7 +85,7 @@ public class Rules {
         Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
     }
 
-    @CommandSubscriber(command = "welcomeset_disable", help = "Begrüßungsnachricht deaktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "welcomeset_disable", help = "Begrüßungsnachricht deaktivieren", permissionLevel = CommandPermissions.ADMIN)
     public void command_Welcomeset_Disable(final IMessage message) {
         this.isEnabled = false;
         if (jsonWelcome.has("on")) {
@@ -97,9 +97,10 @@ public class Rules {
         Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
     }
 
-    @CommandSubscriber(command = "welcomeset_welcome", help = "Begrüßungsnachricht ändern", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
-    public void command_Welcomeset_Welcome(final IMessage message) {
-        this.welcomeMessage = Util.getContext(message.getContent());
+    @CommandSubscriber(command = "welcomeset_welcome", help = "Begrüßungsnachricht ändern", permissionLevel = CommandPermissions.ADMIN)
+    public void command_Welcomeset_Welcome(final IMessage message, final String welcomeMessage) {
+        this.welcomeMessage = welcomeMessage;
+
         if (jsonWelcome.has("welcome")) {
             jsonWelcome.remove("welcome");
         }
@@ -110,9 +111,9 @@ public class Rules {
         Util.sendMessage(message.getChannel(), this.welcomeMessage);
     }
 
-    @CommandSubscriber(command = "welcomeset_regeln", help = "Regeln (deutsch) ändern", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
-    public void command_Welcomeset_Regeln(final IMessage message) {
-        this.rulesDE = Util.getContext(message.getContent());
+    @CommandSubscriber(command = "welcomeset_regeln", help = "Regeln (deutsch) ändern", permissionLevel = CommandPermissions.ADMIN)
+    public void command_Welcomeset_Regeln(final IMessage message, final String rules) {
+        this.rulesDE = rules;
         if (jsonWelcome.has("rulesDE")) {
             jsonWelcome.remove("rulesDE");
         }
@@ -123,9 +124,9 @@ public class Rules {
         Util.sendMessage(message.getChannel(), this.rulesDE);
     }
 
-    @CommandSubscriber(command = "welcomeset_rules", help = "Regeln (englisch) ändern", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
-    public void command_Welcomeset_Rules(final IMessage message) {
-        this.rulesEN = Util.getContext(message.getContent());
+    @CommandSubscriber(command = "welcomeset_rules", help = "Regeln (englisch) ändern", permissionLevel = CommandPermissions.ADMIN)
+    public void command_Welcomeset_Rules(final IMessage message, final String rules) {
+        this.rulesEN = rules;
         if (jsonWelcome.has("rulesEN")) {
             jsonWelcome.remove("rulesEN");
         }
@@ -137,9 +138,9 @@ public class Rules {
     }
 
     @CommandSubscriber(command = "welcomeset_footer", help = "Footer der Begüßungsnachricht ändern. `%s` für Befehls-Prefix",
-            pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
-    public void command_Welcomeset_Footer(final IMessage message) {
-        this.welcomeFooter = Util.getContext(message.getContent());
+            permissionLevel = CommandPermissions.ADMIN)
+    public void command_Welcomeset_Footer(final IMessage message, final String footer) {
+        this.welcomeFooter = footer;
         if (jsonWelcome.has("footer")) {
             jsonWelcome.remove("footer");
         }

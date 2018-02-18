@@ -29,69 +29,66 @@ public class UserGroups {
     }
 
     @CommandSubscriber(command = "createGroup", help = "Neue Gruppe erstellen", pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
-    public void command_createGroup(final IMessage message) {
-        final String groupname = Util.getContext(message.getContent()).toLowerCase();
+    public void command_createGroup(final IMessage message, final String groupName) {
 
-        if (usergroupsJSON.has(groupname)) {
+        if (usergroupsJSON.has(groupName)) {
             Util.sendMessage(message.getChannel(), ":x: Gruppe existiert bereits!");
             return;
         }
 
         final IRole role = message.getGuild().createRole();
-        role.changeName(groupname);
+        role.changeName(groupName);
         role.changeMentionable(true);
 
-        usergroupsJSON.put(groupname, role.getLongID());
+        usergroupsJSON.put(groupName, role.getLongID());
         saveJSON();
 
-        Util.sendMessage(message.getChannel(), ":white_check_mark: Gruppe `" + groupname + "` erstellt.");
+        Util.sendMessage(message.getChannel(), ":white_check_mark: Gruppe `" + groupName + "` erstellt.");
     }
 
     @CommandSubscriber(command = "removeGroup", help = "Gruppe entfernen", pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
-    public void command_removeGroup(final IMessage message) {
-        final String groupname = Util.getContext(message.getContent()).toLowerCase();
+    public void command_removeGroup(final IMessage message, final String groupName) {
 
-        if (!usergroupsJSON.has(groupname)) {
-            Util.sendMessage(message.getChannel(), ":x: Gruppe `" + groupname + "` nicht gefunden!");
+        if (!usergroupsJSON.has(groupName)) {
+            Util.sendMessage(message.getChannel(), ":x: Gruppe `" + groupName + "` nicht gefunden!");
             return;
         }
 
-        final IRole role = message.getGuild().getRoleByID(usergroupsJSON.getLong(groupname));
+        final IRole role = message.getGuild().getRoleByID(usergroupsJSON.getLong(groupName));
         role.delete();
 
-        usergroupsJSON.remove(groupname);
+        usergroupsJSON.remove(groupName);
         saveJSON();
 
-        Util.sendMessage(message.getChannel(), ":white_check_mark: Gruppe `" + groupname + "` entfernt.");
+        Util.sendMessage(message.getChannel(), ":white_check_mark: Gruppe `" + groupName + "` entfernt.");
     }
 
-    @CommandSubscriber(command = "group", help = "Sich selbst eine Rolle zuweisen / wieder entfernen", pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
-    public void command_Group(final IMessage message) {
-        final String groupname = Util.getContext(message.getContent()).toLowerCase();
+    @CommandSubscriber(command = "group", help = "Sich selbst eine Rolle zuweisen / wieder entfernen", pmAllowed = false)
+    public void command_Group(final IMessage message, final String groupName) {
         final IUser user = message.getAuthor();
         final IGuild guild = message.getGuild();
 
-        if (usergroupsJSON.has(groupname)) {
+        if (usergroupsJSON.has(groupName)) {
             // Gruppe existiert bereits
 
-            final long roleID = usergroupsJSON.getLong(groupname);
+            final long roleID = usergroupsJSON.getLong(groupName);
             final IRole role = message.getGuild().getRoleByID(roleID);
 
             if (Util.hasRole(user, role, guild)) {
                 user.removeRole(role);
-                Util.sendMessage(message.getChannel(), ":white_check_mark: Du wurdest aus der Gruppe `" + groupname + "` entfernt.");
+                Util.sendMessage(message.getChannel(), ":white_check_mark: Du wurdest aus der Gruppe `" + groupName + "` entfernt.");
             }
             else {
                 user.addRole(role);
-                Util.sendMessage(message.getChannel(), ":white_check_mark: Du wurdest zur Gruppe `" + groupname + "` hinzugefügt.");
+                Util.sendMessage(message.getChannel(), ":white_check_mark: Du wurdest zur Gruppe `" + groupName + "` hinzugefügt.");
             }
         }
         else {
-            Util.sendMessage(message.getChannel(), ":x: Gruppe `" + groupname + "` nicht gefunden!");
+            Util.sendMessage(message.getChannel(), ":x: Gruppe `" + groupName + "` nicht gefunden!");
         }
     }
 
-    @CommandSubscriber(command = "groups", help = "Alle Rollen auflisten", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "groups", help = "Alle Rollen auflisten")
     public void command_groups(final IMessage message) {
         final StringBuilder stringBuilder = new StringBuilder();
 

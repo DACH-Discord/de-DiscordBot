@@ -37,12 +37,8 @@ public class GameStats {
         this.gameStatsJSON = new JSONObject(jsonContent);
     }
 
-    @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen",
-            pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
-    public void command_Playing(final IMessage message) {
-        final String content = message.getContent();
-        final String game = Util.getContext(content);
-
+    @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
+    public void command_Playing(final IMessage message, final String game) {
         if (game.isEmpty()) {  // Kein Spiel angegeben
             Util.sendMessage(message.getChannel(), "Kein Spiel angegeben!");
             return;
@@ -144,7 +140,7 @@ public class GameStats {
     }
 
     @EventSubscriber
-    public void onStartUP(ReadyEvent event) {
+    public void onStartup(ReadyEvent event) {
         for(IUser user : bot.client.getUsers()) {
             this.updateUserStatus(user);
         }

@@ -151,10 +151,11 @@ public class DiscordBot {
                     final boolean pmAllowed = annotations[0].pmAllowed();
                     final int permissionLevel = annotations[0].permissionLevel();
                     final int parameterCount = method.getParameterCount();
+                    final boolean passContext = annotations[0].passContext();
 
                     // Mindestens 1 (message), max 6 (message + 5 parameter)
                     if (parameterCount > 0 && parameterCount <= 6) {
-                        final Command cmd = new Command(module, method, help, pmAllowed, permissionLevel, parameterCount-1);
+                        final Command cmd = new Command(module, method, help, pmAllowed, permissionLevel, parameterCount-1, passContext);
                         this.commands.put(command.toLowerCase(), cmd);
                     }
                     else {
@@ -247,7 +248,9 @@ public class DiscordBot {
 
             try {
                 final int parameterCount = command.parameterCount;
-                ArrayList<String> params = parseParameters(messageContent, parameterCount);
+                final boolean passContext = command.passContext;
+                ArrayList<String> params = parseParameters(messageContent, parameterCount, passContext);
+
                 switch (parameterCount) {
                     case 0: {
                         command.method.invoke(command.object, message);
@@ -280,7 +283,7 @@ public class DiscordBot {
                 }
 
             }
-            catch (Exception e) {
+            catch (IllegalAccessException | InvocationTargetException e) {
                 final Throwable cause = e.getCause();
 
                 cause.printStackTrace(System.err);
@@ -298,28 +301,46 @@ public class DiscordBot {
 
     }
 
-    private ArrayList<String> parseParameters(String messageContent, int parameterCount) {
+    private ArrayList<String> parseParameters(String messageContent, int parameterCount, boolean passContext) {
+        final ArrayList<String> parameters = new ArrayList<>();
+
+        if (parameterCount == 0) {
+            return parameters;
+        }
+
         final int prefixLength = prefix.length();
         final String content = messageContent.substring(prefixLength);
         final String parameterContent = content.substring(content.indexOf(' ')+1);
-        final ArrayList<String> parameters = new ArrayList<>();
-        parseParameters(parameterContent, parameters, parameterCount);
+        parseParameters(parameterContent, parameters, parameterCount, passContext);
         return parameters;
     }
 
-    private void parseParameters(String parameterContent, ArrayList<String> parameters, int parameterCount) {
-        if (parameterCount == 0) {
+    private void parseParameters(String parameterContent, ArrayList<String> parameters, int parameterCount, boolean passContext) {
+        if (parameterCount == 1) {
+            if (passContext) {
+                // Rest der Nachricht anhängen
+                parameters.add(parameterContent);
+            }
+            else {
+                // Rest der Nachricht weglassen
+                if (parameterContent.contains(" ")) {
+                    parameters.add(parameterContent.substring(0, parameterContent.indexOf(' ')));
+                }
+                else {
+                    parameters.add(parameterContent);
+                }
+            }
             return;
         }
 
-        if (!parameterContent.contains(" ")) {
-            parameters.add(parameterContent);
-            parseParameters("", parameters, parameterCount-1);
-        }
-        else {
+        if (parameterContent.contains(" ")) {
             final int index = parameterContent.indexOf(' ');
             parameters.add(parameterContent.substring(0, index));
-            parseParameters(parameterContent.substring(index + 1), parameters, parameterCount - 1);
+            parseParameters(parameterContent.substring(index + 1), parameters, parameterCount - 1, passContext);
+        }
+        else {
+            parameters.add(parameterContent);
+            parseParameters("", parameters, parameterCount-1, passContext);
         }
     }
 
