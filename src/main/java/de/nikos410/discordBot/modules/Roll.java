@@ -25,17 +25,14 @@ public class Roll {
         rng = new SecureRandom(buffer.array());
     }
 
-    @CommandSubscriber(command = "roll",help = "Würfeln. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`",
-            pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
-    public void command_Roll(final IMessage commandMessage) throws InterruptedException {
-        final String messageContent = commandMessage.getContent();
+    @CommandSubscriber(command = "roll",help = "Würfeln. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`")
+    public void command_Roll(final IMessage commandMessage, final String diceArgsInput) throws InterruptedException {
         final IChannel channel = commandMessage.getChannel();
-        final String context = Util.getContext(messageContent);
 
         final EmbedBuilder outputBuilder = new EmbedBuilder();
-        if (context.matches("^[0-9]+;?[0-9]*")) {
+        if (diceArgsInput.matches("^[0-9]+;?[0-9]*")) {
             try {
-                final String[] args = context.split(";");
+                final String[] args = diceArgsInput.split(";");
                 final int diceCount = Integer.parseInt(args[0]);
                 final int dotCount = args.length > 1 ? Integer.parseInt(args[1]) : DEFAULT_DOT_COUNT;
                 if (diceCount < 1 || dotCount < 1) {
@@ -59,7 +56,7 @@ public class Roll {
                 Util.sendEmbed(channel, rollObject);
             } catch (NumberFormatException ex) {
                 Util.sendMessage(channel, MessageFormat.format("Konnte Eingabe '{0}' nicht verarbeiten." +
-                        "Bitte sicherstellen, dass sowohl die Würfelanzahl als auch die maximale Augenzahl Integer-Zahlen > 0 sind!", context));
+                        "Bitte sicherstellen, dass sowohl die Würfelanzahl als auch die maximale Augenzahl Integer-Zahlen > 0 sind!", diceArgsInput));
             }
         } else {
             Util.sendMessage(channel, "Syntax: `roll AnzahlWürfel;[AugenJeWürfel=6]`");

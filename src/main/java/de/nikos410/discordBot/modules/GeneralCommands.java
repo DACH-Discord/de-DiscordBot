@@ -19,23 +19,23 @@ public class GeneralCommands {
         startupTimestamp = LocalDateTime.now();
     }
 
-    @CommandSubscriber(command = "Ping", help = ":ping_pong:", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "Ping", help = ":ping_pong:")
     public void command_Ping(final IMessage message) {
         Util.sendMessage(message.getChannel(), "pong");
     }
 
-    @CommandSubscriber(command = "uptime", help = "Zeigt seit wann der Bot online ist", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "uptime", help = "Zeigt seit wann der Bot online ist")
     public void command_Uptime(final IMessage message) {
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
         Util.sendMessage(message.getChannel(), "Online seit: " + startupTimestamp.format(timeStampFormatter));
     }
 
-    @CommandSubscriber(command = "git", help = "Quellcode des Bots", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "git", help = "Quellcode des Bots")
     public void command_Git(final IMessage message) {
         Util.sendMessage(message.getChannel(), "https://github.com/DACH-Discord/de-DiscordBot/");
     }
 
-    @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID", pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID", pmAllowed = false, passContext = false)
     public void command_Quote(final IMessage commandMessage, final String id) {
         if (id.isEmpty()) {
             Util.sendMessage(commandMessage.getChannel(), "Keine ID angegeben!");

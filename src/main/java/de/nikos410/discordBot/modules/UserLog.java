@@ -141,16 +141,15 @@ public class UserLog {
     }
 
 
-    @CommandSubscriber(command = "userlog", help = "Zeigt Userlog-Konfuguration an", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "userlog", help = "Zeigt Userlog-Konfuguration an", permissionLevel = CommandPermissions.ADMIN)
     public void command_Userlog(final IMessage message) {
         final String reply = "Kanal: <#" + userLogChannel.getStringID() + ">" + '\n' +
                 "Enabled: `" + isEnabled + '`';
         Util.sendMessage(message.getChannel(), reply);
     }
 
-    @CommandSubscriber(command = "userlog_channel", help = "Kanal für Userlog ändern", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
-    public void command_Userlog_Channel(final IMessage message) {
-        final String channelID = Util.getContext(message.getContent());
+    @CommandSubscriber(command = "userlog_channel", help = "Kanal für Userlog ändern", permissionLevel = CommandPermissions.ADMIN)
+    public void command_Userlog_Channel(final IMessage message, final String channelID) {
         if (jsonUserLog.has("channel")) {
             jsonUserLog.remove("channel");
         }
@@ -168,7 +167,7 @@ public class UserLog {
         }
     }
 
-    @CommandSubscriber(command = "userlog_enable", help = "Userlog aktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "userlog_enable", help = "Userlog aktivieren", permissionLevel = CommandPermissions.ADMIN)
     public void command_Userlog_Enable(final IMessage message) {
         this.isEnabled = true;
         if (jsonUserLog.has("on")) {
@@ -180,7 +179,7 @@ public class UserLog {
         Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
     }
 
-    @CommandSubscriber(command = "userlog_disable", help = "Userlog deaktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "userlog_disable", help = "Userlog deaktivieren", permissionLevel = CommandPermissions.ADMIN)
     public void command_Userlog_Disable(final IMessage message) {
         this.isEnabled = false;
         if (jsonUserLog.has("on")) {
@@ -192,49 +191,12 @@ public class UserLog {
         Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
     }
 
-    @CommandSubscriber(command = "userlog_test", help = "Userlog-Ausgabe testen", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "userlog_test", help = "Userlog-Ausgabe testen", permissionLevel = CommandPermissions.ADMIN)
     public void command_Userlog_Test(final IMessage message) {
         final IUser user = message.getAuthor();
         userJoinNotify(user);
         userLeaveNotify(user);
         userBanNotify(user);
-    }
-
-    @CommandSubscriber(command = "purge", help = "Nutzer vom Server kicken die seit 30 oder mehr Tagen offline waren",
-            pmAllowed = false, permissionLevel = CommandPermissions.ADMIN)
-    public void command_Purge(final IMessage message) {
-        this.purgeCommandMessage = message;
-
-        Util.sendMessage(message.getChannel(), message.getGuild().getUsersToBePruned(30) +
-                " Nutzer werden entfernt. Fortfahren? (y/n)");
-    }
-
-    @EventSubscriber
-    public void onMessageReceived(final MessageReceivedEvent event) {
-        if (this.purgeCommandMessage != null) {
-            final IMessage inputMessage = event.getMessage();
-
-            if (inputMessage.getAuthor().getLongID() == this.purgeCommandMessage.getAuthor().getLongID()) {
-                final String inputMessageContent = inputMessage.getContent();
-
-                if (inputMessage.getChannel().getLongID() == this.purgeCommandMessage.getChannel().getLongID()) {
-                    if (inputMessageContent.equalsIgnoreCase("y")) {
-                        // Purge
-                        this.isEnabled = false;
-
-                        final int userCount = this.purgeCommandMessage.getGuild().getUsersToBePruned(30);
-                        this.purgeCommandMessage.getGuild().pruneUsers(30);
-                        Util.sendMessage(this.purgeCommandMessage.getChannel(), userCount + " Nutzer entfernt. " + ":white_check_mark: ");
-
-                        // TODO: Enable only when all users have been pruned
-                        this.isEnabled = true;
-                    }
-                    else if (inputMessageContent.equalsIgnoreCase("n")) {
-                        Util.sendMessage(this.purgeCommandMessage.getChannel(), ":white_check_mark:");
-                    }
-                }
-            }
-        }
     }
 
     private void saveUserLogJSON() {

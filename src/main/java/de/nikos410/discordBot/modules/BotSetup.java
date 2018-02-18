@@ -25,7 +25,7 @@ public class BotSetup {
         this.client = bot.client;
     }
 
-    @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", pmAllowed = true, permissionLevel = CommandPermissions.OWNER)
+    @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = CommandPermissions.OWNER)
     public void command_Shutdown(final IMessage message) {
         Util.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
         System.out.println("[INFO] Shutting down...");
@@ -44,10 +44,8 @@ public class BotSetup {
         }
     }
 
-    @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", pmAllowed = true, permissionLevel = CommandPermissions.OWNER)
-    public void command_SetUsername(final IMessage message) {
-        final String newUserName = Util.getContext(message.getContent());
-
+    @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = CommandPermissions.OWNER)
+    public void command_SetUsername(final IMessage message, final String newUserName) {
         try {
             this.client.changeUsername(newUserName);
             Util.sendMessage(message.getChannel(), ":white_check_mark: Neuer Username gesetzt: `" + newUserName + "`");
@@ -57,7 +55,7 @@ public class BotSetup {
         }
     }
 
-    @CommandSubscriber(command = "modules", help = "Alle Module anzeigen", pmAllowed = true, permissionLevel = CommandPermissions.EVERYONE)
+    @CommandSubscriber(command = "modules", help = "Alle Module anzeigen")
     public void command_ListModules(final IMessage message) {
         String loadedModulesString = "";
         for (final String key : bot.getLoadedModules().keySet()) {
@@ -83,11 +81,10 @@ public class BotSetup {
         Util.sendEmbed(message.getChannel(), builder.build());
     }
 
-    @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
-    public void command_LoadModule(final IMessage message) {
-        final String messageContext = Util.getContext(message.getContent());
+    @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = CommandPermissions.ADMIN)
+    public void command_LoadModule(final IMessage message, final String moduleName) {
         try {
-            String msg = bot.loadModule(messageContext);
+            String msg = bot.loadModule(moduleName);
             Util.sendMessage(message.getChannel(), msg);
         }
         catch (NullPointerException e) {
@@ -95,11 +92,10 @@ public class BotSetup {
         }
     }
 
-    @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", pmAllowed = true, permissionLevel = CommandPermissions.ADMIN)
-    public void command_UnloadModule(final IMessage message) {
-        final String messageContext = Util.getContext(message.getContent());
+    @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = CommandPermissions.ADMIN)
+    public void command_UnloadModule(final IMessage message, final String moduleName) {
         try {
-            String msg = bot.unloadModule(messageContext);
+            String msg = bot.unloadModule(moduleName);
             Util.sendMessage(message.getChannel(), msg);
         }
         catch (NullPointerException e) {

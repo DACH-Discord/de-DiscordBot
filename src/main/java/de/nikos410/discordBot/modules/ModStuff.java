@@ -49,8 +49,8 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
-            pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
-    public void command_Kick(final IMessage message) {
+            pmAllowed = false)
+    public void command_Kick(final IMessage message, final String kickUserString, String customMessage) {
         if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()) >= CommandPermissions.MODERATOR) {
 
             final List<IUser> mentions = message.getMentions();
@@ -69,13 +69,12 @@ public class ModStuff {
                 return;
             }
 
-            String customMessage = Util.getContext(message.getContent(), 2);
             if (customMessage.isEmpty()) {
                 customMessage = "kein";
             }
 
             final String kickMessage = "**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten)" +
-                    "\nHinweis: _" + customMessage + '_';
+                    "\nHinweis: _" + customMessage + " _";
 
             Util.sendPM(kickUser, kickMessage);
             message.getGuild().kickUser(kickUser);
@@ -83,7 +82,7 @@ public class ModStuff {
 
             // Modlog
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gekickt**. \nHinweis: _%s_", Util.makeUserString(message.getAuthor(), message.getGuild()),
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gekickt**. \nHinweis: _%s _", Util.makeUserString(message.getAuthor(), message.getGuild()),
                     Util.makeUserString(kickUser, message.getGuild()),  customMessage);
             Util.sendMessage(modLogChannel, modLogMessage);
         }
@@ -94,8 +93,8 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "ban", help = "Bannt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
-            pmAllowed = false, permissionLevel = CommandPermissions.EVERYONE)
-    public void command_Ban(final IMessage message) {
+            pmAllowed = false)
+    public void command_Ban(final IMessage message, final String banUserString, String customMessage) {
         if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()) >= CommandPermissions.MODERATOR) {
 
             final List<IUser> mentions = message.getMentions();
@@ -112,12 +111,11 @@ public class ModStuff {
                 return;
             }
 
-            String customMessage = Util.getContext(message.getContent(), 2);
             if (customMessage.isEmpty()) {
                 customMessage = "kein";
             }
 
-            final String banMessage = "**Du wurdest gebannt!** \nHinweis: _" + customMessage + '_';
+            final String banMessage = "**Du wurdest gebannt!** \nHinweis: _" + customMessage + " _";
 
             Util.sendPM(banUser, banMessage);
             message.getGuild().banUser(banUser);
@@ -125,7 +123,7 @@ public class ModStuff {
 
             // Modlog
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gebannt**. \nHinweis: _%s_", Util.makeUserString(message.getAuthor(), message.getGuild()),
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gebannt**. \nHinweis: _%s _", Util.makeUserString(message.getAuthor(), message.getGuild()),
                     Util.makeUserString(banUser, message.getGuild()),  customMessage);
             Util.sendMessage(modLogChannel, modLogMessage);
         }
@@ -137,7 +135,8 @@ public class ModStuff {
 
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
             permissionLevel = CommandPermissions.MODERATOR)
-    public void command_Mute(final IMessage message) {
+    public void command_Mute(final IMessage message, final String muteUserString, final String muteDurationInput) {
+
         final List<IUser> mentions = message.getMentions();
         if (mentions.size() <1) {
             Util.sendMessage(message.getChannel(), ":x: Fehler: Kein Nutzer angegeben!");
@@ -163,8 +162,6 @@ public class ModStuff {
             muteUser.removeRole(muteRole);
             System.out.println("Unmuted user " + muteUser.getName() + '#' + muteUser.getDiscriminator() + ".");
         };
-
-        String muteDurationInput = Util.getContext(message.getContent(), 2);
 
         Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd])\\s?(.*)");
         Matcher matcher = pattern.matcher(muteDurationInput);
@@ -211,7 +208,7 @@ public class ModStuff {
         }
 
         final String muteMessage = "**Du wurdest für " + muteDuration + ' ' + muteDurationUnit +
-                " gemuted!** \nHinweis: _" + customMessage + '_';
+                " gemuted!** \nHinweis: _" + customMessage + " _";
 
         if (!muteUser.isBot()) {
             Util.sendPM(muteUser, muteMessage);
@@ -222,15 +219,14 @@ public class ModStuff {
 
         // Modlog
         IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-        final String modLogMessage = String.format("**%s** hat Nutzer **%s** für %s %s **gemuted**. \nHinweis: _%s_",
+        final String modLogMessage = String.format("**%s** hat Nutzer **%s** für %s %s **gemuted**. \nHinweis: _%s _",
                 Util.makeUserString(message.getAuthor(), message.getGuild()),
                 Util.makeUserString(muteUser, message.getGuild()), muteDuration, muteDurationUnit, customMessage);
         Util.sendMessage(modLogChannel, modLogMessage);
     }
 
-    @CommandSubscriber(command = "selfmute", help = "Mute dich selber für die angegebene Zeit", pmAllowed = true,
-            permissionLevel = CommandPermissions.EVERYONE)
-    public void command_Selfmute(final IMessage message) {
+    @CommandSubscriber(command = "selfmute", help = "Mute dich selber für die angegebene Zeit", pmAllowed = false)
+    public void command_Selfmute(final IMessage message, final String muteDurationInput) {
         final IUser muteUser = message.getAuthor();
 
         final IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
@@ -240,8 +236,6 @@ public class ModStuff {
             muteUser.removeRole(muteRole);
             System.out.println("Unmuted user " + muteUser.getName() + '#' + muteUser.getDiscriminator() + ".");
         };
-
-        String muteDurationInput = Util.getContext(message.getContent(), 1);
 
         Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd]).*");
         Matcher matcher = pattern.matcher(muteDurationInput);

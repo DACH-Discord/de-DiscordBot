@@ -10,13 +10,15 @@ public class Command {
     public final boolean pmAllowed;
     public final int permissionLevel;
     public final int parameterCount;
+    public final boolean passContext;
 
-    public Command(final Object object, final Method method, final String help, final boolean pmAllowed, final int permissionLevel, final int parameterCount) {
+    public Command(final Object object, final Method method, final String help, final boolean pmAllowed, final int permissionLevel, final int parameterCount, final boolean passContext) {
         this.object = object;
         this.method = method;
         this.help = help;
         this.pmAllowed = pmAllowed;
         this.permissionLevel = permissionLevel;
         this.parameterCount = parameterCount;
+        this.passContext = passContext;
     }
 }
