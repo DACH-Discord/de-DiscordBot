@@ -22,6 +22,7 @@ import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.obj.IChannel;
+import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IRole;
 import sx.blah.discord.handle.obj.IUser;
@@ -228,8 +229,9 @@ public class ModStuff {
     @CommandSubscriber(command = "selfmute", help = "Mute dich selber für die angegebene Zeit", pmAllowed = false)
     public void command_Selfmute(final IMessage message, final String muteDurationInput) {
         final IUser muteUser = message.getAuthor();
-
-        final IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
+        final IGuild guild = message.getGuild();
+        
+        final IRole muteRole = guild.getRoleByID(muteRoleID);
 
         Runnable unmuteTask = () -> {
             mutedUsers.remove(muteUser.getStringID());
@@ -277,7 +279,8 @@ public class ModStuff {
 
         scheduler.schedule(unmuteTask, muteDuration, muteDurationTimeUnit);
 
-        Util.sendMessage(message.getChannel(), "Du wurdest für " + muteDuration + ' ' + muteDurationUnit + " gemuted.");
+        final String localUserName = muteUser.getNicknameForGuild(guild);
+        Util.sendMessage(message.getChannel(), localUserName + " wurde für " + muteDuration + ' ' + muteDurationUnit + " gemuted.");
 
         System.out.println("User " + muteUser.getName() + '#' + muteUser.getDiscriminator() + " muted themself for " + muteDuration +
                 ' ' + muteDurationUnit);
