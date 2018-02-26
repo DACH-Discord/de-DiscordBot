@@ -20,11 +20,12 @@ import java.util.regex.Pattern;
 import org.json.JSONObject;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
+import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.handle.obj.IRole;
-import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.handle.impl.events.guild.member.UserLeaveEvent;
+import sx.blah.discord.handle.impl.obj.ReactionEmoji;
+import sx.blah.discord.handle.obj.*;
 
 @CommandModule(moduleName = "Modzeugs", commandOnly = false)
 public class ModStuff {
@@ -77,8 +78,10 @@ public class ModStuff {
                     "\nHinweis: _" + customMessage + " _";
 
             Util.sendPM(kickUser, kickMessage);
-            message.getGuild().kickUser(kickUser);
-            Util.sendMessage(message.getChannel(), ":door::arrow_left:");
+            message.getGuild().kickUser(kickUser, customMessage);
+
+            message.addReaction(ReactionEmoji.of("\uD83D\uDEAA")); // :door:
+            //Util.sendMessage(message.getChannel(), ":door:");
 
             // Modlog
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
@@ -88,7 +91,7 @@ public class ModStuff {
         }
         else {
             message.getGuild().kickUser(message.getAuthor());
-            Util.sendMessage(message.getChannel(), ":tja:");
+            message.addReaction(ReactionEmoji.of("tja", 401835325434888192L));
         }
     }
 
@@ -118,8 +121,10 @@ public class ModStuff {
             final String banMessage = "**Du wurdest gebannt!** \nHinweis: _" + customMessage + " _";
 
             Util.sendPM(banUser, banMessage);
-            message.getGuild().banUser(banUser);
-            Util.sendMessage(message.getChannel(), ":door::arrow_left: :hammer:");
+            message.getGuild().banUser(banUser, customMessage);
+
+            //Util.sendMessage(message.getChannel(), ":hammer:");
+            message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
@@ -129,8 +134,17 @@ public class ModStuff {
         }
         else {
             message.getGuild().kickUser(message.getAuthor());
-            Util.sendMessage(message.getChannel(), ":tja:");
+            message.addReaction(ReactionEmoji.of("tja", 401835325434888192L));
         }
+    }
+
+    @EventSubscriber
+    public void onUserBanned (final UserBanEvent event) {
+        IChannel modLogChannel = event.getGuild().getChannelByID(this.modlogChannelID);
+
+        final String modLogMessage = String.format("**%s** wurde vom Server **gebannt**.",
+                Util.makeUserString(event.getUser(), event.getGuild()));
+        Util.sendMessage(modLogChannel, modLogMessage);
     }
 
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
@@ -201,7 +215,8 @@ public class ModStuff {
 
         scheduler.schedule(unmuteTask, muteDuration, muteDurationTimeUnit);
 
-        Util.sendMessage(message.getChannel(), "Nutzer für " + muteDuration + ' ' + muteDurationUnit + " gemuted.");
+        //Util.sendMessage(message.getChannel(), "Nutzer für " + muteDuration + ' ' + muteDurationUnit + " gemuted.");
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
 
         if (customMessage.isEmpty()) {
             customMessage = "kein";
@@ -213,9 +228,6 @@ public class ModStuff {
         if (!muteUser.isBot()) {
             Util.sendPM(muteUser, muteMessage);
         }
-
-        System.out.println("Muted user " + muteUser.getName() + '#' + muteUser.getDiscriminator() + " for " + muteDuration +
-        ' ' + muteDurationUnit);
 
         // Modlog
         IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
@@ -277,7 +289,7 @@ public class ModStuff {
 
         scheduler.schedule(unmuteTask, muteDuration, muteDurationTimeUnit);
 
-        Util.sendMessage(message.getChannel(), "Du wurdest für " + muteDuration + ' ' + muteDurationUnit + " gemuted.");
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
 
         System.out.println("User " + muteUser.getName() + '#' + muteUser.getDiscriminator() + " muted themself for " + muteDuration +
                 ' ' + muteDurationUnit);
@@ -291,5 +303,11 @@ public class ModStuff {
             IRole muteRole = event.getGuild().getRoleByID(muteRoleID);
             user.addRole(muteRole);
         }
+    }
+
+    @EventSubscriber
+    public void emojiInfoEvent (final ReactionAddEvent event) {
+        System.out.println(event.getReaction().getEmoji().getName());
+        System.out.println(event.getReaction().getEmoji().getStringID());
     }
 }
