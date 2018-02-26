@@ -37,6 +37,7 @@ public class UserGroups {
         }
 
         final IRole role = message.getGuild().createRole();
+        role.changePermissions(EnumSet.noneOf(Permissions.class));
         role.changeName(groupName);
         role.changeMentionable(true);
 
