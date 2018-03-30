@@ -1,29 +1,26 @@
 package de.nikos410.discordBot.modules;
 
-
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.general.Util;
 import de.nikos410.discordBot.util.modular.annotations.CommandModule;
 import de.nikos410.discordBot.util.modular.CommandPermissions;
 import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.LinkedList;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.json.JSONObject;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
-import sx.blah.discord.handle.impl.events.guild.member.UserLeaveEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 
@@ -34,12 +31,9 @@ public class ModStuff {
     private final long modlogChannelID;
     private final long muteRoleID;
 
-    private final static Path MUTED_PATH = Paths.get("data/muted.json");
-    private JSONObject mutedJSON;
-
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private List<String> mutedUsers = new LinkedList<>();
+    private HashMap<String, ScheduledFuture> mutedUsers = new HashMap<>();
 
     public ModStuff (final DiscordBot bot) {
         this.bot = bot;
@@ -167,16 +161,6 @@ public class ModStuff {
             return;
         }
 
-        IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
-        muteUser.addRole(muteRole);
-        mutedUsers.add(muteUser.getStringID());
-
-        Runnable unmuteTask = () -> {
-            mutedUsers.remove(muteUser.getStringID());
-            muteUser.removeRole(muteRole);
-            System.out.println("Unmuted user " + muteUser.getName() + '#' + muteUser.getDiscriminator() + ".");
-        };
-
         Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd])\\s?(.*)");
         Matcher matcher = pattern.matcher(muteDurationInput);
 
@@ -184,45 +168,53 @@ public class ModStuff {
             Util.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
             return;
         }
+
+        IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
+        muteUser.addRole(muteRole);
+        System.out.println("Muted user " + Util.makeUserString(muteUser, message.getGuild()) + ".");
+
+        // Wird ausgeführt, um Nutzer wieder zu entmuten
+        Runnable unmuteTask = () -> {
+            mutedUsers.remove(muteUser.getStringID());
+            muteUser.removeRole(muteRole);
+            System.out.println("Unmuted user " + Util.makeUserString(muteUser, message.getGuild()) + ".");
+        };
+
         final int muteDuration = Integer.parseInt(matcher.group(1));
-        final String muteDurationUnit = matcher.group(2);
-        String customMessage = matcher.group(3);
+        final String muteDurationUnitString = matcher.group(2);
+        ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
 
-        TimeUnit muteDurationTimeUnit = null;
-        switch (muteDurationUnit) {
-            case "S": muteDurationTimeUnit = TimeUnit.SECONDS;
-                break;
-            case "s": muteDurationTimeUnit = TimeUnit.SECONDS;
-                break;
+        if (mutedUsers.containsKey(muteUser.getStringID())) {
+            // Überprüfen, ob angegebener Zeitpunkt nach dem bisherigen Zeitpunkt liegt
+            ScheduledFuture oldFuture = mutedUsers.get(muteUser.getStringID());
 
-            case "M": muteDurationTimeUnit = TimeUnit.MINUTES;
-                break;
-            case "m": muteDurationTimeUnit = TimeUnit.MINUTES;
-                break;
+            LocalDateTime oldDateTime = LocalDateTime.now().plusSeconds(oldFuture.getDelay(TimeUnit.SECONDS));
+            LocalDateTime newDateTime = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
 
-            case "H": muteDurationTimeUnit = TimeUnit.HOURS;
-                break;
-            case "h": muteDurationTimeUnit = TimeUnit.HOURS;
-                break;
-
-            case "D": muteDurationTimeUnit = TimeUnit.DAYS;
-                break;
-            case "d": muteDurationTimeUnit = TimeUnit.DAYS;
-                break;
-
-            default: muteDurationTimeUnit = TimeUnit.SECONDS;
+            if (newDateTime.isBefore(oldDateTime)) {
+                // neuer Zeitpunkt ist vor altem -> nichts tun (längerer Mute bleibt bestehen)
+                Util.sendMessage(message.getChannel(), "Nutzer ist bereits für einen längeren Zeitraum gemuted!");
+                return;
+            }
+            else {
+                // neuer Zeitpunkt ist nach altem -> neu schedulen
+                mutedUsers.remove(muteUser.getStringID(), oldFuture);
+                oldFuture.cancel(false);
+            }
         }
 
-        scheduler.schedule(unmuteTask, muteDuration, muteDurationTimeUnit);
+        ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
+        mutedUsers.put(muteUser.getStringID(), newFuture);
 
-        //Util.sendMessage(message.getChannel(), "Nutzer für " + muteDuration + ' ' + muteDurationUnit + " gemuted.");
-        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
+        message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
+
+        String customMessage = matcher.group(3);
 
         if (customMessage.isEmpty()) {
             customMessage = "kein";
         }
 
-        final String muteMessage = "**Du wurdest für " + muteDuration + ' ' + muteDurationUnit +
+        final String muteMessage = "**Du wurdest für " + muteDuration + ' ' + muteDurationUnitString +
                 " gemuted!** \nHinweis: _" + customMessage + " _";
 
         if (!muteUser.isBot()) {
@@ -233,81 +225,90 @@ public class ModStuff {
         IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
         final String modLogMessage = String.format("**%s** hat Nutzer **%s** für %s %s **gemuted**. \nHinweis: _%s _",
                 Util.makeUserString(message.getAuthor(), message.getGuild()),
-                Util.makeUserString(muteUser, message.getGuild()), muteDuration, muteDurationUnit, customMessage);
+                Util.makeUserString(muteUser, message.getGuild()), muteDuration, muteDurationUnitString, customMessage);
         Util.sendMessage(modLogChannel, modLogMessage);
     }
 
-    @CommandSubscriber(command = "selfmute", help = "Mute dich selber für die angegebene Zeit", pmAllowed = false)
+    @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm", pmAllowed = false)
     public void command_Selfmute(final IMessage message, final String muteDurationInput) {
-        final IUser muteUser = message.getAuthor();
+        IUser muteUser = message.getAuthor();
 
-        final IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
-
-        Runnable unmuteTask = () -> {
-            mutedUsers.remove(muteUser.getStringID());
-            muteUser.removeRole(muteRole);
-            System.out.println("Unmuted user " + muteUser.getName() + '#' + muteUser.getDiscriminator() + ".");
-        };
-
-        Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd]).*");
+        Pattern pattern = Pattern.compile("(\\d+)\\s?([smhd])\\s?(.*)");
         Matcher matcher = pattern.matcher(muteDurationInput);
 
         if (!matcher.matches()) {
             Util.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
             return;
         }
+
+        IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
+        muteUser.addRole(muteRole);
+        System.out.println("User " + Util.makeUserString(muteUser, message.getGuild()) + " selfmuted.");
+
+        // Wird ausgeführt, um Nutzer wieder zu entmuten
+        Runnable unmuteTask = () -> {
+            mutedUsers.remove(muteUser.getStringID());
+            muteUser.removeRole(muteRole);
+            System.out.println("Unmuted user " + Util.makeUserString(muteUser, message.getGuild()) + ". (was selfmuted)");
+        };
+
         final int muteDuration = Integer.parseInt(matcher.group(1));
-        final String muteDurationUnit = matcher.group(2);
+        final String muteDurationUnitString = matcher.group(2);
+        ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
 
-        TimeUnit muteDurationTimeUnit = null;
-        switch (muteDurationUnit) {
-            case "S": muteDurationTimeUnit = TimeUnit.SECONDS;
-                break;
-            case "s": muteDurationTimeUnit = TimeUnit.SECONDS;
-                break;
+        if (mutedUsers.containsKey(muteUser.getStringID())) {
+            // Überprüfen, ob angegebener Zeitpunkt nach dem bisherigen Zeitpunkt liegt
+            ScheduledFuture oldFuture = mutedUsers.get(muteUser.getStringID());
 
-            case "M": muteDurationTimeUnit = TimeUnit.MINUTES;
-                break;
-            case "m": muteDurationTimeUnit = TimeUnit.MINUTES;
-                break;
+            LocalDateTime oldDateTime = LocalDateTime.now().plusSeconds(oldFuture.getDelay(TimeUnit.SECONDS));
+            LocalDateTime newDateTime = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
 
-            case "H": muteDurationTimeUnit = TimeUnit.HOURS;
-                break;
-            case "h": muteDurationTimeUnit = TimeUnit.HOURS;
-                break;
-
-            case "D": muteDurationTimeUnit = TimeUnit.DAYS;
-                break;
-            case "d": muteDurationTimeUnit = TimeUnit.DAYS;
-                break;
-
-            default: muteDurationTimeUnit = TimeUnit.SECONDS;
+            if (newDateTime.isBefore(oldDateTime)) {
+                // neuer Zeitpunkt ist vor altem -> nichts tun (längerer Mute bleibt bestehen)
+                Util.sendMessage(message.getChannel(), "Nutzer ist bereits für einen längeren Zeitraum gemuted!");
+                return;
+            }
+            else {
+                // neuer Zeitpunkt ist nach altem -> neu schedulen
+                mutedUsers.remove(muteUser.getStringID(), oldFuture);
+                oldFuture.cancel(false);
+            }
         }
 
-        muteUser.addRole(muteRole);
-        mutedUsers.add(muteUser.getStringID());
+        ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
+        mutedUsers.put(muteUser.getStringID(), newFuture);
 
-        scheduler.schedule(unmuteTask, muteDuration, muteDurationTimeUnit);
-
-        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
-
-        System.out.println("User " + muteUser.getName() + '#' + muteUser.getDiscriminator() + " muted themself for " + muteDuration +
-                ' ' + muteDurationUnit);
-
+        message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
     }
 
     @EventSubscriber
     public void onUserJoin(final UserJoinEvent event) {
         final IUser user = event.getUser();
-        if (mutedUsers.contains(user.getStringID())) {
+        if (mutedUsers.containsKey(user.getStringID())) {
             IRole muteRole = event.getGuild().getRoleByID(muteRoleID);
             user.addRole(muteRole);
         }
     }
 
-    @EventSubscriber
-    public void emojiInfoEvent (final ReactionAddEvent event) {
-        System.out.println(event.getReaction().getEmoji().getName());
-        System.out.println(event.getReaction().getEmoji().getStringID());
+    private static ChronoUnit parseChronoUnit (String chronoUnitString) {
+        switch (chronoUnitString.toLowerCase()) {
+            case "s": return ChronoUnit.SECONDS;
+            case "m": return ChronoUnit.MINUTES;
+            case "h": return ChronoUnit.HOURS;
+            case "d": return ChronoUnit.DAYS;
+
+            default: return ChronoUnit.SECONDS;
+        }
+    }
+
+    private TimeUnit chronoUnitToTimeUnit (ChronoUnit chronoUnit) {
+        switch (chronoUnit) {
+            case SECONDS: return TimeUnit.SECONDS;
+            case MINUTES: return TimeUnit.MINUTES;
+            case HOURS: return TimeUnit.HOURS;
+            case DAYS: return TimeUnit.DAYS;
+
+            default: throw new UnsupportedOperationException("Unsupported ChronoUnit");
+        }
     }
 }
