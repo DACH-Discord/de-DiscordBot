@@ -24,8 +24,6 @@ import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 
-// TODO: Unmute-Befehl (Future abbrechen, Nutzer sofort entmuten)
-
 @CommandModule(moduleName = "Modzeugs", commandOnly = false)
 public class ModStuff {
     private final DiscordBot bot;
