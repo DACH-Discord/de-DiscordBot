@@ -24,6 +24,8 @@ import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 
+// TODO: Unmute-Befehl (Future abbrechen, Nutzer sofort entmuten)
+
 @CommandModule(moduleName = "Modzeugs", commandOnly = false)
 public class ModStuff {
     private final DiscordBot bot;
@@ -170,8 +172,6 @@ public class ModStuff {
         }
 
         IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
-        muteUser.addRole(muteRole);
-        System.out.println("Muted user " + Util.makeUserString(muteUser, message.getGuild()) + ".");
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
         Runnable unmuteTask = () -> {
@@ -202,6 +202,10 @@ public class ModStuff {
                 oldFuture.cancel(false);
             }
         }
+        else {
+            muteUser.addRole(muteRole);
+            System.out.println("Muted user " + Util.makeUserString(muteUser, message.getGuild()) + ".");
+        }
 
         ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
         mutedUsers.put(muteUser.getStringID(), newFuture);
@@ -229,6 +233,36 @@ public class ModStuff {
         Util.sendMessage(modLogChannel, modLogMessage);
     }
 
+    @CommandSubscriber(command = "unmute", help = "Nutzer entmuten", pmAllowed = false,
+            permissionLevel = CommandPermissions.MODERATOR)
+    public void command_Unmute(final IMessage message) {
+        final List<IUser> mentions = message.getMentions();
+        if (mentions.size() <1) {
+            Util.sendMessage(message.getChannel(), ":x: Fehler: Kein Nutzer angegeben!");
+            return;
+        }
+        else if (mentions.size() > 1) {
+            Util.sendMessage(message.getChannel(), ":x: Fehler: mehrere Nutzer erwähnt");
+            return;
+        }
+
+        final IUser muteUser = mentions.get(0);
+
+        if (!mutedUsers.containsKey(muteUser.getStringID())) {
+            // Nutzer ist nicht gemuted
+            Util.sendMessage(message.getChannel(), "Nutzer scheint nicht gemuted zu sein.");
+            return;
+        }
+
+        ScheduledFuture future = mutedUsers.get(muteUser.getStringID());
+        future.cancel(false);
+
+        IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
+        muteUser.removeRole(muteRole);
+
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
+    }
+
     @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm", pmAllowed = false)
     public void command_Selfmute(final IMessage message, final String muteDurationInput) {
         IUser muteUser = message.getAuthor();
@@ -242,8 +276,6 @@ public class ModStuff {
         }
 
         IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
-        muteUser.addRole(muteRole);
-        System.out.println("User " + Util.makeUserString(muteUser, message.getGuild()) + " selfmuted.");
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
         Runnable unmuteTask = () -> {
@@ -273,6 +305,10 @@ public class ModStuff {
                 mutedUsers.remove(muteUser.getStringID(), oldFuture);
                 oldFuture.cancel(false);
             }
+        }
+        else {
+            muteUser.addRole(muteRole);
+            System.out.println("User " + Util.makeUserString(muteUser, message.getGuild()) + " selfmuted.");
         }
 
         ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
