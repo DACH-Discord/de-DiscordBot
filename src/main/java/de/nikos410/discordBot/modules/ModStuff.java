@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
@@ -34,6 +36,8 @@ public class ModStuff {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private HashMap<String, ScheduledFuture> mutedUsers = new HashMap<>();
+
+    private Logger log = LoggerFactory.getLogger(ModStuff.class);
 
     public ModStuff (final DiscordBot bot) {
         this.bot = bot;
@@ -68,8 +72,9 @@ public class ModStuff {
                 customMessage = "kein";
             }
 
-            final String kickMessage = "**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten)" +
-                    "\nHinweis: _" + customMessage + " _";
+            final String kickMessage = String.format("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.) \nHinweis: _%s_",
+                    customMessage);
+
 
             Util.sendPM(kickUser, kickMessage);
             message.getGuild().kickUser(kickUser, customMessage);
@@ -78,9 +83,16 @@ public class ModStuff {
             //Util.sendMessage(message.getChannel(), ":door:");
 
             // Modlog
+            log.info(String.format("%s hat Nutzer %s vom Server gekickt. Hinweis: %s"),
+                    Util.makeUserString(message.getAuthor(), message.getGuild()),
+                    Util.makeUserString(kickUser, message.getGuild()),
+                    customMessage);
+
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gekickt**. \nHinweis: _%s _", Util.makeUserString(message.getAuthor(), message.getGuild()),
-                    Util.makeUserString(kickUser, message.getGuild()),  customMessage);
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gekickt**. \nHinweis: _%s _",
+                    Util.makeUserString(message.getAuthor(), message.getGuild()),
+                    Util.makeUserString(kickUser, message.getGuild()),
+                    customMessage);
             Util.sendMessage(modLogChannel, modLogMessage);
         }
         else {
@@ -112,7 +124,7 @@ public class ModStuff {
                 customMessage = "kein";
             }
 
-            final String banMessage = "**Du wurdest gebannt!** \nHinweis: _" + customMessage + " _";
+            final String banMessage = String.format("**Du wurdest gebannt!** \nHinweis: _%s_", customMessage);
 
             Util.sendPM(banUser, banMessage);
             message.getGuild().banUser(banUser, customMessage);
@@ -121,9 +133,16 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
+            log.info(String.format("%s hat Nutzer %s vom Server gebannt. Hinweis: %s"),
+                    Util.makeUserString(message.getAuthor(), message.getGuild()),
+                    Util.makeUserString(banUser, message.getGuild()),
+                    customMessage);
+
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gebannt**. \nHinweis: _%s _", Util.makeUserString(message.getAuthor(), message.getGuild()),
-                    Util.makeUserString(banUser, message.getGuild()),  customMessage);
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gebannt**. \nHinweis: _%s _",
+                    Util.makeUserString(message.getAuthor(), message.getGuild()),
+                    Util.makeUserString(banUser, message.getGuild()),
+                    customMessage);
             Util.sendMessage(modLogChannel, modLogMessage);
         }
         else {
@@ -175,7 +194,8 @@ public class ModStuff {
         Runnable unmuteTask = () -> {
             mutedUsers.remove(muteUser.getStringID());
             muteUser.removeRole(muteRole);
-            System.out.println("Unmuted user " + Util.makeUserString(muteUser, message.getGuild()) + ".");
+
+            log.info(String.format("Unmuted user %s.", Util.makeUserString(muteUser, message.getGuild())));
         };
 
         final int muteDuration = Integer.parseInt(matcher.group(1));
@@ -202,7 +222,7 @@ public class ModStuff {
         }
         else {
             muteUser.addRole(muteRole);
-            System.out.println("Muted user " + Util.makeUserString(muteUser, message.getGuild()) + ".");
+            log.info(String.format("Muted user %s.", Util.makeUserString(muteUser, message.getGuild())));
         }
 
         ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
@@ -216,8 +236,8 @@ public class ModStuff {
             customMessage = "kein";
         }
 
-        final String muteMessage = "**Du wurdest für " + muteDuration + ' ' + muteDurationUnitString +
-                " gemuted!** \nHinweis: _" + customMessage + " _";
+        final String muteMessage = String.format("**Du wurdest für %s %S gemuted!** \nHinweis: _%s_",
+                muteDuration, muteDurationUnitString, customMessage);
 
         if (!muteUser.isBot()) {
             Util.sendPM(muteUser, muteMessage);
@@ -279,7 +299,8 @@ public class ModStuff {
         Runnable unmuteTask = () -> {
             mutedUsers.remove(muteUser.getStringID());
             muteUser.removeRole(muteRole);
-            System.out.println("Unmuted user " + Util.makeUserString(muteUser, message.getGuild()) + ". (was selfmuted)");
+            log.info(String.format("Unmuted user %s. (Was selfmuted)", Util.makeUserString(muteUser, message.getGuild())));
+
         };
 
         final int muteDuration = Integer.parseInt(matcher.group(1));
@@ -306,7 +327,7 @@ public class ModStuff {
         }
         else {
             muteUser.addRole(muteRole);
-            System.out.println("User " + Util.makeUserString(muteUser, message.getGuild()) + " selfmuted.");
+            log.info(String.format("User %s selfmuted.", Util.makeUserString(muteUser, message.getGuild())));
         }
 
         ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));

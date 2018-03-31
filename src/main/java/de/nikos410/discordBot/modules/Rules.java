@@ -7,6 +7,8 @@ import de.nikos410.discordBot.util.modular.annotations.CommandModule;
 import de.nikos410.discordBot.util.modular.CommandPermissions;
 import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.obj.IMessage;
@@ -26,6 +28,8 @@ public class Rules {
     private String rulesEN;
     private String welcomeFooter;
     private boolean isEnabled;
+
+    private Logger log = LoggerFactory.getLogger(Rules.class);
 
     public Rules (final DiscordBot bot) {
         this.bot = bot;
@@ -83,6 +87,8 @@ public class Rules {
         this.saveJSON();
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
+        log.info(String.format("%s enabled welcome messages.", Util.makeUserString(message.getAuthor(), message.getGuild())));
+
     }
 
     @CommandSubscriber(command = "welcomeset_disable", help = "Begrüßungsnachricht deaktivieren", permissionLevel = CommandPermissions.ADMIN)
@@ -95,6 +101,8 @@ public class Rules {
         this.saveJSON();
 
         Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
+        log.info(String.format("%s disabled welcome messages.", Util.makeUserString(message.getAuthor(), message.getGuild())));
+
     }
 
     @CommandSubscriber(command = "welcomeset_welcome", help = "Begrüßungsnachricht ändern", permissionLevel = CommandPermissions.ADMIN)
@@ -122,6 +130,8 @@ public class Rules {
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
         Util.sendMessage(message.getChannel(), this.rulesDE);
+        log.info(String.format("%s changed rules. (GER)", Util.makeUserString(message.getAuthor(), message.getGuild())));
+
     }
 
     @CommandSubscriber(command = "welcomeset_rules", help = "Regeln (englisch) ändern", permissionLevel = CommandPermissions.ADMIN)
@@ -135,6 +145,8 @@ public class Rules {
 
         Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
         Util.sendMessage(message.getChannel(), this.rulesEN);
+        log.info(String.format("%s changed rules. (EN)", Util.makeUserString(message.getAuthor(), message.getGuild())));
+
     }
 
     @CommandSubscriber(command = "welcomeset_footer", help = "Footer der Begüßungsnachricht ändern. `%s` für Befehls-Prefix",
@@ -150,9 +162,11 @@ public class Rules {
         Util.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Footer geändert");
         Util.sendMessage(message.getChannel(), String.format(this.welcomeFooter,
                 bot.configJSON.getString("prefix")));
+        log.info(String.format("%s changed welcome footer.", Util.makeUserString(message.getAuthor(), message.getGuild())));
     }
 
     private void saveJSON() {
+        log.debug("Saving welcome file.");
         final String jsonOutput = jsonWelcome.toString(4);
         Util.writeToFile(RULES_PATH, jsonOutput);
 

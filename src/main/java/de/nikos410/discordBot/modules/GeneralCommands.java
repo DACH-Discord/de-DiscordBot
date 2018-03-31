@@ -27,7 +27,7 @@ public class GeneralCommands {
     @CommandSubscriber(command = "uptime", help = "Zeigt seit wann der Bot online ist")
     public void command_Uptime(final IMessage message) {
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
-        Util.sendMessage(message.getChannel(), "Online seit: " + startupTimestamp.format(timeStampFormatter));
+        Util.sendMessage(message.getChannel(), String.format("Online seit: %s", startupTimestamp.format(timeStampFormatter)));
     }
 
     @CommandSubscriber(command = "git", help = "Quellcode des Bots")
@@ -48,7 +48,7 @@ public class GeneralCommands {
         final IMessage quoteMessage = guild.getMessageByID(quoteMessageID);
 
         if (quoteMessage == null) {
-            Util.sendMessage(commandMessage.getChannel(), "Nachricht mit der ID `" + quoteMessageID + "` nicht gefunden!");
+            Util.sendMessage(commandMessage.getChannel(), String.format("Nachricht mit der ID `%s` nicht gefunden!", quoteMessageID));
             return;
         }
 
@@ -67,7 +67,7 @@ public class GeneralCommands {
         final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("dd.MM.YYYY, HH:mm");
         final String timestampString = quoteMessage.getTimestamp().format(timestampFormatter);
 
-        embedBuilder.withFooterText(timestampString + " | Zitiert von: " + Util.makeUserString(commandAuthor, guild));
+        embedBuilder.withFooterText(String.format("%s | Zitiert von: %s", timestampString, Util.makeUserString(commandAuthor, guild)));
 
         Util.sendEmbed(commandMessage.getChannel(), embedBuilder.build());
     }

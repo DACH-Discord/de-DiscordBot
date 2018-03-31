@@ -9,11 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.*;
 
 public class Util {
+
+    private static Logger log = LoggerFactory.getLogger(Util.class);
 
     /**
      * Eine Nachricht senden. Wenn die Nachricht zu lang (>2000 Zeichen) ist, wird sie in mehrere kürzere
@@ -81,11 +85,11 @@ public class Util {
                 sendSingleMessage(channel, message, tries+1);
             }
             else {
-                System.err.println("[ERR] Ratelimited");
+                log.warn("Bot was ratelimited while trying to send message. (20 tries)", e);
             }
         }
         catch (DiscordException e) {
-            error(e);
+            log.error("Message could not be sent.", e);
         }
 
         return null;
@@ -106,14 +110,23 @@ public class Util {
                 sendEmbed(channel, embedObject, tries+1);
             }
             else {
-                System.err.println("[ERR] Ratelimited");
+                log.warn("Bot was ratelimited while trying to send embed. (20 tries)", e);
             }
         }
         catch (DiscordException e) {
-            error(e);
+            log.error("Embed could not be sent.", e);
         }
 
         return null;
+    }
+
+    private static void sleep (int milliseconds) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(milliseconds);
+        }
+        catch (InterruptedException e) {
+            log.error("Sleep was interrupted.", e);
+        }
     }
 
     public static synchronized void sendPM(final IUser user, final String message) {
@@ -172,23 +185,23 @@ public class Util {
         try {
             return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
         }
-        catch (IOException e){
-            error(e);
+        catch (IOException | NullPointerException e){
+            log.error(String.format("Could not read file from Path \"%s\"", path), e);
             return null;
         }
     }
 
-    public static Path writeToFile(Path file, String text) {
+    public static Path writeToFile(Path path, String text) {
         try {
-            return Files.write(file, text.getBytes(StandardCharsets.UTF_8));
+            return Files.write(path, text.getBytes(StandardCharsets.UTF_8));
         }
         catch (IOException e) {
-            error(e);
+            log.error(String.format("Could not write to Path \"%s\"", path), e);
             return null;
         }
     }
 
-    public static void error(final Exception e, final IChannel channel) {
+    public static void errorNotify(final Exception e, final IChannel channel) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
         embedBuilder.withColor(new Color(255, 42, 50));
@@ -196,13 +209,16 @@ public class Util {
         embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
         sendEmbed(channel, embedBuilder.build());
-
-        error(e);
     }
 
-    public static void error(final Exception e) {
-        System.err.println(e.toString() + '\n');
-        e.printStackTrace(System.err);
+    public static void errorNotify(final String s, final IChannel channel) {
+        final EmbedBuilder embedBuilder = new EmbedBuilder();
+
+        embedBuilder.withColor(new Color(255, 42, 50));
+        embedBuilder.appendField("Fehler aufgetreten", s, false);
+        embedBuilder.withFooterText("Mehr Infos in der Konsole");
+
+        sendEmbed(channel, embedBuilder.build());
     }
 
     public static String makeUserString(final IUser user, final IGuild guild) {
@@ -216,14 +232,5 @@ public class Util {
             return String.format("%s (%s#%s)", displayName, name, user.getDiscriminator());
         }
 
-    }
-
-    public static void sleep (int milliseconds) {
-        try {
-            TimeUnit.MILLISECONDS.sleep(milliseconds);
-        }
-        catch (InterruptedException e) {
-            error(e);
-        }
     }
 }
