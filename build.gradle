@@ -31,6 +31,7 @@ dependencies {
     compile "com.github.austinv11:Discord4J:2.9.3"
     compile "org.json:json:20160810"
     compile group: 'org.reflections', name: 'reflections', version: '0.9.10'
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: '0.9.26'
 }
 
 repositories {

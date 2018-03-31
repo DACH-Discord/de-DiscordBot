@@ -5,11 +5,13 @@ import de.nikos410.discordBot.util.general.Util;
 import de.nikos410.discordBot.util.modular.annotations.CommandModule;
 import de.nikos410.discordBot.util.modular.CommandPermissions;
 import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserLeaveEvent;
@@ -37,6 +39,7 @@ public class UserLog {
 
     private IMessage purgeCommandMessage;
 
+    private Logger log = LoggerFactory.getLogger(UserLog.class);
 
     public UserLog (final DiscordBot bot) {
         this.bot = bot;
@@ -47,15 +50,25 @@ public class UserLog {
         // UserLog Kanal auslesen
         final String userLogFileContent = Util.readFile(USERLOG_PATH);
         if (userLogFileContent == null) {
-            throw new RuntimeException("[ERROR] Could not read userLog File!");
+            log.error("Could not read configuration file. Deactivating module.");
+            bot.unloadModule("Userlog");
+            return;
         }
         jsonUserLog = new JSONObject(userLogFileContent);
 
         this.isEnabled = jsonUserLog.getBoolean("on");
-        final long channelID = jsonUserLog.getLong("channel");
-        this.userLogChannel = bot.client.getChannelByID(channelID);
-        if (this.userLogChannel == null) {
-            System.err.println("[ERR] Invalid UserLog Channel!");
+        try {
+            final long channelID = jsonUserLog.getLong("channel");
+            this.userLogChannel = bot.client.getChannelByID(channelID);
+
+            if (this.userLogChannel == null) {
+                log.error("Invalid Userlog channel. Deactivating module.");
+                bot.unloadModule("Userlog");
+            }
+        }
+        catch (JSONException e) {
+            log.error("Invalid Userlog channel. Deactivating module.");
+            bot.unloadModule("Userlog");
         }
     }
 
@@ -85,19 +98,21 @@ public class UserLog {
         int joinedDays = (int)joinTimeStamp.until(LocalDateTime.now(), ChronoUnit.DAYS);
 
         // String für Embed
-        String embedString = "**Name:** " + user.getName() + '#' + user.getDiscriminator() + '\n' +
-                "**ID:** " + user.getStringID() + '\n' +
-                "**Discord beigetreten:** vor " + joinedDays + " Tagen";
+        String embedString = String.format("**Name:** %s#%s \n" +
+                "**ID:** %s \n" +
+                "**Discord beigetreten:** vor %s Tagen",
+                user.getName(), user.getDiscriminator(),
+                user.getStringID(),
+                joinedDays);
 
         if (joinedDays <= 1) {
-            embedString = embedString + '\n' + ":exclamation: Neuer Nutzer! :exclamation:";
+            embedString = embedString + "\n:exclamation: Neuer Nutzer!";
         }
 
         // Embed
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.appendField(":white_check_mark: Nutzer ist dem Server beigetreten!", embedString,
-                false);
+        embedBuilder.appendField(":white_check_mark: Nutzer ist dem Server beigetreten!", embedString, false);
         embedBuilder.withThumbnail(user.getAvatarURL());
         embedBuilder.withFooterText(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM. | HH:mm")));
         embedBuilder.withColor(new Color(119, 178, 85));
@@ -108,14 +123,17 @@ public class UserLog {
     }
 
     private void userLeaveNotify(final IUser user) {
+        // String für Embed
+        String embedString = String.format("**Name:** %s#%s \n" +
+                        "**ID:** %s",
+                user.getName(), user.getDiscriminator(),
+                user.getStringID());
+
         final EmbedBuilder embedBuilder = new EmbedBuilder();
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
 
         embedBuilder.withThumbnail(user.getAvatarURL());
-        embedBuilder.appendField(":x: Nutzer hat den Server verlassen!",
-                "**Name:** " + user.getName() + '#' + user.getDiscriminator() + '\n' +
-                        "**ID:** " + user.getStringID(),
-                false);
+        embedBuilder.appendField(":x: Nutzer hat den Server verlassen!", embedString, false);
         embedBuilder.withFooterText(LocalDateTime.now().format(timeStampFormatter));
         embedBuilder.withColor(new Color(221, 46, 68));
 
@@ -125,14 +143,17 @@ public class UserLog {
     }
 
     private void userBanNotify(final IUser user) {
+        // String für Embed
+        String embedString = String.format("**Name:** %s#%s \n" +
+                        "**ID:** %s",
+                user.getName(), user.getDiscriminator(),
+                user.getStringID());
+
         final EmbedBuilder embedBuilder = new EmbedBuilder();
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
 
         embedBuilder.withThumbnail(user.getAvatarURL());
-        embedBuilder.appendField(":hammer: Nutzer gebannt!",
-                "**Name:** " + user.getName() + '#' + user.getDiscriminator() + '\n' +
-                        "**ID:** " + user.getStringID(),
-                false);
+        embedBuilder.appendField(":hammer: Nutzer gebannt!", embedString, false);
         embedBuilder.withFooterText(LocalDateTime.now().format(timeStampFormatter));
 
         final EmbedObject embedObject = embedBuilder.build();
@@ -143,9 +164,7 @@ public class UserLog {
 
     @CommandSubscriber(command = "userlog", help = "Zeigt Userlog-Konfuguration an", permissionLevel = CommandPermissions.ADMIN)
     public void command_Userlog(final IMessage message) {
-        final String reply = "Kanal: <#" + userLogChannel.getStringID() + ">" + '\n' +
-                "Enabled: `" + isEnabled + '`';
-        Util.sendMessage(message.getChannel(), reply);
+        Util.sendMessage(message.getChannel(), String.format("Kanal: %s \nEnabled: `%s`", userLogChannel.mention(), isEnabled));
     }
 
     @CommandSubscriber(command = "userlog_channel", help = "Kanal für Userlog ändern", permissionLevel = CommandPermissions.ADMIN)
@@ -158,12 +177,10 @@ public class UserLog {
 
         this.userLogChannel = this.bot.client.getChannelByID(Long.parseLong(channelID));
         if (userLogChannel == null) {
-            System.err.print("[ERR] Invalid UserLog Channel!");
-            Util.sendMessage(message.getChannel(), ":x: Kanal mit der ID `" + channelID + "` nicht gefunden!");
+            Util.sendMessage(message.getChannel(), String.format(":x: Kanal mit der ID `%s` nicht gefunden!", channelID));
         }
         else {
-            Util.sendMessage(message.getChannel(), ":white_check_mark: Neuer Kanal: " +
-                    "<#" + userLogChannel.getStringID() + ">");
+            Util.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Kanal: %s", userLogChannel.mention()));
         }
     }
 
@@ -200,6 +217,8 @@ public class UserLog {
     }
 
     private void saveUserLogJSON() {
+        log.debug("Saving UserLog file.");
+
         final String jsonOutput = jsonUserLog.toString(4);
         Util.writeToFile(USERLOG_PATH, jsonOutput);
 

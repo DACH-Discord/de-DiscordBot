@@ -9,7 +9,6 @@ import sx.blah.discord.handle.obj.IMessage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 @CommandModule(moduleName = "Reddit-Linker", commandOnly = false)
 public class RedditLinker {
 

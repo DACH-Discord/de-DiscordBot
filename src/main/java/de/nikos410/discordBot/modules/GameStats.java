@@ -3,11 +3,12 @@ package de.nikos410.discordBot.modules;
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.general.Util;
 import de.nikos410.discordBot.util.modular.annotations.CommandModule;
-import de.nikos410.discordBot.util.modular.CommandPermissions;
 import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
@@ -28,6 +29,8 @@ public class GameStats {
     private final static Path GAMESTATS_PATH = Paths.get("data/gameStats.json");
     private JSONObject gameStatsJSON;
 
+    private Logger log = LoggerFactory.getLogger(GameStats.class);
+
     public GameStats (final DiscordBot bot) {
         this.bot = bot;
         this.client = bot.client;
@@ -35,6 +38,7 @@ public class GameStats {
         // Spiel-Liste einlesen
         final String jsonContent = Util.readFile(GAMESTATS_PATH);
         this.gameStatsJSON = new JSONObject(jsonContent);
+        log.info(String.format("Loaded GameStats file with %s games.", gameStatsJSON.keySet().size()));
     }
 
     @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
@@ -83,16 +87,19 @@ public class GameStats {
          */
 
         // Ähnliche Spiele
-        String similarGames = "";
+        StringBuilder similarBuilder = new StringBuilder();
         for (String s : findSimilarKeys(game)) {
-            similarGames = similarGames + s + '\n';
+            similarBuilder.append(s);
+            similarBuilder.append('\n');
         }
+        String similarGames = similarBuilder.toString();
 
         // Keine Nutzer spielen gerade oder haben jemals gespielt
         if (usersPlayingNow.isEmpty() && usersPlayingAny.isEmpty()) {
-            Util.sendMessage(message.getChannel(), "**Niemand auf diesem Server spielt _" + game + "_**.");
+
+            Util.sendMessage(message.getChannel(), String.format("**Niemand auf diesem Server spielt _%s_**.", game));
             if (!similarGames.isEmpty()) {
-                Util.sendMessage(message.getChannel(), "**Meintest du...** \n" + similarGames);
+                Util.sendMessage(message.getChannel(), String.format("**Meintest du...**\n%s", similarGames));
             }
 
             return;
@@ -100,12 +107,14 @@ public class GameStats {
 
         // TODO: Nachricht in einzelnen Zeilen übergeben um saubereren Zeilenumbruch zu gewährleisten
 
-        Util.sendMessage(message.getChannel(), "**Nutzer, die __jetzt__ _" + game + "_ spielen**\n" +
-                userListToString(usersPlayingNow, guild));
-        Util.sendMessage(message.getChannel(), "**__Alle anderen__ Nutzer, die _" + game + "_ spielen**\n" +
-                userListToString(usersPlayingAny, guild));
+        Util.sendMessage(message.getChannel(), String.format("**Nutzer, die __jetzt__ _%s_ spielen**\n%s",
+                game, userListToString(usersPlayingNow, guild)));
+
+        Util.sendMessage(message.getChannel(), String.format("**__Alle anderen__ Nutzer, die _%s_ spielen**\n%s",
+                game, userListToString(usersPlayingAny, guild)));
+
         if (!similarGames.isEmpty()) {
-            Util.sendMessage(message.getChannel(), "**Ähnliche Spiele:** \n" + similarGames);
+            Util.sendMessage(message.getChannel(), String.format("**Ähnliche Spiele:** \n%s", similarGames));
         }
     }
 
@@ -126,24 +135,23 @@ public class GameStats {
     }
 
     private String userListToString (final List<IUser> userList, final IGuild guild) {
-        String userListString = "";
+        StringBuilder stringBuilder = new StringBuilder();
 
         for (IUser user : userList) {
-            userListString = userListString + Util.makeUserString(user, guild) + '\n';
+            stringBuilder.append(Util.makeUserString(user, guild));
+            stringBuilder.append('\n');
         }
 
-        if (userListString.isEmpty()) {
-            userListString = "_niemand_";
-        }
-
-        return userListString;
+        return stringBuilder.toString().isEmpty() ? "_niemand_" : stringBuilder.toString();
     }
 
     @EventSubscriber
     public void onStartup(ReadyEvent event) {
+        log.info("Initializing GameStats module.");
         for(IUser user : bot.client.getUsers()) {
             this.updateUserStatus(user);
         }
+        log.info("Finished initializing GameStats module.");
     }
 
     @EventSubscriber
@@ -207,7 +215,9 @@ public class GameStats {
         return false;
     }
 
-    private void saveJSON() {
+    private synchronized void saveJSON() {
+        log.debug("Saving GameStats file");
+
         final String jsonOutput = gameStatsJSON.toString(4);
         Util.writeToFile(GAMESTATS_PATH, jsonOutput);
 
