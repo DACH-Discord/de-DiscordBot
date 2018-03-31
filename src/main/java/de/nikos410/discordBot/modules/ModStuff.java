@@ -89,9 +89,10 @@ public class ModStuff {
                     customMessage);
 
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gekickt**. \nHinweis: _%s _",
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**. \nHinweis: _%s _",
                     Util.makeUserString(message.getAuthor(), message.getGuild()),
                     Util.makeUserString(kickUser, message.getGuild()),
+                    message.getChannel().mention(),
                     customMessage);
             Util.sendMessage(modLogChannel, modLogMessage);
         }
@@ -139,9 +140,10 @@ public class ModStuff {
                     customMessage);
 
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** vom Server **gebannt**. \nHinweis: _%s _",
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
                     Util.makeUserString(message.getAuthor(), message.getGuild()),
                     Util.makeUserString(banUser, message.getGuild()),
+                    message.getChannel().mention(),
                     customMessage);
             Util.sendMessage(modLogChannel, modLogMessage);
         }
@@ -245,9 +247,10 @@ public class ModStuff {
 
         // Modlog
         IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-        final String modLogMessage = String.format("**%s** hat Nutzer **%s** für %s %s **gemuted**. \nHinweis: _%s _",
+        final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
                 Util.makeUserString(message.getAuthor(), message.getGuild()),
-                Util.makeUserString(muteUser, message.getGuild()), muteDuration, muteDurationUnitString, customMessage);
+                Util.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
+                muteDuration, muteDurationUnitString, customMessage);
         Util.sendMessage(modLogChannel, modLogMessage);
     }
 
