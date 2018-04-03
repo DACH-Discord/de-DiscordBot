@@ -308,16 +308,22 @@ public class ModStuff {
 
         final int muteDuration = Integer.parseInt(matcher.group(1));
         final String muteDurationUnitString = matcher.group(2);
-        ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
+        final ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
+
+        final LocalDateTime muteEnd = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
+        if (muteEnd.isAfter(LocalDateTime.now().plusDays(1))) {
+            // Länger als 1 Tag
+            Util.sendMessage(message.getChannel(), "Du kannst dich für maximal einen Tag muten!");
+            return;
+        }
 
         if (mutedUsers.containsKey(muteUser.getStringID())) {
             // Überprüfen, ob angegebener Zeitpunkt nach dem bisherigen Zeitpunkt liegt
             ScheduledFuture oldFuture = mutedUsers.get(muteUser.getStringID());
 
-            LocalDateTime oldDateTime = LocalDateTime.now().plusSeconds(oldFuture.getDelay(TimeUnit.SECONDS));
-            LocalDateTime newDateTime = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
+            LocalDateTime oldMuteEnd = LocalDateTime.now().plusSeconds(oldFuture.getDelay(TimeUnit.SECONDS));
 
-            if (newDateTime.isBefore(oldDateTime)) {
+            if (muteEnd.isBefore(oldMuteEnd)) {
                 // neuer Zeitpunkt ist vor altem -> nichts tun (längerer Mute bleibt bestehen)
                 Util.sendMessage(message.getChannel(), "Nutzer ist bereits für einen längeren Zeitraum gemuted!");
                 return;
