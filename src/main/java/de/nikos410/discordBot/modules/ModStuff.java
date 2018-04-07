@@ -83,10 +83,10 @@ public class ModStuff {
             //Util.sendMessage(message.getChannel(), ":door:");
 
             // Modlog
-            log.info(String.format("%s hat Nutzer %s vom Server gekickt. Hinweis: %s"),
+            log.info(String.format("%s hat Nutzer %s vom Server gekickt. Hinweis: %s",
                     Util.makeUserString(message.getAuthor(), message.getGuild()),
                     Util.makeUserString(kickUser, message.getGuild()),
-                    customMessage);
+                    customMessage));
 
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
             final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**. \nHinweis: _%s _",
@@ -134,10 +134,10 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
-            log.info(String.format("%s hat Nutzer %s vom Server gebannt. Hinweis: %s"),
+            log.info(String.format("%s hat Nutzer %s vom Server gebannt. Hinweis: %s",
                     Util.makeUserString(message.getAuthor(), message.getGuild()),
                     Util.makeUserString(banUser, message.getGuild()),
-                    customMessage);
+                    customMessage));
 
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
             final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
