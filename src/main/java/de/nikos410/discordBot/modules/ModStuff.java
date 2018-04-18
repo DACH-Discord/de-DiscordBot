@@ -128,7 +128,7 @@ public class ModStuff {
             final String banMessage = String.format("**Du wurdest gebannt!** \nHinweis: _%s_", customMessage);
 
             Util.sendPM(banUser, banMessage);
-            message.getGuild().banUser(banUser, customMessage);
+            message.getGuild().banUser(banUser, customMessage, 0);
 
             //Util.sendMessage(message.getChannel(), ":hammer:");
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
@@ -148,7 +148,7 @@ public class ModStuff {
             Util.sendMessage(modLogChannel, modLogMessage);
         }
         else {
-            message.getGuild().kickUser(message.getAuthor());
+            message.getGuild().kickUser(message.getAuthor(), customMessage);
             message.addReaction(ReactionEmoji.of("tja", 401835325434888192L));
         }
     }
