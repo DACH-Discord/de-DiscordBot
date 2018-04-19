@@ -1,10 +1,13 @@
-package de.nikos410.discordBot.util.modular.annotations;
+package de.nikos410.discordBot.modular.annotations;
 
+import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AlwaysLoaded {}
+public @interface CommandModule {
+    String moduleName();
+    boolean commandOnly();
+}

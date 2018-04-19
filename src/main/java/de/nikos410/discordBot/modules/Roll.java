@@ -1,18 +1,18 @@
 package de.nikos410.discordBot.modules;
 
-import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.annotations.CommandModule;
-import de.nikos410.discordBot.util.modular.CommandPermissions;
-import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
-import sx.blah.discord.api.internal.json.objects.EmbedObject;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.util.EmbedBuilder;
-
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.stream.IntStream;
+
+import de.nikos410.discordBot.util.discord.DiscordIO;
+import de.nikos410.discordBot.modular.annotations.CommandModule;
+import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+
+import sx.blah.discord.api.internal.json.objects.EmbedObject;
+import sx.blah.discord.handle.obj.IChannel;
+import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.util.EmbedBuilder;
 
 @CommandModule(moduleName = "Würfel", commandOnly = true)
 public class Roll {
@@ -53,13 +53,15 @@ public class Roll {
                         false
                 );
                 EmbedObject rollObject = outputBuilder.build();
-                Util.sendEmbed(channel, rollObject);
-            } catch (NumberFormatException ex) {
-                Util.sendMessage(channel, MessageFormat.format("Konnte Eingabe '{0}' nicht verarbeiten." +
+                DiscordIO.sendEmbed(channel, rollObject);
+            }
+            catch (NumberFormatException ex) {
+                DiscordIO.sendMessage(channel, MessageFormat.format("Konnte Eingabe '{0}' nicht verarbeiten." +
                         "Bitte sicherstellen, dass sowohl die Würfelanzahl als auch die maximale Augenzahl Integer-Zahlen > 0 sind!", diceArgsInput));
             }
-        } else {
-            Util.sendMessage(channel, "Syntax: `roll AnzahlWürfel;[AugenJeWürfel=6]`");
+        }
+        else {
+            DiscordIO.sendMessage(channel, "Syntax: `roll AnzahlWürfel;[AugenJeWürfel=6]`");
         }
     }
 }

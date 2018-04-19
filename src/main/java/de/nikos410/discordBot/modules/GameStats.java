@@ -1,25 +1,31 @@
 package de.nikos410.discordBot.modules;
 
-import de.nikos410.discordBot.DiscordBot;
-import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.annotations.CommandModule;
-import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
-import org.apache.commons.lang3.StringUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
-import sx.blah.discord.handle.impl.events.user.PresenceUpdateEvent;
-import sx.blah.discord.handle.obj.*;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import de.nikos410.discordBot.DiscordBot;
+import de.nikos410.discordBot.util.discord.DiscordIO;
+import de.nikos410.discordBot.util.discord.UserOperations;
+import de.nikos410.discordBot.util.io.IOUtil;
+import de.nikos410.discordBot.modular.annotations.CommandModule;
+import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+
+import org.apache.commons.lang3.StringUtils;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.ReadyEvent;
+import sx.blah.discord.handle.impl.events.user.PresenceUpdateEvent;
+import sx.blah.discord.handle.obj.*;
 
 @CommandModule(moduleName = "Spiel-Informationen", commandOnly = false)
 public class GameStats {
@@ -36,7 +42,7 @@ public class GameStats {
         this.client = bot.client;
 
         // Spiel-Liste einlesen
-        final String jsonContent = Util.readFile(GAMESTATS_PATH);
+        final String jsonContent = IOUtil.readFile(GAMESTATS_PATH);
         this.gameStatsJSON = new JSONObject(jsonContent);
         log.info(String.format("Loaded GameStats file with %s games.", gameStatsJSON.keySet().size()));
     }
@@ -44,7 +50,7 @@ public class GameStats {
     @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
     public void command_Playing(final IMessage message, final String game) {
         if (game.isEmpty()) {  // Kein Spiel angegeben
-            Util.sendMessage(message.getChannel(), "Kein Spiel angegeben!");
+            DiscordIO.sendMessage(message.getChannel(), "Kein Spiel angegeben!");
             return;
         }
 
@@ -97,9 +103,9 @@ public class GameStats {
         // Keine Nutzer spielen gerade oder haben jemals gespielt
         if (usersPlayingNow.isEmpty() && usersPlayingAny.isEmpty()) {
 
-            Util.sendMessage(message.getChannel(), String.format("**Niemand auf diesem Server spielt _%s_**.", game));
+            DiscordIO.sendMessage(message.getChannel(), String.format("**Niemand auf diesem Server spielt _%s_**.", game));
             if (!similarGames.isEmpty()) {
-                Util.sendMessage(message.getChannel(), String.format("**Meintest du...**\n%s", similarGames));
+                DiscordIO.sendMessage(message.getChannel(), String.format("**Meintest du...**\n%s", similarGames));
             }
 
             return;
@@ -107,14 +113,14 @@ public class GameStats {
 
         // TODO: Nachricht in einzelnen Zeilen übergeben um saubereren Zeilenumbruch zu gewährleisten
 
-        Util.sendMessage(message.getChannel(), String.format("**Nutzer, die __jetzt__ _%s_ spielen**\n%s",
+        DiscordIO.sendMessage(message.getChannel(), String.format("**Nutzer, die __jetzt__ _%s_ spielen**\n%s",
                 game, userListToString(usersPlayingNow, guild)));
 
-        Util.sendMessage(message.getChannel(), String.format("**__Alle anderen__ Nutzer, die _%s_ spielen**\n%s",
+        DiscordIO.sendMessage(message.getChannel(), String.format("**__Alle anderen__ Nutzer, die _%s_ spielen**\n%s",
                 game, userListToString(usersPlayingAny, guild)));
 
         if (!similarGames.isEmpty()) {
-            Util.sendMessage(message.getChannel(), String.format("**Ähnliche Spiele:** \n%s", similarGames));
+            DiscordIO.sendMessage(message.getChannel(), String.format("**Ähnliche Spiele:** \n%s", similarGames));
         }
     }
 
@@ -138,7 +144,7 @@ public class GameStats {
         StringBuilder stringBuilder = new StringBuilder();
 
         for (IUser user : userList) {
-            stringBuilder.append(Util.makeUserString(user, guild));
+            stringBuilder.append(UserOperations.makeUserString(user, guild));
             stringBuilder.append('\n');
         }
 
@@ -219,7 +225,7 @@ public class GameStats {
         log.debug("Saving GameStats file");
 
         final String jsonOutput = gameStatsJSON.toString(4);
-        Util.writeToFile(GAMESTATS_PATH, jsonOutput);
+        IOUtil.writeToFile(GAMESTATS_PATH, jsonOutput);
 
         gameStatsJSON = new JSONObject(jsonOutput);
     }

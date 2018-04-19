@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.util.general;
+package de.nikos410.discordBot.util.discord;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -2,10 +2,12 @@ package de.nikos410.discordBot.modules;
 
 
 import de.nikos410.discordBot.DiscordBot;
-import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.annotations.CommandModule;
-import de.nikos410.discordBot.util.modular.CommandPermissions;
-import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
+import de.nikos410.discordBot.util.discord.DiscordIO;
+import de.nikos410.discordBot.util.discord.UserOperations;
+import de.nikos410.discordBot.util.io.IOUtil;
+import de.nikos410.discordBot.modular.annotations.CommandModule;
+import de.nikos410.discordBot.modular.CommandPermissions;
+import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,7 @@ public class Rules {
         this.bot = bot;
 
         // Welcome Nachricht auslesen
-        final String welcomeFileContent = Util.readFile(RULES_PATH);
+        final String welcomeFileContent = IOUtil.readFile(RULES_PATH);
         this.jsonWelcome = new JSONObject(welcomeFileContent);
 
         this.welcomeMessage = jsonWelcome.getString("welcome");
@@ -48,32 +50,32 @@ public class Rules {
     @EventSubscriber
     public void onUserJoin(UserJoinEvent event) {
         if (this.isEnabled) {
-            Util.sendPM(event.getUser(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter,
+            DiscordIO.sendMessage(event.getUser().getOrCreatePMChannel(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter,
                     bot.configJSON.getString("prefix")));
         }
     }
 
     @CommandSubscriber(command = "regeln", help = "Die Regeln dieses Servers")
     public void command_Regeln(final IMessage message) {
-        Util.sendPM(message.getAuthor(), this.rulesDE);
+        DiscordIO.sendMessage(message.getAuthor().getOrCreatePMChannel(), this.rulesDE);
 
         if (!message.getChannel().isPrivate()) {
-            Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+            DiscordIO.sendMessage(message.getChannel(), ":mailbox_with_mail:");
         }
     }
 
     @CommandSubscriber(command = "rules", help = "The rules of this server")
     public void command_Rules(final IMessage message) {
-        Util.sendPM(message.getAuthor(), this.rulesEN);
+        DiscordIO.sendMessage(message.getAuthor().getOrCreatePMChannel(), this.rulesEN);
 
         if (!message.getChannel().isPrivate()) {
-            Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+            DiscordIO.sendMessage(message.getChannel(), ":mailbox_with_mail:");
         }
     }
 
     @CommandSubscriber(command = "welcomeset_test", help = "Begrüßungsnachricht testen", permissionLevel = CommandPermissions.ADMIN)
     public void command_Welcomeset_Test(final IMessage message) {
-        Util.sendPM(message.getAuthor(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter,
+        DiscordIO.sendMessage(message.getAuthor().getOrCreatePMChannel(), welcomeMessage + "\n\n" + rulesDE + "\n\n\n" + String.format(welcomeFooter,
                 bot.configJSON.getString("prefix")));
     }
 
@@ -86,8 +88,8 @@ public class Rules {
         jsonWelcome.put("on", true);
         this.saveJSON();
 
-        Util.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
-        log.info(String.format("%s enabled welcome messages.", Util.makeUserString(message.getAuthor(), message.getGuild())));
+        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
+        log.info(String.format("%s enabled welcome messages.", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
 
     }
 
@@ -100,8 +102,8 @@ public class Rules {
         jsonWelcome.put("on", false);
         this.saveJSON();
 
-        Util.sendMessage(message.getChannel(), ":x: Deaktiviert!");
-        log.info(String.format("%s disabled welcome messages.", Util.makeUserString(message.getAuthor(), message.getGuild())));
+        DiscordIO.sendMessage(message.getChannel(), ":x: Deaktiviert!");
+        log.info(String.format("%s disabled welcome messages.", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
 
     }
 
@@ -115,8 +117,8 @@ public class Rules {
         jsonWelcome.put("welcome", this.welcomeMessage);
         this.saveJSON();
 
-        Util.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Nachricht geändert");
-        Util.sendMessage(message.getChannel(), this.welcomeMessage);
+        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Nachricht geändert");
+        DiscordIO.sendMessage(message.getChannel(), this.welcomeMessage);
     }
 
     @CommandSubscriber(command = "welcomeset_regeln", help = "Regeln (deutsch) ändern", permissionLevel = CommandPermissions.ADMIN)
@@ -128,9 +130,9 @@ public class Rules {
         jsonWelcome.put("rulesDE", this.rulesDE);
         this.saveJSON();
 
-        Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
-        Util.sendMessage(message.getChannel(), this.rulesDE);
-        log.info(String.format("%s changed rules. (GER)", Util.makeUserString(message.getAuthor(), message.getGuild())));
+        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
+        DiscordIO.sendMessage(message.getChannel(), this.rulesDE);
+        log.info(String.format("%s changed rules. (GER)", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
 
     }
 
@@ -143,9 +145,9 @@ public class Rules {
         jsonWelcome.put("rulesEN", this.rulesEN);
         this.saveJSON();
 
-        Util.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
-        Util.sendMessage(message.getChannel(), this.rulesEN);
-        log.info(String.format("%s changed rules. (EN)", Util.makeUserString(message.getAuthor(), message.getGuild())));
+        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Regeln geändert:");
+        DiscordIO.sendMessage(message.getChannel(), this.rulesEN);
+        log.info(String.format("%s changed rules. (EN)", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
 
     }
 
@@ -159,16 +161,16 @@ public class Rules {
         jsonWelcome.put("footer", this.welcomeFooter);
         this.saveJSON();
 
-        Util.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Footer geändert");
-        Util.sendMessage(message.getChannel(), String.format(this.welcomeFooter,
+        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Footer geändert");
+        DiscordIO.sendMessage(message.getChannel(), String.format(this.welcomeFooter,
                 bot.configJSON.getString("prefix")));
-        log.info(String.format("%s changed welcome footer.", Util.makeUserString(message.getAuthor(), message.getGuild())));
+        log.info(String.format("%s changed welcome footer.", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
     }
 
     private void saveJSON() {
         log.debug("Saving welcome file.");
         final String jsonOutput = jsonWelcome.toString(4);
-        Util.writeToFile(RULES_PATH, jsonOutput);
+        IOUtil.writeToFile(RULES_PATH, jsonOutput);
 
         jsonWelcome = new JSONObject(jsonOutput);
     }

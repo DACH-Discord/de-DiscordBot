@@ -1,9 +1,5 @@
 package de.nikos410.discordBot;
 
-import de.nikos410.discordBot.util.general.Authorization;
-import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.*;
-
 import java.awt.Color;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,21 +11,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
-import de.nikos410.discordBot.util.modular.annotations.AlwaysLoaded;
-import de.nikos410.discordBot.util.modular.annotations.CommandModule;
-import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
+import de.nikos410.discordBot.modular.*;
+import de.nikos410.discordBot.modular.annotations.*;
+import de.nikos410.discordBot.util.discord.*;
+import de.nikos410.discordBot.util.io.IOUtil;
+
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageUpdateEvent;
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 
 import org.json.JSONObject;
@@ -56,7 +53,7 @@ public class DiscordBot {
      * Richtet den Bot ein, lädt Konfiguration etc.
      */
     private DiscordBot() {
-        final String configFileContent = Util.readFile(CONFIG_PATH);
+        final String configFileContent = IOUtil.readFile(CONFIG_PATH);
         if (configFileContent == null) {
             log.error("Could not read configuration file.");
             System.exit(1);
@@ -245,7 +242,7 @@ public class DiscordBot {
 
         if (messageCommand.equalsIgnoreCase("help")) {
             this.command_help(message);
-            log.info(String.format("User %s used command %s", Util.makeUserString(message.getAuthor(), message.getGuild()), "help"));
+            log.info(String.format("User %s used command %s", UserOperations.makeUserString(message.getAuthor(), message.getGuild()), "help"));
             return;
         }
 
@@ -254,13 +251,13 @@ public class DiscordBot {
 
             final int userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
             if (userPermissionLevel < command.permissionLevel) {
-                Util.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
+                DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
                         CommandPermissions.getPermissionLevelName(userPermissionLevel)));
                 return;
             }
 
             if (message.getChannel().isPrivate() && !command.pmAllowed) {
-                Util.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
+                DiscordIO.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
                 return;
             }
 
@@ -296,10 +293,10 @@ public class DiscordBot {
                     }
                     default: {
                         log.error(String.format("Command \"%s\" has an invalid number of arguments. This should never happen.", messageCommand));
-                        Util.errorNotify("Befehl kann wegen einer ungültigen Anzahl an Argumenten nicht ausgeführt werden. Dies sollte niemals passieren!", message.getChannel());
+                        DiscordIO.errorNotify("Befehl kann wegen einer ungültigen Anzahl an Argumenten nicht ausgeführt werden. Dies sollte niemals passieren!", message.getChannel());
                     }
                 }
-                log.info(String.format("User %s used command %s", Util.makeUserString(message.getAuthor(), message.getGuild()), messageCommand));
+                log.info(String.format("User %s used command %s", UserOperations.makeUserString(message.getAuthor(), message.getGuild()), messageCommand));
             }
             catch (IllegalAccessException | InvocationTargetException e) {
                 final Throwable cause = e.getCause();
@@ -311,7 +308,7 @@ public class DiscordBot {
                 embedBuilder.appendField("Fehler aufgetreten", cause.toString(), false);
                 embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
-                Util.sendEmbed(message.getChannel(), embedBuilder.build());
+                DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
             }
         }
 
@@ -364,10 +361,10 @@ public class DiscordBot {
         if (user.getLongID() == this.ownerID) {
             return CommandPermissions.OWNER;
         }
-        else if (Util.hasRoleByID(user, this.adminRoleID, guild)) {
+        else if (UserOperations.hasRoleByID(user, this.adminRoleID, guild)) {
             return CommandPermissions.ADMIN;
         }
-        else if (Util.hasRoleByID(user, this.modRoleID, guild)) {
+        else if (UserOperations.hasRoleByID(user, this.modRoleID, guild)) {
             return CommandPermissions.MODERATOR;
         }
         else {
@@ -410,10 +407,10 @@ public class DiscordBot {
         }
 
         final EmbedObject embedObject = embedBuilder.build();
-        Util.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
+        DiscordIO.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
 
         if (!message.getChannel().isPrivate()) {
-            Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+            DiscordIO.sendMessage(message.getChannel(), ":mailbox_with_mail:");
         }
     }
 
@@ -521,7 +518,7 @@ public class DiscordBot {
         log.debug("Saving config file.");
 
         final String jsonOutput = this.configJSON.toString(4);
-        Util.writeToFile(CONFIG_PATH, jsonOutput);
+        IOUtil.writeToFile(CONFIG_PATH, jsonOutput);
 
         this.configJSON = new JSONObject(jsonOutput);
     }
