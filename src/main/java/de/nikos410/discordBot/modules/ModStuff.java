@@ -569,7 +569,7 @@ public class ModStuff {
     }
 
     public void saveJSON() {
-        log.debug("Saving roles file.");
+        log.debug("Saving modstuff file.");
 
         final String jsonOutput = this.modstuffJSON.toString(4);
         IOUtil.writeToFile(MODSTUFF_PATH, jsonOutput);
