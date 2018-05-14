@@ -6,15 +6,16 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
+import de.nikos410.discordBot.util.discord.GuildOperations;
 import de.nikos410.discordBot.util.io.IOUtil;
 import de.nikos410.discordBot.modular.annotations.CommandModule;
 import de.nikos410.discordBot.modular.CommandPermissions;
 import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import org.slf4j.Logger;
@@ -22,11 +23,12 @@ import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserLeaveEvent;
+import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IChannel;
+import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
@@ -37,67 +39,60 @@ public class UserLog {
 
     private final DiscordBot bot;
 
-    private JSONObject jsonUserLog;
-    private IChannel userLogChannel;
-    private boolean isEnabled;
-
-    private IMessage purgeCommandMessage;
+    private JSONObject userlogJSON;
 
     private Logger log = LoggerFactory.getLogger(UserLog.class);
 
     public UserLog (final DiscordBot bot) {
         this.bot = bot;
-    }
 
-    @EventSubscriber
-    public void onStartup(ReadyEvent event) {
-        // UserLog Kanal auslesen
-        final String userLogFileContent = IOUtil.readFile(USERLOG_PATH);
-        if (userLogFileContent == null) {
-            log.error("Could not read configuration file. Deactivating module.");
-            bot.unloadModule("Userlog");
-            return;
-        }
-        jsonUserLog = new JSONObject(userLogFileContent);
-
-        this.isEnabled = jsonUserLog.getBoolean("on");
-        try {
-            final long channelID = jsonUserLog.getLong("channel");
-            this.userLogChannel = bot.client.getChannelByID(channelID);
-
-            if (this.userLogChannel == null) {
-                log.error("Invalid Userlog channel. Deactivating module.");
-                bot.unloadModule("Userlog");
-            }
-        }
-        catch (JSONException e) {
-            log.error("Invalid Userlog channel. Deactivating module.");
-            bot.unloadModule("Userlog");
-        }
+        final String jsonContent = IOUtil.readFile(USERLOG_PATH);
+        userlogJSON = new JSONObject(jsonContent);
     }
 
     @EventSubscriber
     public void onUserJoin(UserJoinEvent event) {
-        if (this.isEnabled) {
-            this.userJoinNotify(event.getUser());
+        final IGuild guild = event.getGuild();
+        final JSONObject guildJSON = getJSONForGuild(guild);
+
+        if (guildJSON.has("on") && guildJSON.getBoolean("on") && guildJSON.has("channel")) {
+            final long channelID = guildJSON.getLong("channel");
+            final IChannel channel = guild.getChannelByID(channelID);
+            if (channel != null) {
+                userJoinNotify(event.getUser(), channel);
+            }
         }
     }
 
     @EventSubscriber
     public void onUnserLeave(UserLeaveEvent event) {
-        if (this.isEnabled) {
-            this.userLeaveNotify(event.getUser());
+        final IGuild guild = event.getGuild();
+        final JSONObject guildJSON = getJSONForGuild(guild);
+
+        if (guildJSON.has("on") && guildJSON.getBoolean("on") && guildJSON.has("channel")) {
+            final long channelID = guildJSON.getLong("channel");
+            final IChannel channel = guild.getChannelByID(channelID);
+            if (channel != null) {
+                userLeaveNotify(event.getUser(), channel);
+            }
         }
     }
 
     @EventSubscriber
     public void onUserBan(UserBanEvent event) {
-        if (this.isEnabled) {
-            this.userBanNotify(event.getUser());
+        final IGuild guild = event.getGuild();
+        final JSONObject guildJSON = getJSONForGuild(guild);
+
+        if (guildJSON.has("on") && guildJSON.getBoolean("on") && guildJSON.has("channel")) {
+            final long channelID = guildJSON.getLong("channel");
+            final IChannel channel = guild.getChannelByID(channelID);
+            if (channel != null) {
+                userBanNotify(event.getUser(), channel);
+            }
         }
     }
 
-    private void userJoinNotify(final IUser user) {
+    private void userJoinNotify(final IUser user, final IChannel channel) {
         final LocalDateTime joinTimeStamp = user.getCreationDate();
         int joinedDays = (int)joinTimeStamp.until(LocalDateTime.now(), ChronoUnit.DAYS);
 
@@ -123,10 +118,10 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        DiscordIO.sendEmbed(userLogChannel, embedObject);
+        DiscordIO.sendEmbed(channel, embedObject);
     }
 
-    private void userLeaveNotify(final IUser user) {
+    private void userLeaveNotify(final IUser user, final IChannel channel) {
         // String für Embed
         String embedString = String.format("**Name:** %s#%s \n" +
                         "**ID:** %s",
@@ -143,10 +138,10 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        DiscordIO.sendEmbed(userLogChannel, embedObject);
+        DiscordIO.sendEmbed(channel, embedObject);
     }
 
-    private void userBanNotify(final IUser user) {
+    private void userBanNotify(final IUser user, final IChannel channel) {
         // String für Embed
         String embedString = String.format("**Name:** %s#%s \n" +
                         "**ID:** %s",
@@ -162,70 +157,92 @@ public class UserLog {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        DiscordIO.sendEmbed(userLogChannel, embedObject);
+        DiscordIO.sendEmbed(channel, embedObject);
     }
 
+    @CommandSubscriber(command = "setUserlogChannel", help = "Kanal für Userlog ändern", permissionLevel = CommandPermissions.ADMIN)
+    public void command_SetUserlogChannel(final IMessage message, final String channel) {
+        final IChannel modlogChannel;
+        final List<IChannel> channelMentions = message.getChannelMentions();
 
-    @CommandSubscriber(command = "userlog", help = "Zeigt Userlog-Konfuguration an", permissionLevel = CommandPermissions.ADMIN)
-    public void command_Userlog(final IMessage message) {
-        DiscordIO.sendMessage(message.getChannel(), String.format("Kanal: %s \nEnabled: `%s`", userLogChannel.mention(), isEnabled));
-    }
-
-    @CommandSubscriber(command = "userlog_channel", help = "Kanal für Userlog ändern", permissionLevel = CommandPermissions.ADMIN)
-    public void command_Userlog_Channel(final IMessage message, final String channelID) {
-        if (jsonUserLog.has("channel")) {
-            jsonUserLog.remove("channel");
+        if (GuildOperations.hasChannelByID(message.getGuild(), channel)) {
+            // Kanal ID wurde als Parameter angegeben
+            modlogChannel = message.getGuild().getChannelByID(Long.parseLong(channel));
         }
-        jsonUserLog.put("channel", channelID);
-        saveUserLogJSON();
-
-        this.userLogChannel = this.bot.client.getChannelByID(Long.parseLong(channelID));
-        if (userLogChannel == null) {
-            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Kanal mit der ID `%s` nicht gefunden!", channelID));
+        else if (channelMentions.size() == 1) {
+            // ein Kanal wurde erwähnt
+            modlogChannel = channelMentions.get(0);
         }
         else {
-            DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Kanal: %s", userLogChannel.mention()));
+            // Kein Kanal angegeben
+            DiscordIO.sendMessage(message.getChannel(), "Kein gültiger Kanal angegeben!");
+            return;
         }
-    }
 
-    @CommandSubscriber(command = "userlog_enable", help = "Userlog aktivieren", permissionLevel = CommandPermissions.ADMIN)
-    public void command_Userlog_Enable(final IMessage message) {
-        this.isEnabled = true;
-        if (jsonUserLog.has("on")) {
-            jsonUserLog.remove("on");
-        }
-        jsonUserLog.put("on", true);
+        final IGuild guild = message.getGuild();
+        final JSONObject guildJSON = getJSONForGuild(guild);
+
+        guildJSON.put("channel", modlogChannel.getLongID());
         saveUserLogJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "userlog_disable", help = "Userlog deaktivieren", permissionLevel = CommandPermissions.ADMIN)
-    public void command_Userlog_Disable(final IMessage message) {
-        this.isEnabled = false;
-        if (jsonUserLog.has("on")) {
-            jsonUserLog.remove("on");
-        }
-        jsonUserLog.put("on", false);
+    @CommandSubscriber(command = "enableUserlog", help = "Userlog aktivieren", permissionLevel = CommandPermissions.ADMIN)
+    public void command_EnableUserlog(final IMessage message) {
+        final IGuild guild = message.getGuild();
+        final JSONObject guildJSON = getJSONForGuild(guild);
+
+        guildJSON.put("on", true);
         saveUserLogJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), ":x: Deaktiviert!");
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "userlog_test", help = "Userlog-Ausgabe testen", permissionLevel = CommandPermissions.ADMIN)
-    public void command_Userlog_Test(final IMessage message) {
+    @CommandSubscriber(command = "disableUserlog", help = "Userlog deaktivieren", permissionLevel = CommandPermissions.ADMIN)
+    public void command_DisableUserlog(final IMessage message) {
+        final IGuild guild = message.getGuild();
+        final JSONObject guildJSON = getJSONForGuild(guild);
+
+        guildJSON.put("on", false);
+        saveUserLogJSON();
+
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
+    }
+
+    @CommandSubscriber(command = "userlogTest", help = "Userlog-Ausgabe testen", permissionLevel = CommandPermissions.ADMIN)
+    public void command_UserlogTest(final IMessage message) {
         final IUser user = message.getAuthor();
-        userJoinNotify(user);
-        userLeaveNotify(user);
-        userBanNotify(user);
+
+        final IGuild guild = message.getGuild();
+        final JSONObject guildJSON = getJSONForGuild(guild);
+
+        final long channelID = guildJSON.getLong("channel");
+        final IChannel channel = guild.getChannelByID(channelID);
+        if (channel != null) {
+            userJoinNotify(user, channel);
+            userLeaveNotify(user, channel);
+            userBanNotify(user, channel);
+        }
+    }
+
+    private JSONObject getJSONForGuild (final IGuild guild) {
+        if (userlogJSON.has(guild.getStringID())) {
+            return userlogJSON.getJSONObject(guild.getStringID());
+        }
+        else {
+            final JSONObject guildJSON = new JSONObject();
+            userlogJSON.put(guild.getStringID(), guildJSON);
+            return guildJSON;
+        }
     }
 
     private void saveUserLogJSON() {
         log.debug("Saving UserLog file.");
 
-        final String jsonOutput = jsonUserLog.toString(4);
+        final String jsonOutput = userlogJSON.toString(4);
         IOUtil.writeToFile(USERLOG_PATH, jsonOutput);
 
-        jsonUserLog = new JSONObject(jsonOutput);
+        userlogJSON = new JSONObject(jsonOutput);
     }
 }

@@ -1,5 +1,7 @@
 package de.nikos410.discordBot.modules;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -13,11 +15,14 @@ import java.util.regex.Pattern;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
+import de.nikos410.discordBot.util.discord.GuildOperations;
 import de.nikos410.discordBot.util.discord.UserOperations;
 import de.nikos410.discordBot.modular.annotations.CommandModule;
 import de.nikos410.discordBot.modular.CommandPermissions;
 import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
 
+import de.nikos410.discordBot.util.io.IOUtil;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,12 +37,12 @@ import sx.blah.discord.handle.obj.*;
 public class ModStuff {
     private final DiscordBot bot;
 
-    private final long modlogChannelID;
-    private final long muteRoleID;
+    private final static Path MODSTUFF_PATH = Paths.get("data/modstuff.json");
+    private JSONObject modstuffJSON;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private HashMap<String, ScheduledFuture> mutedUsers = new HashMap<>();
+    private HashMap<String, HashMap<String, ScheduledFuture>> mutedUsers = new HashMap<>();
 
     private Logger log = LoggerFactory.getLogger(ModStuff.class);
 
@@ -45,8 +50,13 @@ public class ModStuff {
         this.bot = bot;
         final IDiscordClient client = bot.client;
 
-        this.muteRoleID = bot.configJSON.getLong("muteRole");
-        this.modlogChannelID = bot.configJSON.getLong("modLogChannelID");
+        final String rolesFileContent = IOUtil.readFile(MODSTUFF_PATH);
+        if (rolesFileContent == null) {
+            log.error("Could not read modstuff file.");
+            System.exit(1);
+        }
+        this.modstuffJSON = new JSONObject(rolesFileContent);
+        log.info(String.format("Loaded modstuff file for %s guilds.", modstuffJSON.keySet().size()));
     }
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
@@ -90,13 +100,17 @@ public class ModStuff {
                     UserOperations.makeUserString(kickUser, message.getGuild()),
                     customMessage));
 
-            IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**. \nHinweis: _%s _",
-                    UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserOperations.makeUserString(kickUser, message.getGuild()),
-                    message.getChannel().mention(),
-                    customMessage);
-            DiscordIO.sendMessage(modLogChannel, modLogMessage);
+            final IGuild guild = message.getGuild();
+            final IChannel modLogChannel = getModlogChannel(guild);
+
+            if (modLogChannel != null) {
+                final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**. \nHinweis: _%s _",
+                        UserOperations.makeUserString(message.getAuthor(), guild),
+                        UserOperations.makeUserString(kickUser, guild),
+                        message.getChannel().mention(),
+                        customMessage);
+                DiscordIO.sendMessage(modLogChannel, modLogMessage);
+            }
         }
         else {
             message.getGuild().kickUser(message.getAuthor());
@@ -141,13 +155,17 @@ public class ModStuff {
                     UserOperations.makeUserString(banUser, message.getGuild()),
                     customMessage));
 
-            IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
-                    UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserOperations.makeUserString(banUser, message.getGuild()),
-                    message.getChannel().mention(),
-                    customMessage);
-            DiscordIO.sendMessage(modLogChannel, modLogMessage);
+            final IGuild guild = message.getGuild();
+            final IChannel modLogChannel = getModlogChannel(guild);
+
+            if (modLogChannel != null) {
+                final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
+                        UserOperations.makeUserString(message.getAuthor(), guild),
+                        UserOperations.makeUserString(banUser, guild),
+                        message.getChannel().mention(),
+                        customMessage);
+                DiscordIO.sendMessage(modLogChannel, modLogMessage);
+            }
         }
         else {
             message.getGuild().kickUser(message.getAuthor(), customMessage);
@@ -157,11 +175,14 @@ public class ModStuff {
 
     @EventSubscriber
     public void onUserBanned (final UserBanEvent event) {
-        IChannel modLogChannel = event.getGuild().getChannelByID(this.modlogChannelID);
+        final IGuild guild = event.getGuild();
+        final IChannel modLogChannel = getModlogChannel(guild);
 
-        final String modLogMessage = String.format("**%s** wurde vom Server **gebannt**.",
-                UserOperations.makeUserString(event.getUser(), event.getGuild()));
-        DiscordIO.sendMessage(modLogChannel, modLogMessage);
+        if (modLogChannel != null) {
+            final String modLogMessage = String.format("**%s** wurde vom Server **gebannt**.",
+                    UserOperations.makeUserString(event.getUser(), event.getGuild()));
+            DiscordIO.sendMessage(modLogChannel, modLogMessage);
+        }
     }
 
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
@@ -169,7 +190,7 @@ public class ModStuff {
     public void command_Mute(final IMessage message, final String muteUserString, final String muteDurationInput) {
 
         final List<IUser> mentions = message.getMentions();
-        if (mentions.size() <1) {
+        if (mentions.size() < 1) {
             DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein Nutzer angegeben!");
             return;
         }
@@ -192,23 +213,30 @@ public class ModStuff {
             return;
         }
 
-        IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
+        final IGuild guild = message.getGuild();
+        final IRole muteRole = getMuteRole(guild);
+
+        if (muteRole == null) {
+            DiscordIO.sendMessage(message.getChannel(), "Keine gültige Mute Rolle konfiguriert!");
+            return;
+        }
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
-        Runnable unmuteTask = () -> {
-            mutedUsers.remove(muteUser.getStringID());
+        final Runnable unmuteTask = () -> {
             muteUser.removeRole(muteRole);
+            mutedUsers.get(guild.getStringID()).remove(muteUser.getStringID());
 
-            log.info(String.format("Unmuted user %s.", UserOperations.makeUserString(muteUser, message.getGuild())));
+            log.info(String.format("Nutzer %s wurde entmuted.", UserOperations.makeUserString(muteUser, message.getGuild())));
         };
 
         final int muteDuration = Integer.parseInt(matcher.group(1));
         final String muteDurationUnitString = matcher.group(2);
         ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
 
-        if (mutedUsers.containsKey(muteUser.getStringID())) {
+        // Prüfen ob Nutzer bereits gemuted ist
+        if (mutedUsers.containsKey(guild.getStringID()) && mutedUsers.get(guild.getStringID()).containsKey(muteUser.getStringID())) {
             // Überprüfen, ob angegebener Zeitpunkt nach dem bisherigen Zeitpunkt liegt
-            ScheduledFuture oldFuture = mutedUsers.get(muteUser.getStringID());
+            ScheduledFuture oldFuture = mutedUsers.get(guild.getStringID()).get(muteUser.getStringID());
 
             LocalDateTime oldDateTime = LocalDateTime.now().plusSeconds(oldFuture.getDelay(TimeUnit.SECONDS));
             LocalDateTime newDateTime = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
@@ -220,7 +248,7 @@ public class ModStuff {
             }
             else {
                 // neuer Zeitpunkt ist nach altem -> neu schedulen
-                mutedUsers.remove(muteUser.getStringID(), oldFuture);
+                mutedUsers.get(guild.getStringID()).remove(muteUser.getStringID(), oldFuture);
                 oldFuture.cancel(false);
             }
         }
@@ -230,7 +258,15 @@ public class ModStuff {
         }
 
         ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
-        mutedUsers.put(muteUser.getStringID(), newFuture);
+
+        if (mutedUsers.containsKey(guild.getStringID())) {
+            mutedUsers.get(guild.getStringID()).put(muteUser.getStringID(), newFuture);
+        }
+        else {
+            final HashMap<String, ScheduledFuture> guildMap = new HashMap<>();
+            guildMap.put(muteUser.getStringID(), newFuture);
+            mutedUsers.put(guild.getStringID(), guildMap);
+        }
 
         message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
 
@@ -248,12 +284,18 @@ public class ModStuff {
         }
 
         // Modlog
-        IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-        final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
-                UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
-                UserOperations.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
-                muteDuration, muteDurationUnitString, customMessage);
-        DiscordIO.sendMessage(modLogChannel, modLogMessage);
+
+        log.info(String.format("Nutzer %s wurde für %s gemuted.", UserOperations.makeUserString(muteUser, message.getGuild()), muteDurationInput));
+
+        final IChannel modLogChannel = getModlogChannel(guild);
+
+        if (modLogChannel != null) {
+            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
+                    UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
+                    UserOperations.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
+                    muteDuration, muteDurationUnitString, customMessage);
+            DiscordIO.sendMessage(modLogChannel, modLogMessage);
+        }
     }
 
     @CommandSubscriber(command = "unmute", help = "Nutzer entmuten", pmAllowed = false,
@@ -270,18 +312,20 @@ public class ModStuff {
         }
 
         final IUser muteUser = mentions.get(0);
+        final IRole muteRole = getMuteRole(message.getGuild());
 
-        if (!mutedUsers.containsKey(muteUser.getStringID())) {
-            // Nutzer ist nicht gemuted
-            DiscordIO.sendMessage(message.getChannel(), "Nutzer scheint nicht gemuted zu sein.");
+        if (muteRole == null) {
+            DiscordIO.sendMessage(message.getChannel(), "Keine gültige Mute Rolle konfiguriert!");
             return;
         }
 
-        ScheduledFuture future = mutedUsers.get(muteUser.getStringID());
-        future.cancel(false);
-
-        IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
         muteUser.removeRole(muteRole);
+
+        if (mutedUsers.containsKey(message.getGuild().getStringID()) &&
+                mutedUsers.get(message.getGuild().getStringID()).containsKey(muteUser.getStringID())) {
+            ScheduledFuture future = mutedUsers.get(message.getGuild().getStringID()).get(muteUser.getStringID());
+            future.cancel(false);
+        }
 
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
@@ -298,12 +342,18 @@ public class ModStuff {
             return;
         }
 
-        IRole muteRole = message.getGuild().getRoleByID(muteRoleID);
+        final IRole muteRole = getMuteRole(message.getGuild());
+
+        if (muteRole == null) {
+            DiscordIO.sendMessage(message.getChannel(), "Keine gültige Mute Rolle konfiguriert!");
+            return;
+        }
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
         Runnable unmuteTask = () -> {
-            mutedUsers.remove(muteUser.getStringID());
             muteUser.removeRole(muteRole);
+            mutedUsers.get(message.getGuild().getStringID()).remove(muteUser.getStringID());
+
             log.info(String.format("Unmuted user %s. (Was selfmuted)", UserOperations.makeUserString(muteUser, message.getGuild())));
 
         };
@@ -319,9 +369,10 @@ public class ModStuff {
             return;
         }
 
-        if (mutedUsers.containsKey(muteUser.getStringID())) {
+        final IGuild guild = message.getGuild();
+        if (mutedUsers.containsKey(guild.getStringID()) && mutedUsers.get(guild.getStringID()).containsKey(muteUser.getStringID())) {
             // Überprüfen, ob angegebener Zeitpunkt nach dem bisherigen Zeitpunkt liegt
-            ScheduledFuture oldFuture = mutedUsers.get(muteUser.getStringID());
+            ScheduledFuture oldFuture = mutedUsers.get(guild.getStringID()).get(muteUser.getStringID());
 
             LocalDateTime oldMuteEnd = LocalDateTime.now().plusSeconds(oldFuture.getDelay(TimeUnit.SECONDS));
 
@@ -332,7 +383,7 @@ public class ModStuff {
             }
             else {
                 // neuer Zeitpunkt ist nach altem -> neu schedulen
-                mutedUsers.remove(muteUser.getStringID(), oldFuture);
+                mutedUsers.get(guild.getStringID()).remove(muteUser.getStringID(), oldFuture);
                 oldFuture.cancel(false);
             }
         }
@@ -342,17 +393,156 @@ public class ModStuff {
         }
 
         ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
-        mutedUsers.put(muteUser.getStringID(), newFuture);
+
+        if (mutedUsers.containsKey(guild.getStringID())) {
+            mutedUsers.get(guild.getStringID()).put(muteUser.getStringID(), newFuture);
+        }
+        else {
+            final HashMap<String, ScheduledFuture> guildMap = new HashMap<>();
+            guildMap.put(muteUser.getStringID(), newFuture);
+            mutedUsers.put(guild.getStringID(), guildMap);
+        }
 
         message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
+    }
+
+    @CommandSubscriber(command = "setModlogChannel", help = "Kanal in dem die Modlog Nachrichten gesendet werden einstellen",
+            pmAllowed = false, passContext = false, permissionLevel = CommandPermissions.ADMIN)
+    public void command_setModlogChannel(final IMessage message, final String channel) {
+        final IChannel modlogChannel;
+        final List<IChannel> channelMentions = message.getChannelMentions();
+
+        if (GuildOperations.hasChannelByID(message.getGuild(), channel)) {
+            // Kanal ID wurde als Parameter angegeben
+            modlogChannel = message.getGuild().getChannelByID(Long.parseLong(channel));
+        }
+        else if (channelMentions.size() == 1) {
+            // ein Kanal wurde erwähnt
+            modlogChannel = channelMentions.get(0);
+        }
+        else {
+            // Kein Kanal angegeben
+            DiscordIO.sendMessage(message.getChannel(), "Kein gültiger Kanal angegeben!");
+            return;
+        }
+
+        final IGuild guild = message.getGuild();
+        final JSONObject guildJSON;
+        if (modstuffJSON.has(guild.getStringID())) {
+            guildJSON = modstuffJSON.getJSONObject(guild.getStringID());
+        }
+        else {
+            guildJSON = new JSONObject();
+            modstuffJSON.put(guild.getStringID(), guildJSON);
+        }
+
+        guildJSON.put("modlogChannel", modlogChannel.getLongID());
+        saveJSON();
+
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
+    }
+
+    @CommandSubscriber(command = "setMuteRole", help = "Mute Rolle einstellen einstellen",
+            pmAllowed = false, passContext = false, permissionLevel = CommandPermissions.ADMIN)
+    public void command_setMuteRole(final IMessage message, final String role) {
+        final IRole muteRole;
+        final List<IRole> roleMentions = message.getRoleMentions();
+
+        if (GuildOperations.hasRoleByID(message.getGuild(), role)) {
+            // Rollen ID wurde als Parameter angegeben
+            muteRole = message.getGuild().getRoleByID(Long.parseLong(role));
+        }
+        else if (roleMentions.size() == 1) {
+            // eine Rolle wurde erwähnt
+            muteRole = roleMentions.get(0);
+        }
+        else {
+            // Keine Rolle angegeben
+            DiscordIO.sendMessage(message.getChannel(), "Keine gültige Rolle angegeben!");
+            return;
+        }
+
+        final IGuild guild = message.getGuild();
+        final JSONObject guildJSON;
+        if (modstuffJSON.has(guild.getStringID())) {
+            guildJSON = modstuffJSON.getJSONObject(guild.getStringID());
+        }
+        else {
+            guildJSON = new JSONObject();
+            modstuffJSON.put(guild.getStringID(), guildJSON);
+        }
+
+        guildJSON.put("muteRole", muteRole.getLongID());
+        saveJSON();
+
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
     @EventSubscriber
     public void onUserJoin(final UserJoinEvent event) {
         final IUser user = event.getUser();
-        if (mutedUsers.containsKey(user.getStringID())) {
-            IRole muteRole = event.getGuild().getRoleByID(muteRoleID);
+        if (mutedUsers.containsKey(event.getGuild().getStringID()) && mutedUsers.get(event.getGuild().getStringID()).containsKey(user.getStringID())) {
+            final IRole muteRole = getMuteRole(event.getGuild());
+            if (muteRole == null) {
+                return;
+            }
+
             user.addRole(muteRole);
+        }
+    }
+
+    private IRole getMuteRole (final IGuild guild) {
+        if (modstuffJSON.has(guild.getStringID())) {
+            final JSONObject guildJSON = modstuffJSON.getJSONObject(guild.getStringID());
+            if (guildJSON.has("muteRole")) {
+                final long muteRoleID = guildJSON.getLong("muteRole");
+                final IRole muteRole = guild.getRoleByID(muteRoleID);
+                if (muteRole != null) {
+                    return muteRole;
+                }
+                else {
+                    log.warn(String.format("Auf dem Server %s (ID: %s) wurde keine Rolle mit der ID %s gefunden!", guild.getName(), guild.getStringID(), muteRoleID));
+                    return null;
+                }
+            }
+            else {
+                log.warn(String.format("Keine Mute Rolle für Server %s (ID: %s) angegeben.",
+                        guild.getName(), guild.getStringID()));
+                return null;
+            }
+        }
+        else {
+            log.warn(String.format("Mute Rolle nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
+                    guild.getName(), guild.getStringID()));
+            return null;
+        }
+    }
+
+    private IChannel getModlogChannel (final IGuild guild) {
+        if (modstuffJSON.has(guild.getStringID())) {
+            final JSONObject guildJSON = modstuffJSON.getJSONObject(guild.getStringID());
+            if (guildJSON.has("modlogChannel")) {
+                final long modlogChannelID = guildJSON.getLong("modlogChannel");
+                final IChannel modlogChannel = guild.getChannelByID(modlogChannelID);
+                if (modlogChannel != null) {
+                    return modlogChannel;
+                }
+                else {
+                    log.warn(String.format("Auf dem Server %s (ID: %s) wurde kein Channel mit der ID %s gefunden!",
+                            guild.getName(), guild.getStringID(), modlogChannelID));
+                    return null;
+                }
+            }
+            else {
+                log.warn(String.format("Kein Modlog Channel für Server %s (ID: %s) angegeben.",
+                        guild.getName(), guild.getStringID()));
+                return null;
+            }
+        }
+        else {
+            log.warn(String.format("Modlog Channel nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
+                    guild.getName(), guild.getStringID()));
+            return null;
         }
     }
 
@@ -376,5 +566,12 @@ public class ModStuff {
 
             default: throw new UnsupportedOperationException("Unsupported ChronoUnit");
         }
+    }
+
+    public void saveJSON() {
+        log.debug("Saving roles file.");
+
+        final String jsonOutput = this.modstuffJSON.toString(4);
+        IOUtil.writeToFile(MODSTUFF_PATH, jsonOutput);
     }
 }

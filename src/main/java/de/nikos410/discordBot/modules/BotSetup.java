@@ -4,17 +4,22 @@ import java.util.concurrent.TimeUnit;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
+import de.nikos410.discordBot.util.discord.GuildOperations;
 import de.nikos410.discordBot.util.discord.UserOperations;
 import de.nikos410.discordBot.modular.annotations.AlwaysLoaded;
 import de.nikos410.discordBot.modular.annotations.CommandModule;
 import de.nikos410.discordBot.modular.CommandPermissions;
 import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
 
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.handle.obj.IRole;
+import sx.blah.discord.handle.obj.Permissions;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
 
@@ -30,6 +35,52 @@ public class BotSetup {
     public BotSetup (final DiscordBot bot) {
         this.bot = bot;
         this.client = bot.client;
+    }
+
+    @CommandSubscriber(command = "setupRoles", help = "Moderator- und Admin-Rolle setzen", permissionLevel = CommandPermissions.EVERYONE,
+            pmAllowed = false, passContext = false)
+    public void command_setupRoles(final IMessage message, final String modRoleID, final String adminRoleID) {
+        // Check if user is allowed to use this command
+        final IRole userTopRole = UserOperations.getTopRole(message.getAuthor(), message.getGuild());
+        if (!userTopRole.getPermissions().contains(Permissions.MANAGE_SERVER) && !userTopRole.getPermissions().contains(Permissions.ADMINISTRATOR)) {
+            DiscordIO.sendMessage(message.getChannel(), "Du benötigst die permission \"Server Verwalten\" oder \"Administrator\" um diesen Befehl zu benutzen");
+            return;
+        }
+
+        // Check if parameters are valid
+        if (!modRoleID.matches("^[0-9]{18}$") || !adminRoleID.matches("^[0-9]{18}$")) {
+            DiscordIO.sendMessage(message.getChannel(), "Ungültige Eingabe! Syntax: `setupRoles <modID> <adminID>`");
+            return;
+        }
+
+        // Check if IDs are valid
+        if (!GuildOperations.hasRoleByID(message.getGuild(), Long.parseLong(modRoleID))) {
+            DiscordIO.sendMessage(message.getChannel(), String.format("Anscheinend existiert keine Rolle mit der ID `%s` auf diesem Server.", modRoleID));
+            return;
+        }
+        if (!GuildOperations.hasRoleByID(message.getGuild(), Long.parseLong(adminRoleID))) {
+            DiscordIO.sendMessage(message.getChannel(), String.format("Anscheinend existiert keine Rolle mit der ID `%s` auf diesem Server.", adminRoleID));
+            return;
+        }
+
+        final JSONObject rolesJSON = bot.rolesJSON;
+        final String guildID = message.getGuild().getStringID();
+
+        final JSONObject serverRoles;
+        if (rolesJSON.has(guildID)) {
+            serverRoles = rolesJSON.getJSONObject(guildID);
+        }
+        else {
+            serverRoles = new JSONObject();
+        }
+        serverRoles.put("modRole", Long.parseLong(modRoleID));
+        serverRoles.put("adminRole", Long.parseLong(adminRoleID));
+
+        bot.saveRoles();
+
+        message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
+
+        log.info("Updated mod and admin roles for ");
     }
 
     @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = CommandPermissions.OWNER)

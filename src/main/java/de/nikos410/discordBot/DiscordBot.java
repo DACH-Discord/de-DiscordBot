@@ -40,11 +40,11 @@ public class DiscordBot {
     public final IDiscordClient client;
 
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
+    public JSONObject rolesJSON;
+    private final static Path ROLES_PATH = Paths.get("data/roles.json");
     public JSONObject configJSON;
 
     private final String prefix;
-    private final long modRoleID;
-    private final long adminRoleID;
     private final long ownerID;
 
     private Logger log = LoggerFactory.getLogger(DiscordBot.class);
@@ -59,15 +59,20 @@ public class DiscordBot {
             System.exit(1);
         }
         this.configJSON = new JSONObject(configFileContent);
-        log.debug(String.format("Loaded configuration file with %s entries.", configJSON.keySet().size()));
+
+        final String rolesFileContent = IOUtil.readFile(ROLES_PATH);
+        if (rolesFileContent == null) {
+            log.error("Could not read roles file.");
+            System.exit(1);
+        }
+        this.rolesJSON = new JSONObject(rolesFileContent);
+        log.info(String.format("Loaded roles file for %s guilds.", rolesJSON.keySet().size()));
 
         final String token = configJSON.getString("token");
         this.client = Authorization.createClient(token, true);
         log.info("Bot authorized.");
 
         this.prefix = configJSON.getString("prefix");
-        this.modRoleID = configJSON.getLong("modRole");
-        this.adminRoleID = configJSON.getLong("adminRole");
         this.ownerID = configJSON.getLong("owner");
 
         try {
@@ -361,10 +366,21 @@ public class DiscordBot {
         if (user.getLongID() == this.ownerID) {
             return CommandPermissions.OWNER;
         }
-        else if (UserOperations.hasRoleByID(user, this.adminRoleID, guild)) {
+
+        if (!rolesJSON.has(guild.getStringID())) {
+            log.warn(String.format("Rollen für Server %s (ID: %s) nicht konfiguriert!", guild.getName(), guild.getStringID()));
+            return 0;
+        }
+
+        final JSONObject serverRoles = rolesJSON.getJSONObject(guild.getStringID());
+
+        final long adminRoleID = serverRoles.getLong("adminRole");
+        if (UserOperations.hasRoleByID(user, adminRoleID, guild)) {
             return CommandPermissions.ADMIN;
         }
-        else if (UserOperations.hasRoleByID(user, this.modRoleID, guild)) {
+
+        final long modRoleID = serverRoles.getLong("modRole");
+        if (UserOperations.hasRoleByID(user, modRoleID, guild)) {
             return CommandPermissions.MODERATOR;
         }
         else {
@@ -420,6 +436,7 @@ public class DiscordBot {
     @EventSubscriber
     public void onStartup(final ReadyEvent event) {
         log.info(String.format("[INFO] Bot ready. Prefix: %s", this.prefix));
+        log.info(String.format("Add this bot to a server: https://discordapp.com/oauth2/authorize?client_id=%s&scope=bot", client.getApplicationClientID()));
         client.changePlayingText(String.format("%shelp | WIP", this.prefix));
     }
 
@@ -455,7 +472,7 @@ public class DiscordBot {
                 jsonUnloadedModules.remove(i);
             }
         }
-        this.saveJSON();
+        this.saveConfig();
 
         // EventListener aktivieren
         final CommandModule moduleAnnotation = module.getClass().getDeclaredAnnotationsByType(CommandModule.class)[0];
@@ -496,7 +513,7 @@ public class DiscordBot {
         // Modul in JSON-Array speichern
         final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
         jsonUnloadedModules.put(moduleName);
-        this.saveJSON();
+        this.saveConfig();
 
         // EventListener deaktivieren
         final CommandModule moduleAnnotation = module.getClass().getDeclaredAnnotationsByType(CommandModule.class)[0];
@@ -514,13 +531,18 @@ public class DiscordBot {
         return String.format(":x: Modul `%s` deaktiviert.", moduleName);
     }
 
-    private void saveJSON() {
+    private void saveConfig() {
         log.debug("Saving config file.");
 
         final String jsonOutput = this.configJSON.toString(4);
         IOUtil.writeToFile(CONFIG_PATH, jsonOutput);
+    }
 
-        this.configJSON = new JSONObject(jsonOutput);
+    public void saveRoles() {
+        log.debug("Saving roles file.");
+
+        final String jsonOutput = this.rolesJSON.toString(4);
+        IOUtil.writeToFile(ROLES_PATH, jsonOutput);
     }
 
     public static void main(String[] args) {

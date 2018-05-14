@@ -34,7 +34,7 @@ public class GeneralCommands {
         DiscordIO.sendMessage(message.getChannel(), "https://github.com/DACH-Discord/de-DiscordBot/");
     }
 
-    @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID", pmAllowed = false, passContext = false)
+    @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID.", pmAllowed = false, passContext = false)
     public void command_Quote(final IMessage commandMessage, final String id) {
         if (id.isEmpty()) {
             DiscordIO.sendMessage(commandMessage.getChannel(), "Keine ID angegeben!");
