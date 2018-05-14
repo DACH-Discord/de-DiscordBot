@@ -1,6 +1,6 @@
-package de.nikos410.discordBot.util.modular.annotations;
+package de.nikos410.discordBot.modular.annotations;
 
-import de.nikos410.discordBot.util.modular.CommandPermissions;
+import de.nikos410.discordBot.modular.CommandPermissions;
 
 import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;

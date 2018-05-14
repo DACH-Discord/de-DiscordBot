@@ -1,9 +1,5 @@
 package de.nikos410.discordBot;
 
-import de.nikos410.discordBot.util.general.Authorization;
-import de.nikos410.discordBot.util.general.Util;
-import de.nikos410.discordBot.util.modular.*;
-
 import java.awt.Color;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,21 +11,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
-import de.nikos410.discordBot.util.modular.annotations.AlwaysLoaded;
-import de.nikos410.discordBot.util.modular.annotations.CommandModule;
-import de.nikos410.discordBot.util.modular.annotations.CommandSubscriber;
+import de.nikos410.discordBot.modular.*;
+import de.nikos410.discordBot.modular.annotations.*;
+import de.nikos410.discordBot.util.discord.*;
+import de.nikos410.discordBot.util.io.IOUtil;
+
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageUpdateEvent;
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 
 import org.json.JSONObject;
@@ -43,11 +40,11 @@ public class DiscordBot {
     public final IDiscordClient client;
 
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
+    public JSONObject rolesJSON;
+    private final static Path ROLES_PATH = Paths.get("data/roles.json");
     public JSONObject configJSON;
 
     private final String prefix;
-    private final long modRoleID;
-    private final long adminRoleID;
     private final long ownerID;
 
     private Logger log = LoggerFactory.getLogger(DiscordBot.class);
@@ -56,21 +53,26 @@ public class DiscordBot {
      * Richtet den Bot ein, lädt Konfiguration etc.
      */
     private DiscordBot() {
-        final String configFileContent = Util.readFile(CONFIG_PATH);
+        final String configFileContent = IOUtil.readFile(CONFIG_PATH);
         if (configFileContent == null) {
             log.error("Could not read configuration file.");
             System.exit(1);
         }
         this.configJSON = new JSONObject(configFileContent);
-        log.debug(String.format("Loaded configuration file with %s entries.", configJSON.keySet().size()));
+
+        final String rolesFileContent = IOUtil.readFile(ROLES_PATH);
+        if (rolesFileContent == null) {
+            log.error("Could not read roles file.");
+            System.exit(1);
+        }
+        this.rolesJSON = new JSONObject(rolesFileContent);
+        log.info(String.format("Loaded roles file for %s guilds.", rolesJSON.keySet().size()));
 
         final String token = configJSON.getString("token");
         this.client = Authorization.createClient(token, true);
         log.info("Bot authorized.");
 
         this.prefix = configJSON.getString("prefix");
-        this.modRoleID = configJSON.getLong("modRole");
-        this.adminRoleID = configJSON.getLong("adminRole");
         this.ownerID = configJSON.getLong("owner");
 
         try {
@@ -245,7 +247,7 @@ public class DiscordBot {
 
         if (messageCommand.equalsIgnoreCase("help")) {
             this.command_help(message);
-            log.info(String.format("User %s used command %s", Util.makeUserString(message.getAuthor(), message.getGuild()), "help"));
+            log.info(String.format("User %s used command %s", UserOperations.makeUserString(message.getAuthor(), message.getGuild()), "help"));
             return;
         }
 
@@ -254,13 +256,13 @@ public class DiscordBot {
 
             final int userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
             if (userPermissionLevel < command.permissionLevel) {
-                Util.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
+                DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
                         CommandPermissions.getPermissionLevelName(userPermissionLevel)));
                 return;
             }
 
             if (message.getChannel().isPrivate() && !command.pmAllowed) {
-                Util.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
+                DiscordIO.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
                 return;
             }
 
@@ -296,10 +298,10 @@ public class DiscordBot {
                     }
                     default: {
                         log.error(String.format("Command \"%s\" has an invalid number of arguments. This should never happen.", messageCommand));
-                        Util.errorNotify("Befehl kann wegen einer ungültigen Anzahl an Argumenten nicht ausgeführt werden. Dies sollte niemals passieren!", message.getChannel());
+                        DiscordIO.errorNotify("Befehl kann wegen einer ungültigen Anzahl an Argumenten nicht ausgeführt werden. Dies sollte niemals passieren!", message.getChannel());
                     }
                 }
-                log.info(String.format("User %s used command %s", Util.makeUserString(message.getAuthor(), message.getGuild()), messageCommand));
+                log.info(String.format("User %s used command %s", UserOperations.makeUserString(message.getAuthor(), message.getGuild()), messageCommand));
             }
             catch (IllegalAccessException | InvocationTargetException e) {
                 final Throwable cause = e.getCause();
@@ -311,7 +313,7 @@ public class DiscordBot {
                 embedBuilder.appendField("Fehler aufgetreten", cause.toString(), false);
                 embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
-                Util.sendEmbed(message.getChannel(), embedBuilder.build());
+                DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
             }
         }
 
@@ -364,10 +366,21 @@ public class DiscordBot {
         if (user.getLongID() == this.ownerID) {
             return CommandPermissions.OWNER;
         }
-        else if (Util.hasRoleByID(user, this.adminRoleID, guild)) {
+
+        if (!rolesJSON.has(guild.getStringID())) {
+            log.warn(String.format("Rollen für Server %s (ID: %s) nicht konfiguriert!", guild.getName(), guild.getStringID()));
+            return 0;
+        }
+
+        final JSONObject serverRoles = rolesJSON.getJSONObject(guild.getStringID());
+
+        final long adminRoleID = serverRoles.getLong("adminRole");
+        if (UserOperations.hasRoleByID(user, adminRoleID, guild)) {
             return CommandPermissions.ADMIN;
         }
-        else if (Util.hasRoleByID(user, this.modRoleID, guild)) {
+
+        final long modRoleID = serverRoles.getLong("modRole");
+        if (UserOperations.hasRoleByID(user, modRoleID, guild)) {
             return CommandPermissions.MODERATOR;
         }
         else {
@@ -410,10 +423,10 @@ public class DiscordBot {
         }
 
         final EmbedObject embedObject = embedBuilder.build();
-        Util.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
+        DiscordIO.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
 
         if (!message.getChannel().isPrivate()) {
-            Util.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+            DiscordIO.sendMessage(message.getChannel(), ":mailbox_with_mail:");
         }
     }
 
@@ -423,6 +436,7 @@ public class DiscordBot {
     @EventSubscriber
     public void onStartup(final ReadyEvent event) {
         log.info(String.format("[INFO] Bot ready. Prefix: %s", this.prefix));
+        log.info(String.format("Add this bot to a server: https://discordapp.com/oauth2/authorize?client_id=%s&scope=bot", client.getApplicationClientID()));
         client.changePlayingText(String.format("%shelp | WIP", this.prefix));
     }
 
@@ -458,7 +472,7 @@ public class DiscordBot {
                 jsonUnloadedModules.remove(i);
             }
         }
-        this.saveJSON();
+        this.saveConfig();
 
         // EventListener aktivieren
         final CommandModule moduleAnnotation = module.getClass().getDeclaredAnnotationsByType(CommandModule.class)[0];
@@ -499,7 +513,7 @@ public class DiscordBot {
         // Modul in JSON-Array speichern
         final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
         jsonUnloadedModules.put(moduleName);
-        this.saveJSON();
+        this.saveConfig();
 
         // EventListener deaktivieren
         final CommandModule moduleAnnotation = module.getClass().getDeclaredAnnotationsByType(CommandModule.class)[0];
@@ -517,13 +531,18 @@ public class DiscordBot {
         return String.format(":x: Modul `%s` deaktiviert.", moduleName);
     }
 
-    private void saveJSON() {
+    private void saveConfig() {
         log.debug("Saving config file.");
 
         final String jsonOutput = this.configJSON.toString(4);
-        Util.writeToFile(CONFIG_PATH, jsonOutput);
+        IOUtil.writeToFile(CONFIG_PATH, jsonOutput);
+    }
 
-        this.configJSON = new JSONObject(jsonOutput);
+    public void saveRoles() {
+        log.debug("Saving roles file.");
+
+        final String jsonOutput = this.rolesJSON.toString(4);
+        IOUtil.writeToFile(ROLES_PATH, jsonOutput);
     }
 
     public static void main(String[] args) {
