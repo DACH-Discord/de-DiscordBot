@@ -323,7 +323,7 @@ public class ModStuff {
 
         if (mutedUsers.containsKey(message.getGuild().getStringID()) &&
                 mutedUsers.get(message.getGuild().getStringID()).containsKey(muteUser.getStringID())) {
-            ScheduledFuture future = mutedUsers.get(message.getGuild().getStringID()).get(muteUser.getStringID());
+            ScheduledFuture future = mutedUsers.get(message.getGuild().getStringID()).remove(muteUser.getStringID());
             future.cancel(false);
         }
 
