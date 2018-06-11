@@ -126,7 +126,7 @@ public class BotSetup {
         final String loadedModulesString = loadedBuilder.toString().isEmpty() ? "_keine_" : loadedBuilder.toString();
 
         StringBuilder unloadedBuilder = new StringBuilder();
-        for (final String key : bot.getUnloadedModules().keySet()) {
+        for (final String key : bot.getUnloadedModules()) {
             unloadedBuilder.append(key);
             unloadedBuilder.append('\n');
         }
