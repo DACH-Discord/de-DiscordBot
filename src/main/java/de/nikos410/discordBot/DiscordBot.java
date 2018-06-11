@@ -100,12 +100,12 @@ public class DiscordBot {
 
         this.loadedModules.clear();
 
-        Reflections reflections = new Reflections("de.nikos410.discordBot.modules");
-        Set<Class<?>> moduleClasses = reflections.getTypesAnnotatedWith(CommandModule.class);
+        final Reflections reflections = new Reflections("de.nikos410.discordBot.modules");
+        final Set<Class<?>> moduleClasses = reflections.getTypesAnnotatedWith(CommandModule.class);
 
         log.info(String.format("Found %s total module(s).", moduleClasses.size()));
 
-        for (Class<?> moduleClass : moduleClasses) {
+        for (final Class<?> moduleClass : moduleClasses) {
             loadModule(moduleClass);
         }
 
@@ -173,7 +173,7 @@ public class DiscordBot {
 
             log.debug(String.format("Registering command(s) for module \"%s\".", key));
 
-            for (Method method : module.getClass().getMethods()) {
+            for (final Method method : module.getClass().getMethods()) {
 
                 if (method.isAnnotationPresent(CommandSubscriber.class)) {
 
@@ -403,7 +403,7 @@ public class DiscordBot {
 
             StringBuilder helpBuilder = new StringBuilder();
 
-            for (Method method : module.getClass().getMethods()) {
+            for (final Method method : module.getClass().getMethods()) {
 
                 if (method.isAnnotationPresent(CommandSubscriber.class)) {
                     final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
