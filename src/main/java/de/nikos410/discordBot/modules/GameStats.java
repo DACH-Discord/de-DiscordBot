@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
@@ -45,6 +46,27 @@ public class GameStats {
         final String jsonContent = IOUtil.readFile(GAMESTATS_PATH);
         this.gameStatsJSON = new JSONObject(jsonContent);
         log.info(String.format("Loaded GameStats file for %s guilds.", gameStatsJSON.keySet().size()));
+
+        // Darauf warten, dass der Client ready ist
+        if (!bot.client.isReady()) {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            }
+            catch (InterruptedException e) {
+                log.warn("Sleep was interrupted!", e);
+            }
+            finally {
+                updateAllUsers();
+            }
+        }
+    }
+
+    private void updateAllUsers() {
+        for(IUser user : bot.client.getUsers()) {
+            this.updateUserStatus(user);
+        }
+        saveJSON();
+        log.info("Gamestats Module ready.");
     }
 
     @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
@@ -158,15 +180,6 @@ public class GameStats {
         }
 
         return stringBuilder.toString().isEmpty() ? "_niemand_" : stringBuilder.toString();
-    }
-
-    @EventSubscriber
-    public void onStartup(ReadyEvent event) {
-        for(IUser user : bot.client.getUsers()) {
-            this.updateUserStatus(user);
-        }
-        saveJSON();
-        log.info("Gamestats Module ready.");
     }
 
     @EventSubscriber
