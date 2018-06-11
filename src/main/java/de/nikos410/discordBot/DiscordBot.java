@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventDispatcher;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
@@ -131,11 +132,8 @@ public class DiscordBot {
 
             // EventListener aktivieren
             if (!moduleAnnotation.commandOnly()) {
-                try {
-                    this.client.getDispatcher().registerListener(moduleObject);
-                } catch (NullPointerException e) {
-                    log.error("Could not get EventDispatcher", e);
-                }
+                final EventDispatcher dispatcher = this.client.getDispatcher();
+                dispatcher.registerListener(moduleObject);
             }
 
             log.info(String.format("Loaded module \"%s\".", moduleName));
@@ -497,13 +495,8 @@ public class DiscordBot {
 
         final CommandModule moduleAnnotation = moduleClass.getDeclaredAnnotationsByType(CommandModule.class)[0];
         if (!moduleAnnotation.commandOnly()) {
-            try {
-                this.client.getDispatcher().unregisterListener(moduleObject);
-            }
-            catch (NullPointerException e) {
-                log.error("Could not get EventDispatcher", e);
-                return ":x: Fehler! EventListener konnte nicht entfernt werden.";
-            }
+            final EventDispatcher dispatcher = this.client.getDispatcher();
+            dispatcher.registerListener(moduleObject);
         }
 
         // Modul in unloaded Liste speichern
