@@ -7,10 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import de.nikos410.discordBot.modular.*;
 import de.nikos410.discordBot.modular.annotations.*;
@@ -35,9 +32,9 @@ import org.json.JSONArray;
 
 public class DiscordBot {
     private final List<String> unloadedModules = new ArrayList<>();
-    private final HashMap<String, Object> loadedModules = new HashMap<>();
+    private final Map<String, Object> loadedModules = new HashMap<>();
 
-    private final HashMap<String, Command> commands = new HashMap<>();
+    private final Map<String, Command> commands = new HashMap<>();
 
     public final IDiscordClient client;
 
@@ -279,7 +276,7 @@ public class DiscordBot {
             try {
                 final int parameterCount = command.parameterCount;
                 final boolean passContext = command.passContext;
-                ArrayList<String> params = parseParameters(messageContent, parameterCount, passContext);
+                List<String> params = parseParameters(messageContent, parameterCount, passContext);
 
                 switch (parameterCount) {
                     case 0: {
@@ -328,8 +325,8 @@ public class DiscordBot {
 
     }
 
-    private ArrayList<String> parseParameters(String messageContent, int parameterCount, boolean passContext) {
-        final ArrayList<String> parameters = new ArrayList<>();
+    private List<String> parseParameters(String messageContent, int parameterCount, boolean passContext) {
+        final List<String> parameters = new ArrayList<>();
 
         if (parameterCount == 0) {
             return parameters;
@@ -342,7 +339,7 @@ public class DiscordBot {
         return parameters;
     }
 
-    private void parseParameters(String parameterContent, ArrayList<String> parameters, int parameterCount, boolean passContext) {
+    private void parseParameters(String parameterContent, List<String> parameters, int parameterCount, boolean passContext) {
         if (parameterCount == 1) {
             if (passContext) {
                 // Rest der Nachricht anhängen
@@ -449,7 +446,7 @@ public class DiscordBot {
         client.changePlayingText(String.format("%shelp | WIP", this.prefix));
     }
 
-    public HashMap<String, Object> getLoadedModules() {
+    public Map<String, Object> getLoadedModules() {
         return loadedModules;
     }
     public List<String> getUnloadedModules() {
