@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import de.nikos410.discordBot.modular.*;
 import de.nikos410.discordBot.modular.annotations.*;
@@ -324,46 +326,48 @@ public class DiscordBot {
     }
 
     private List<String> parseParameters(String messageContent, int parameterCount, boolean passContext) {
-        final List<String> parameters = new ArrayList<>();
+        // Prefix vom String entfernen
+        final String content = messageContent.substring(prefix.length());
 
-        if (parameterCount == 0) {
-            return parameters;
+        // Befehl vom string entfernen
+        final Pattern pattern = Pattern.compile("(\\S*)\\s+(.*)");
+        final Matcher matcher = pattern.matcher(content);
+        if (!matcher.matches()) {
+            return null;
+        }
+        final String parameterContent = matcher.group(2);
+
+        final List<String> parameters = new LinkedList<>();
+        final String[] contentParts = parameterContent.split("\\s+");
+
+        for (String s : contentParts) {
+            System.out.println("* " + s);
         }
 
-        final int prefixLength = prefix.length();
-        final String content = messageContent.substring(prefixLength);
-        final String parameterContent = content.substring(content.indexOf(' ')+1);
-        parseParameters(parameterContent, parameters, parameterCount, passContext);
-        return parameters;
-    }
-
-    private void parseParameters(String parameterContent, List<String> parameters, int parameterCount, boolean passContext) {
-        if (parameterCount == 1) {
-            if (passContext) {
-                // Rest der Nachricht anhängen
-                parameters.add(parameterContent);
+        for (int i = 0; i < parameterCount; i++) {
+            if (i >= contentParts.length) {
+                parameters.add("");
             }
             else {
-                // Rest der Nachricht weglassen
-                if (parameterContent.contains(" ")) {
-                    parameters.add(parameterContent.substring(0, parameterContent.indexOf(' ')));
-                }
-                else {
-                    parameters.add(parameterContent);
-                }
+                parameters.add(contentParts[i]);
             }
-            return;
         }
 
-        if (parameterContent.contains(" ")) {
-            final int index = parameterContent.indexOf(' ');
-            parameters.add(parameterContent.substring(0, index));
-            parseParameters(parameterContent.substring(index + 1), parameters, parameterCount - 1, passContext);
+        if (passContext) {
+            // Rest der Nachricht an letzten Parameter anhängen
+
+            final StringBuilder builder = new StringBuilder();
+            for (int i = parameterCount-1; i < contentParts.length; i++) {
+                if (builder.length() > 0) {
+                    builder.append(" ");
+                }
+                builder.append(contentParts[i]);
+            }
+
+            parameters.add(parameterCount-1, builder.toString());
         }
-        else {
-            parameters.add(parameterContent);
-            parseParameters("", parameters, parameterCount-1, passContext);
-        }
+
+        return parameters;
     }
 
     public int getUserPermissionLevel(final IUser user, final IGuild guild) {
