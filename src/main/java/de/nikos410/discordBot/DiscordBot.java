@@ -340,10 +340,6 @@ public class DiscordBot {
         final List<String> parameters = new LinkedList<>();
         final String[] contentParts = parameterContent.split("\\s+");
 
-        for (String s : contentParts) {
-            System.out.println("* " + s);
-        }
-
         for (int i = 0; i < parameterCount; i++) {
             if (i >= contentParts.length) {
                 parameters.add("");
@@ -353,7 +349,7 @@ public class DiscordBot {
             }
         }
 
-        if (passContext) {
+        if (passContext && parameters.size() > 0) {
             // Rest der Nachricht an letzten Parameter anhängen
 
             final StringBuilder builder = new StringBuilder();
