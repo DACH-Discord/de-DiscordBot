@@ -23,6 +23,8 @@ import sx.blah.discord.util.EmbedBuilder;
 @CommandModule(moduleName = "Nutzergruppen", commandOnly = true)
 public class UserGroups {
     private final static Path USERGROUPS_PATH = Paths.get("data/usergroups.json");
+    private static final String NON_GAME_GROUP_NAME_PREFIX = "~";
+
     private JSONObject usergroupsJSON;
 
     private final DiscordBot bot;
@@ -50,7 +52,9 @@ public class UserGroups {
         final IRole role = message.getGuild().createRole();
         role.changePermissions(EnumSet.noneOf(Permissions.class));
         role.changeName(groupName);
-        role.changeMentionable(true);
+        if (!groupName.startsWith(NON_GAME_GROUP_NAME_PREFIX)) {
+            role.changeMentionable(true);
+        }
 
         guildJSON.put(groupName, role.getLongID());
         saveJSON();
