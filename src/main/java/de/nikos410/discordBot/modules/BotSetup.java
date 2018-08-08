@@ -37,7 +37,7 @@ public class BotSetup {
         this.client = bot.client;
     }
 
-    @CommandSubscriber(command = "setupRoles", help = "Moderator- und Admin-Rolle setzen", permissionLevel = CommandPermissions.EVERYONE,
+    @CommandSubscriber(command = "setupRoles", help = "Moderator- und Admin-Rolle setzen",
             pmAllowed = false, passContext = false)
     public void command_setupRoles(final IMessage message, final String modRoleID, final String adminRoleID) {
         // Check if user is allowed to use this command
