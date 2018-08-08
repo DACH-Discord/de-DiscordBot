@@ -193,7 +193,7 @@ public class DiscordBot {
                         LOG.debug(String.format("Registered command \"%s\".", command));
                     }
                     else {
-                        LOG.warn(String.format("Command \"%s\" has an invalid number of arguments. Skipping"), command);
+                        LOG.warn(String.format("Command \"%s\" has an invalid number of arguments. Skipping", command));
                     }
                 }
             }
