@@ -206,8 +206,15 @@ public class UserGroups {
     private void validateAllGroupsForGuild(final IGuild guild) {
         final JSONObject guildJSON = getJSONForGuild(guild);
 
-        for (String currentKey : guildJSON.keySet()) {
-            validateGroup(guild, currentKey);
+        final Iterator<String> keyIterator = guildJSON.keys();
+        while (keyIterator.hasNext()) {
+            final String groupName = keyIterator.next();
+            final long roleID = guildJSON.getLong(groupName);
+
+            if (!GuildOperations.hasRoleByID(guild, roleID)) {
+                keyIterator.remove();
+                saveJSON();
+            }
         }
     }
 
