@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.user.PresenceUpdateEvent;
 import sx.blah.discord.handle.obj.*;
 
