@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 public class Rules {
     private final static Path RULES_PATH = Paths.get("data/rules.json");
 
-    private JSONObject rulesJSON;
+    private final JSONObject rulesJSON;
 
     private final static Logger LOG = LoggerFactory.getLogger(Rules.class);
 

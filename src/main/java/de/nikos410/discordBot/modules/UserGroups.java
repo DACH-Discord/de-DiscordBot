@@ -30,7 +30,7 @@ public class UserGroups {
     private final static Path USERGROUPS_PATH = Paths.get("data/usergroups.json");
     private static final String NON_GAME_GROUP_NAME_PREFIX = "~";
 
-    private JSONObject usergroupsJSON;
+    private final JSONObject usergroupsJSON;
 
     private final DiscordBot bot;
 

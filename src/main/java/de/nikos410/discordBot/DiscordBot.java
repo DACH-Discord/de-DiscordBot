@@ -42,9 +42,9 @@ public class DiscordBot {
     public final IDiscordClient client;
 
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
-    public JSONObject rolesJSON;
+    public final JSONObject rolesJSON;
     private final static Path ROLES_PATH = Paths.get("data/roles.json");
-    public JSONObject configJSON;
+    public final JSONObject configJSON;
 
     private final String prefix;
     private final long ownerID;

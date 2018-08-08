@@ -33,7 +33,7 @@ public class GameStats {
     private final IDiscordClient client;
 
     private final static Path GAMESTATS_PATH = Paths.get("data/gameStats.json");
-    private JSONObject gameStatsJSON;
+    private final JSONObject gameStatsJSON;
 
     private final static Logger LOG = LoggerFactory.getLogger(GameStats.class);
 

@@ -38,12 +38,12 @@ public class ModStuff {
     private final DiscordBot bot;
 
     private final static Path MODSTUFF_PATH = Paths.get("data/modstuff.json");
-    private JSONObject modstuffJSON;
+    private final JSONObject modstuffJSON;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private Map<IGuild, Map<IUser, ScheduledFuture>> userMuteFutures = new HashMap<>();
-    private Map<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> channelMuteFutures = new HashMap<>();
+    private final Map<IGuild, Map<IUser, ScheduledFuture>> userMuteFutures = new HashMap<>();
+    private final Map<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> channelMuteFutures = new HashMap<>();
 
     private final static Logger LOG = LoggerFactory.getLogger(ModStuff.class);
 
