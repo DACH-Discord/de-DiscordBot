@@ -17,10 +17,12 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.guild.role.RoleDeleteEvent;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 
-@CommandModule(moduleName = "Nutzergruppen", commandOnly = true)
+@CommandModule(moduleName = "Nutzergruppen", commandOnly = false)
 public class UserGroups {
     private final static Path USERGROUPS_PATH = Paths.get("data/usergroups.json");
     private static final String NON_GAME_GROUP_NAME_PREFIX = "~";
@@ -147,6 +149,26 @@ public class UserGroups {
             usergroupsJSON.put(guild.getStringID(), guildJSON);
             return guildJSON;
         }
+    }
+
+    /**
+     * Delete a group if the corresponding role gets deleted
+     * @param event The event that is dispatched if a role is deleted
+     */
+    @EventSubscriber
+    public void onRoleDelete(final RoleDeleteEvent event) {
+        final long deletedRoleID = event.getRole().getLongID();
+
+        final JSONObject guildJSON = getJSONForGuild(event.getGuild());
+        for (String currentKey : guildJSON.keySet()) {
+            final long currentID = guildJSON.getLong(currentKey);
+
+            if (currentID == deletedRoleID) {
+                guildJSON.remove(currentKey);
+            }
+        }
+        
+        saveJSON();
     }
 
     private void saveJSON() {
