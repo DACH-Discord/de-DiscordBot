@@ -6,6 +6,7 @@ import java.util.*;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
+import de.nikos410.discordBot.util.discord.GuildOperations;
 import de.nikos410.discordBot.util.discord.UserOperations;
 import de.nikos410.discordBot.util.io.IOUtil;
 import de.nikos410.discordBot.modular.annotations.CommandModule;
@@ -17,7 +18,9 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.role.RoleDeleteEvent;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
@@ -32,7 +35,6 @@ public class UserGroups {
     private final DiscordBot bot;
 
     private Logger log = LoggerFactory.getLogger(UserGroups.class);
-
 
     public UserGroups(final DiscordBot bot) {
         this.bot = bot;
@@ -68,6 +70,10 @@ public class UserGroups {
     @CommandSubscriber(command = "removeGroup", help = "Gruppe entfernen", pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
     public void command_removeGroup(final IMessage message, final String groupName) {
         final IGuild guild = message.getGuild();
+
+        // Validate group first
+        validateGroup(guild, groupName);
+
         final JSONObject guildJSON = getJSONForGuild(guild);
 
         if (!guildJSON.has(groupName)) {
@@ -87,8 +93,12 @@ public class UserGroups {
 
     @CommandSubscriber(command = "group", help = "Sich selbst eine Rolle zuweisen / wieder entfernen", pmAllowed = false)
     public void command_Group(final IMessage message, final String groupName) {
-        final IUser user = message.getAuthor();
         final IGuild guild = message.getGuild();
+
+        // Validate group first
+        validateGroup(guild, groupName);
+
+        final IUser user = message.getAuthor();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
         if (guildJSON.has(groupName)) {
@@ -114,7 +124,12 @@ public class UserGroups {
 
     @CommandSubscriber(command = "groups", help = "Alle Rollen auflisten")
     public void command_groups(final IMessage message) {
-        final JSONObject guildJSON = getJSONForGuild(message.getGuild());
+        final IGuild guild = message.getGuild();
+
+        // Validate all groups first
+        validateAllGroupsForGuild(guild);
+
+        final JSONObject guildJSON = getJSONForGuild(guild);
 
         final StringBuilder stringBuilder = new StringBuilder();
 
@@ -167,8 +182,48 @@ public class UserGroups {
                 guildJSON.remove(currentKey);
             }
         }
-        
+
         saveJSON();
+    }
+
+    /**
+     * On startup, make sure all roles corresponting to a group (still) exist
+     * @param event Gets dispatched when Bot is ready
+     */
+    @EventSubscriber
+    public void validateAllGroups(final ReadyEvent event) {
+        // Validate all groups for all guilds
+        final IDiscordClient client = event.getClient();
+        for (IGuild guild : client.getGuilds()) {
+            validateAllGroupsForGuild(guild);
+        }
+    }
+
+    /**
+     * Make sure all roles corresponding to a group on the specified guild (still) exist
+     * @param guild The guild for which to validate groups
+     */
+    private void validateAllGroupsForGuild(final IGuild guild) {
+        final JSONObject guildJSON = getJSONForGuild(guild);
+
+        for (String currentKey : guildJSON.keySet()) {
+            validateGroup(guild, currentKey);
+        }
+    }
+
+    /**
+     * Make sure the role corresponding to a group (still) exists
+     * @param guild The guild containing the group
+     * @param groupName The name of the group to validate
+     */
+    private void validateGroup(final IGuild guild, final String groupName) {
+        final JSONObject guildJSON = getJSONForGuild(guild);
+        final long roleID = guildJSON.getLong(groupName);
+
+        if (!GuildOperations.hasRoleByID(guild, roleID)) {
+            guildJSON.remove(groupName);
+            saveJSON();
+        }
     }
 
     private void saveJSON() {
