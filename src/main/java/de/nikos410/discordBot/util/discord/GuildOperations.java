@@ -4,8 +4,6 @@ import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IRole;
 
-import java.util.List;
-
 public class GuildOperations {
 
     public static boolean hasRoleByID(final IGuild guild, final long roleID) {
