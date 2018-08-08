@@ -8,7 +8,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.GuildOperations;
 import de.nikos410.discordBot.util.io.IOUtil;
@@ -39,7 +38,7 @@ public class UserLog {
 
     private JSONObject userlogJSON;
 
-    private Logger log = LoggerFactory.getLogger(UserLog.class);
+    private final static Logger LOG = LoggerFactory.getLogger(UserLog.class);
 
     public UserLog () {
         final String jsonContent = IOUtil.readFile(USERLOG_PATH);
@@ -243,7 +242,7 @@ public class UserLog {
     }
 
     private void saveUserLogJSON() {
-        log.debug("Saving UserLog file.");
+        LOG.debug("Saving UserLog file.");
 
         final String jsonOutput = userlogJSON.toString(4);
         IOUtil.writeToFile(USERLOG_PATH, jsonOutput);

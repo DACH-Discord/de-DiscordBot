@@ -10,7 +10,7 @@ import sx.blah.discord.util.DiscordException;
  * Authorizes the Bot and returns Instance
  */
 public class Authorization {
-    private static Logger log = LoggerFactory.getLogger(Authorization.class);
+    private final static Logger log = LoggerFactory.getLogger(Authorization.class);
 
     public static IDiscordClient createClient(final String token, final boolean login) {
         ClientBuilder clientBuilder = new ClientBuilder(); // Creates the ClientBuilder instance

@@ -45,7 +45,7 @@ public class ModStuff {
     private Map<IGuild, Map<IUser, ScheduledFuture>> userMuteFutures = new HashMap<>();
     private Map<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> channelMuteFutures = new HashMap<>();
 
-    private Logger log = LoggerFactory.getLogger(ModStuff.class);
+    private final static Logger LOG = LoggerFactory.getLogger(ModStuff.class);
 
     public ModStuff (final DiscordBot bot) {
         this.bot = bot;
@@ -53,11 +53,11 @@ public class ModStuff {
 
         final String rolesFileContent = IOUtil.readFile(MODSTUFF_PATH);
         if (rolesFileContent == null) {
-            log.error("Could not read modstuff file.");
+            LOG.error("Could not read modstuff file.");
             System.exit(1);
         }
         this.modstuffJSON = new JSONObject(rolesFileContent);
-        log.info(String.format("Loaded modstuff file for %s guilds.", modstuffJSON.keySet().size()));
+        LOG.info(String.format("Loaded modstuff file for %s guilds.", modstuffJSON.keySet().size()));
     }
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
@@ -96,7 +96,7 @@ public class ModStuff {
             //Util.sendMessage(message.getChannel(), ":door:");
 
             // Modlog
-            log.info(String.format("%s hat Nutzer %s vom Server gekickt. Hinweis: %s",
+            LOG.info(String.format("%s hat Nutzer %s vom Server gekickt. Hinweis: %s",
                     UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
                     UserOperations.makeUserString(kickUser, message.getGuild()),
                     customMessage));
@@ -151,7 +151,7 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
-            log.info(String.format("%s hat Nutzer %s vom Server gebannt. Hinweis: %s",
+            LOG.info(String.format("%s hat Nutzer %s vom Server gebannt. Hinweis: %s",
                     UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
                     UserOperations.makeUserString(banUser, message.getGuild()),
                     customMessage));
@@ -250,7 +250,7 @@ public class ModStuff {
         }
 
         // Modlog
-        log.info(String.format("Nutzer %s wurde für %s gemuted.", UserOperations.makeUserString(muteUser, message.getGuild()), muteDurationInput));
+        LOG.info(String.format("Nutzer %s wurde für %s gemuted.", UserOperations.makeUserString(muteUser, message.getGuild()), muteDurationInput));
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
@@ -365,7 +365,7 @@ public class ModStuff {
         else {
             // Nutzer ist noch nicht gemuted
             user.addRole(muteRole);
-            log.info(String.format("Muted user %s.", UserOperations.makeUserString(user, guild)));
+            LOG.info(String.format("Muted user %s.", UserOperations.makeUserString(user, guild)));
         }
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
@@ -373,7 +373,7 @@ public class ModStuff {
             user.removeRole(muteRole);
             userMuteFutures.get(guild).remove(user);
 
-            log.info(String.format("Nutzer %s wurde entmuted.", UserOperations.makeUserString(user, guild)));
+            LOG.info(String.format("Nutzer %s wurde entmuted.", UserOperations.makeUserString(user, guild)));
         };
 
         // Unmute schedulen
@@ -480,7 +480,7 @@ public class ModStuff {
         }
 
         // Modlog
-        log.info(String.format("Nutzer %s wurde für %s %s für den Kanal %s auf dem Server %s gemuted. \nHinweis: %s",
+        LOG.info(String.format("Nutzer %s wurde für %s %s für den Kanal %s auf dem Server %s gemuted. \nHinweis: %s",
                 UserOperations.makeUserString(muteUser, guild), muteDuration, muteDurationUnitString,
                 muteChannel.getName(), guild.getName(), customMessage));
 
@@ -544,7 +544,7 @@ public class ModStuff {
         }
         else {
             // Nutzer ist noch nicht gemuted
-            log.info(String.format("Muted user %s.", UserOperations.makeUserString(user, guild)));
+            LOG.info(String.format("Muted user %s.", UserOperations.makeUserString(user, guild)));
         }
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
@@ -593,13 +593,13 @@ public class ModStuff {
             }
             else {
                 // Override existiert nicht mehr, wurde vmtl. von Hand entfernt
-                log.info(String.format("Can't unmute user %s for channel %s. Override does not exist.",
+                LOG.info(String.format("Can't unmute user %s for channel %s. Override does not exist.",
                         UserOperations.makeUserString(user, guild), channel.getName()));
             }
 
             channelMuteFutures.get(guild).get(channel).remove(user);
 
-            log.info(String.format("Nutzer %s wurde entmuted.", UserOperations.makeUserString(user, guild)));
+            LOG.info(String.format("Nutzer %s wurde entmuted.", UserOperations.makeUserString(user, guild)));
         };
 
         // Unmute schedulen
@@ -740,18 +740,18 @@ public class ModStuff {
                     return muteRole;
                 }
                 else {
-                    log.warn(String.format("Auf dem Server %s (ID: %s) wurde keine Rolle mit der ID %s gefunden!", guild.getName(), guild.getStringID(), muteRoleID));
+                    LOG.warn(String.format("Auf dem Server %s (ID: %s) wurde keine Rolle mit der ID %s gefunden!", guild.getName(), guild.getStringID(), muteRoleID));
                     return null;
                 }
             }
             else {
-                log.warn(String.format("Keine Mute Rolle für Server %s (ID: %s) angegeben.",
+                LOG.warn(String.format("Keine Mute Rolle für Server %s (ID: %s) angegeben.",
                         guild.getName(), guild.getStringID()));
                 return null;
             }
         }
         else {
-            log.warn(String.format("Mute Rolle nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
+            LOG.warn(String.format("Mute Rolle nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
                     guild.getName(), guild.getStringID()));
             return null;
         }
@@ -767,19 +767,19 @@ public class ModStuff {
                     return modlogChannel;
                 }
                 else {
-                    log.warn(String.format("Auf dem Server %s (ID: %s) wurde kein Channel mit der ID %s gefunden!",
+                    LOG.warn(String.format("Auf dem Server %s (ID: %s) wurde kein Channel mit der ID %s gefunden!",
                             guild.getName(), guild.getStringID(), modlogChannelID));
                     return null;
                 }
             }
             else {
-                log.warn(String.format("Kein Modlog Channel für Server %s (ID: %s) angegeben.",
+                LOG.warn(String.format("Kein Modlog Channel für Server %s (ID: %s) angegeben.",
                         guild.getName(), guild.getStringID()));
                 return null;
             }
         }
         else {
-            log.warn(String.format("Modlog Channel nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
+            LOG.warn(String.format("Modlog Channel nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
                     guild.getName(), guild.getStringID()));
             return null;
         }
@@ -808,7 +808,7 @@ public class ModStuff {
     }
 
     private void saveJSON() {
-        log.debug("Saving modstuff file.");
+        LOG.debug("Saving modstuff file.");
 
         final String jsonOutput = this.modstuffJSON.toString(4);
         IOUtil.writeToFile(MODSTUFF_PATH, jsonOutput);

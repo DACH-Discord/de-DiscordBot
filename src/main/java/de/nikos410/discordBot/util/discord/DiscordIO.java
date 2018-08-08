@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 public class DiscordIO {
 
-    private static Logger log = LoggerFactory.getLogger(DiscordIO.class);
+    private final static Logger LOG = LoggerFactory.getLogger(DiscordIO.class);
 
     /**
      * Eine Nachricht senden. Wenn die Nachricht zu lang (>2000 Zeichen) ist, wird sie in mehrere kürzere
@@ -85,18 +85,18 @@ public class DiscordIO {
                     TimeUnit.MILLISECONDS.sleep(500);
                 }
                 catch (InterruptedException ie) {
-                    log.error("Sleep was interrupted.", ie);
+                    LOG.error("Sleep was interrupted.", ie);
                 }
                 finally {
                     sendSingleMessage(channel, message, tries+1);
                 }
             }
             else {
-                log.warn("Bot was ratelimited while trying to send message. (20 tries)", rle);
+                LOG.warn("Bot was ratelimited while trying to send message. (20 tries)", rle);
             }
         }
         catch (DiscordException de) {
-            log.error("Message could not be sent.", de);
+            LOG.error("Message could not be sent.", de);
         }
 
         return null;
@@ -117,18 +117,18 @@ public class DiscordIO {
                     TimeUnit.MILLISECONDS.sleep(500);
                 }
                 catch (InterruptedException ie) {
-                    log.error("Sleep was interrupted.", ie);
+                    LOG.error("Sleep was interrupted.", ie);
                 }
                 finally {
                     sendEmbed(channel, embedObject, tries + 1);
                 }
             }
             else {
-                log.warn("Bot was ratelimited while trying to send embed. (20 tries)", rle);
+                LOG.warn("Bot was ratelimited while trying to send embed. (20 tries)", rle);
             }
         }
         catch (DiscordException de) {
-            log.error("Embed could not be sent.", de);
+            LOG.error("Embed could not be sent.", de);
         }
 
         return null;

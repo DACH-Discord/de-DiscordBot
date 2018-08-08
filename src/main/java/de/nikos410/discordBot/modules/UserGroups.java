@@ -34,7 +34,7 @@ public class UserGroups {
 
     private final DiscordBot bot;
 
-    private Logger log = LoggerFactory.getLogger(UserGroups.class);
+    private final static Logger LOG = LoggerFactory.getLogger(UserGroups.class);
 
     public UserGroups(final DiscordBot bot) {
         this.bot = bot;
@@ -64,7 +64,7 @@ public class UserGroups {
         saveJSON();
 
         DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Gruppe `%s` erstellt.", groupName));
-        log.info(String.format("%s created new group %s.", UserOperations.makeUserString(message.getAuthor(), guild), groupName));
+        LOG.info(String.format("%s created new group %s.", UserOperations.makeUserString(message.getAuthor(), guild), groupName));
     }
 
     @CommandSubscriber(command = "removeGroup", help = "Gruppe entfernen", pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
@@ -88,7 +88,7 @@ public class UserGroups {
         saveJSON();
 
         DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Gruppe `%s` entfernt.", groupName));
-        log.info(String.format("%s deleted group %s.", UserOperations.makeUserString(message.getAuthor(), guild), groupName));
+        LOG.info(String.format("%s deleted group %s.", UserOperations.makeUserString(message.getAuthor(), guild), groupName));
     }
 
     @CommandSubscriber(command = "group", help = "Sich selbst eine Rolle zuweisen / wieder entfernen", pmAllowed = false)
@@ -109,12 +109,12 @@ public class UserGroups {
             if (UserOperations.hasRole(user, role, guild)) {
                 user.removeRole(role);
                 DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Du wurdest aus der Gruppe `%s` entfernt.", groupName));
-                log.info(String.format("%s left group %s.", UserOperations.makeUserString(message.getAuthor(), guild), groupName));
+                LOG.info(String.format("%s left group %s.", UserOperations.makeUserString(message.getAuthor(), guild), groupName));
             }
             else {
                 user.addRole(role);
                 DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Du wurdest zur Gruppe `%s` hinzugefügt.", groupName));
-                log.info(String.format("%s joined group %s.", UserOperations.makeUserString(message.getAuthor(), guild), groupName));
+                LOG.info(String.format("%s joined group %s.", UserOperations.makeUserString(message.getAuthor(), guild), groupName));
             }
         }
         else {
@@ -234,7 +234,7 @@ public class UserGroups {
     }
 
     private void saveJSON() {
-        log.debug("Saving UserGroups file.");
+        LOG.debug("Saving UserGroups file.");
 
         final String jsonOutput = usergroupsJSON.toString(4);
         IOUtil.writeToFile(USERGROUPS_PATH, jsonOutput);

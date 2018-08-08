@@ -1,7 +1,6 @@
 package de.nikos410.discordBot.modules;
 
 
-import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.UserOperations;
 import de.nikos410.discordBot.util.io.IOUtil;
@@ -25,7 +24,7 @@ public class Rules {
 
     private JSONObject rulesJSON;
 
-    private Logger log = LoggerFactory.getLogger(Rules.class);
+    private final static Logger LOG = LoggerFactory.getLogger(Rules.class);
 
     public Rules () {
 
@@ -101,7 +100,7 @@ public class Rules {
         saveJSON();
 
         DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
-        log.info(String.format("%s enabled welcome messages for server %s (ID: %s)", UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
+        LOG.info(String.format("%s enabled welcome messages for server %s (ID: %s)", UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
                 guild.getName(), guild.getStringID()));
     }
 
@@ -114,7 +113,7 @@ public class Rules {
         saveJSON();
 
         DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Deaktiviert!");
-        log.info(String.format("%s disabled welcome messages for server %s (ID: %s)", UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
+        LOG.info(String.format("%s disabled welcome messages for server %s (ID: %s)", UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
                 guild.getName(), guild.getStringID()));
     }
 
@@ -140,7 +139,7 @@ public class Rules {
 
         DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Regeln (DE) geändert:");
         DiscordIO.sendMessage(message.getChannel(), rulesDE);
-        log.info(String.format("%s changed rules. (DE)", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
+        LOG.info(String.format("%s changed rules. (DE)", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
     }
 
     @CommandSubscriber(command = "setRules", help = "Regeln (englisch) ändern", permissionLevel = CommandPermissions.ADMIN)
@@ -153,7 +152,7 @@ public class Rules {
 
         DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Regeln (EN) geändert:");
         DiscordIO.sendMessage(message.getChannel(), rulesEN);
-        log.info(String.format("%s changed rules. (EN)", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
+        LOG.info(String.format("%s changed rules. (EN)", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
     }
 
     @CommandSubscriber(command = "setFooter", help = "Footer der Begüßungsnachricht ändern.",
@@ -167,7 +166,7 @@ public class Rules {
 
         DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Footer geändert:");
         DiscordIO.sendMessage(message.getChannel(), footer);
-        log.info(String.format("%s changed rules. (DE)", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
+        LOG.info(String.format("%s changed rules. (DE)", UserOperations.makeUserString(message.getAuthor(), message.getGuild())));
     }
 
     private JSONObject getJSONForGuild (final IGuild guild) {
@@ -182,7 +181,7 @@ public class Rules {
     }
 
     private void saveJSON() {
-        log.debug("Saving rules file.");
+        LOG.debug("Saving rules file.");
         final String jsonOutput = rulesJSON.toString(4);
         IOUtil.writeToFile(RULES_PATH, jsonOutput);
     }

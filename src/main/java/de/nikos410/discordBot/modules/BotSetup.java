@@ -29,7 +29,7 @@ public class BotSetup {
     private final DiscordBot bot;
     private final IDiscordClient client;
 
-    private Logger log = LoggerFactory.getLogger(DiscordBot.class);
+    private final static Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
 
 
     public BotSetup (final DiscordBot bot) {
@@ -80,13 +80,13 @@ public class BotSetup {
 
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
 
-        log.info("Updated mod and admin roles for ");
+        LOG.info("Updated mod and admin roles for ");
     }
 
     @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = CommandPermissions.OWNER)
     public void command_Shutdown(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
-        log.info("Shutting down.");
+        LOG.info("Shutting down.");
         
         try {
             this.client.logout();
@@ -107,11 +107,11 @@ public class BotSetup {
         try {
             this.client.changeUsername(newUserName);
             DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Username gesetzt: `%s`", newUserName));
-            log.info(String.format("%s changed the bots username to %s.", UserOperations.makeUserString(message.getAuthor(), message.getGuild()), newUserName));
+            LOG.info(String.format("%s changed the bots username to %s.", UserOperations.makeUserString(message.getAuthor(), message.getGuild()), newUserName));
         }
         catch (RateLimitException e) {
             DiscordIO.errorNotify(e, message.getChannel());
-            log.warn("Bot was ratelimited while trying to change its username.");
+            LOG.warn("Bot was ratelimited while trying to change its username.");
         }
     }
 
@@ -148,7 +148,7 @@ public class BotSetup {
         }
         catch (NullPointerException e) {
             DiscordIO.errorNotify(e, message.getChannel());
-            log.error(String.format("Something went wrong while activating module \"%s\"", moduleName));
+            LOG.error(String.format("Something went wrong while activating module \"%s\"", moduleName));
         }
     }
 
@@ -160,7 +160,7 @@ public class BotSetup {
         }
         catch (NullPointerException e) {
             DiscordIO.errorNotify(e, message.getChannel());
-            log.error(String.format("Something went wrong while deactivating module \"%s\"", moduleName));
+            LOG.error(String.format("Something went wrong while deactivating module \"%s\"", moduleName));
         }
     }
 

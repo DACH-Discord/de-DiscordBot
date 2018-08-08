@@ -35,7 +35,7 @@ public class GameStats {
     private final static Path GAMESTATS_PATH = Paths.get("data/gameStats.json");
     private JSONObject gameStatsJSON;
 
-    private Logger log = LoggerFactory.getLogger(GameStats.class);
+    private final static Logger LOG = LoggerFactory.getLogger(GameStats.class);
 
     public GameStats (final DiscordBot bot) {
         this.bot = bot;
@@ -44,7 +44,7 @@ public class GameStats {
         // Spiel-Liste einlesen
         final String jsonContent = IOUtil.readFile(GAMESTATS_PATH);
         this.gameStatsJSON = new JSONObject(jsonContent);
-        log.info(String.format("Loaded GameStats file for %s guilds.", gameStatsJSON.keySet().size()));
+        LOG.info(String.format("Loaded GameStats file for %s guilds.", gameStatsJSON.keySet().size()));
 
         // Darauf warten, dass der Client ready ist
         if (!bot.client.isReady()) {
@@ -52,7 +52,7 @@ public class GameStats {
                 TimeUnit.SECONDS.sleep(1);
             }
             catch (InterruptedException e) {
-                log.warn("Sleep was interrupted!", e);
+                LOG.warn("Sleep was interrupted!", e);
             }
             finally {
                 updateAllUsers();
@@ -65,7 +65,7 @@ public class GameStats {
             this.updateUserStatus(user);
         }
         saveJSON();
-        log.info("Gamestats Module ready.");
+        LOG.info("Gamestats Module ready.");
     }
 
     @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
@@ -280,7 +280,7 @@ public class GameStats {
     }
 
     private synchronized void saveJSON() {
-        log.debug("Saving GameStats file");
+        LOG.debug("Saving GameStats file");
 
         final String jsonOutput = gameStatsJSON.toString(4);
         IOUtil.writeToFile(GAMESTATS_PATH, jsonOutput);
