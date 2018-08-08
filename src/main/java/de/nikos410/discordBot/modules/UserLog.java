@@ -37,15 +37,11 @@ import sx.blah.discord.util.EmbedBuilder;
 public class UserLog {
     private final static Path USERLOG_PATH = Paths.get("data/userLog.json");
 
-    private final DiscordBot bot;
-
     private JSONObject userlogJSON;
 
     private Logger log = LoggerFactory.getLogger(UserLog.class);
 
-    public UserLog (final DiscordBot bot) {
-        this.bot = bot;
-
+    public UserLog () {
         final String jsonContent = IOUtil.readFile(USERLOG_PATH);
         userlogJSON = new JSONObject(jsonContent);
     }
