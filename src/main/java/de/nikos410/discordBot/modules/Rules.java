@@ -23,14 +23,11 @@ import java.nio.file.Paths;
 public class Rules {
     private final static Path RULES_PATH = Paths.get("data/rules.json");
 
-    private final DiscordBot bot;
-
     private JSONObject rulesJSON;
 
     private Logger log = LoggerFactory.getLogger(Rules.class);
 
-    public Rules (final DiscordBot bot) {
-        this.bot = bot;
+    public Rules () {
 
         // Welcome Nachricht auslesen
         final String welcomeFileContent = IOUtil.readFile(RULES_PATH);
