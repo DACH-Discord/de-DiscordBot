@@ -193,6 +193,10 @@ public class UserLog {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
+        if (!guildJSON.has("channel")) {
+            DiscordIO.sendMessage(message.getChannel(), "Es ist noch kein Kanal hinterlegt!");
+        }
+
         guildJSON.put("on", true);
         saveUserLogJSON();
 
@@ -216,6 +220,11 @@ public class UserLog {
 
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
+
+        if (!guildJSON.has("channel")) {
+            DiscordIO.sendMessage(message.getChannel(), "Fehler! Kein Kanal hinterlegt!");
+            return;
+        }
 
         final long channelID = guildJSON.getLong("channel");
         final IChannel channel = guild.getChannelByID(channelID);
