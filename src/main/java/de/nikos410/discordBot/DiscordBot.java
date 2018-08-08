@@ -180,7 +180,6 @@ public class DiscordBot {
                     final CommandSubscriber[] annotations = method.getDeclaredAnnotationsByType(CommandSubscriber.class);
 
                     final String command = annotations[0].command();
-                    final String help = annotations[0].help();
                     final boolean pmAllowed = annotations[0].pmAllowed();
                     final int permissionLevel = annotations[0].permissionLevel();
                     final int parameterCount = method.getParameterCount();
@@ -188,7 +187,7 @@ public class DiscordBot {
 
                     // Mindestens 1 (message), max 6 (message + 5 parameter)
                     if (parameterCount > 0 && parameterCount <= 6) {
-                        final Command cmd = new Command(module, method, help, pmAllowed, permissionLevel, parameterCount-1, passContext);
+                        final Command cmd = new Command(module, method, pmAllowed, permissionLevel, parameterCount-1, passContext);
                         this.commands.put(command.toLowerCase(), cmd);
 
                         log.debug(String.format("Registered command \"%s\".", command));
