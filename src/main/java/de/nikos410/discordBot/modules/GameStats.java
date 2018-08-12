@@ -11,8 +11,8 @@ import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.UserOperations;
 import de.nikos410.discordBot.util.io.IOUtil;
-import de.nikos410.discordBot.modular.annotations.CommandModule;
-import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+import de.nikos410.discordBot.framework.annotations.CommandModule;
+import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -150,6 +150,7 @@ public class GameStats {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private List<String> findSimilarKeys (final String inputKey, final IGuild guild) {
         final int levDistTreshold = 2 + StringUtils.countMatches(inputKey, " ");
 

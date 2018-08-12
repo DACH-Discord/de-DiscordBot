@@ -1,8 +1,8 @@
 package de.nikos410.discordBot.modules;
 
 import de.nikos410.discordBot.util.discord.*;
-import de.nikos410.discordBot.modular.annotations.CommandModule;
-import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+import de.nikos410.discordBot.framework.annotations.CommandModule;
+import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;

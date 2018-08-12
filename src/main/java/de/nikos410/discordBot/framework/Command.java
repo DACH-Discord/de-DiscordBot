@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.modular;
+package de.nikos410.discordBot.framework;
 
 import java.lang.reflect.Method;
 

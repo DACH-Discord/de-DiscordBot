@@ -6,8 +6,8 @@ import java.text.MessageFormat;
 import java.util.stream.IntStream;
 
 import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.modular.annotations.CommandModule;
-import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+import de.nikos410.discordBot.framework.annotations.CommandModule;
+import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;

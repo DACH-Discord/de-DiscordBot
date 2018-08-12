@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.modular;
+package de.nikos410.discordBot.framework;
 
 public class CommandPermissions {
     public final static int EVERYONE = 0;

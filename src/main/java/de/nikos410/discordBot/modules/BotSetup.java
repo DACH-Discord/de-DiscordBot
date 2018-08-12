@@ -8,10 +8,10 @@ import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.GuildOperations;
 import de.nikos410.discordBot.util.discord.UserOperations;
-import de.nikos410.discordBot.modular.annotations.AlwaysLoaded;
-import de.nikos410.discordBot.modular.annotations.CommandModule;
-import de.nikos410.discordBot.modular.CommandPermissions;
-import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+import de.nikos410.discordBot.framework.annotations.AlwaysLoaded;
+import de.nikos410.discordBot.framework.annotations.CommandModule;
+import de.nikos410.discordBot.framework.CommandPermissions;
+import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 
 import org.json.JSONObject;
 import org.slf4j.Logger;

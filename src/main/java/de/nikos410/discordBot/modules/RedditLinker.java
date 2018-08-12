@@ -4,7 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.modular.annotations.CommandModule;
+import de.nikos410.discordBot.framework.annotations.CommandModule;
 
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;

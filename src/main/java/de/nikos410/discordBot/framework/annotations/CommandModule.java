@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.modular.annotations;
+package de.nikos410.discordBot.framework.annotations;
 
 import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;

@@ -10,8 +10,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import de.nikos410.discordBot.modular.*;
-import de.nikos410.discordBot.modular.annotations.*;
+import de.nikos410.discordBot.framework.*;
+import de.nikos410.discordBot.framework.annotations.*;
+import de.nikos410.discordBot.modules.BotSetup;
 import de.nikos410.discordBot.util.discord.*;
 import de.nikos410.discordBot.util.io.IOUtil;
 
@@ -143,8 +144,27 @@ public class DiscordBot {
 
         // Check if module is deactivated in config
         if (this.unloadedModules.contains(moduleName)) {
-            LOG.info(String.format("Module \"%s\" is deactivated. Skipping.", moduleName));
-            return;
+            // BotSetup Module must always be loaded
+            if (moduleClass.equals(BotSetup.class)) {
+                LOG.info(String.format("Module \"%s\" can not be deactivated. Loading anyways.",
+                        moduleName));
+
+                // Remove entry from unloaded list and JSON
+                LOG.debug("Removing module from unloaded list.");
+                unloadedModules.remove(moduleName);
+                LOG.debug("Removing module from unloaded JSON array");
+                final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
+                for (int i = 0; i < jsonUnloadedModules.length(); i++) {
+                    if (jsonUnloadedModules.getString(i).equals(moduleName)) {
+                        jsonUnloadedModules.remove(i);
+                    }
+                }
+                this.saveConfig();
+            }
+            else {
+                LOG.info(String.format("Module \"%s\" is deactivated. Skipping.", moduleName));
+                return;
+            }
         }
 
         LOG.debug(String.format("Loading module \"%s\".", moduleName));
