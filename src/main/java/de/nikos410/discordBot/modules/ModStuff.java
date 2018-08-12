@@ -189,8 +189,6 @@ public class ModStuff {
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
             permissionLevel = CommandPermissions.MODERATOR)
     public void command_Mute(final IMessage message, final String muteUserString, final String muteDurationInput) {
-        System.out.println(String.format("muteUserString: %s | durIn: %s", muteUserString, muteDurationInput));
-
         // Nutzer der gemuted werden soll auslesen
         final List<IUser> mentions = message.getMentions();
         if (mentions.size() < 1) {
