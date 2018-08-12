@@ -122,7 +122,7 @@ public class UserGroups {
         }
     }
 
-    @CommandSubscriber(command = "groups", help = "Alle Rollen auflisten")
+    @CommandSubscriber(command = "groups", help = "Alle Rollen auflisten", pmAllowed = false)
     public void command_groups(final IMessage message) {
         final IGuild guild = message.getGuild();
 
@@ -225,6 +225,11 @@ public class UserGroups {
      */
     private void validateGroup(final IGuild guild, final String groupName) {
         final JSONObject guildJSON = getJSONForGuild(guild);
+
+        if (!guildJSON.has(groupName)) {
+            return;
+        }
+
         final long roleID = guildJSON.getLong(groupName);
 
         if (!GuildOperations.hasRoleByID(guild, roleID)) {
