@@ -358,7 +358,7 @@ public class DiscordBot {
 
         final Command command = commands.get(commandName);
 
-        LOG.info(String.format("User %s used command %s", UserOperations.makeUserString(message.getAuthor(), message.getGuild()), commandName));
+        LOG.info(String.format("User %s used command %s", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), commandName));
 
         // Check if the user is allowed to use that command
         final int userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
@@ -367,7 +367,7 @@ public class DiscordBot {
             DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
                     CommandPermissions.getPermissionLevelName(userPermissionLevel)));
             LOG.info(String.format("User %s doesn't have the required permissions for using the command %s.",
-                    UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
+                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     commandName));
             return;
         }
@@ -522,12 +522,12 @@ public class DiscordBot {
         final JSONObject guildRoles = rolesJSON.getJSONObject(guild.getStringID());
 
         final long adminRoleID = guildRoles.getLong("adminRole");
-        if (UserOperations.hasRoleByID(user, adminRoleID, guild)) {
+        if (UserUtils.hasRoleByID(user, adminRoleID, guild)) {
             return CommandPermissions.ADMIN;
         }
 
         final long modRoleID = guildRoles.getLong("modRole");
-        if (UserOperations.hasRoleByID(user, modRoleID, guild)) {
+        if (UserUtils.hasRoleByID(user, modRoleID, guild)) {
             return CommandPermissions.MODERATOR;
         }
 

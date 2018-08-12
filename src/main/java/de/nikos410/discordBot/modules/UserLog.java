@@ -9,7 +9,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.util.discord.GuildOperations;
+import de.nikos410.discordBot.util.discord.GuildUtils;
 import de.nikos410.discordBot.util.io.IOUtil;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
 import de.nikos410.discordBot.framework.CommandPermissions;
@@ -160,7 +160,7 @@ public class UserLog {
         final IChannel modlogChannel;
         final List<IChannel> channelMentions = message.getChannelMentions();
 
-        if (GuildOperations.hasChannelByID(message.getGuild(), channel)) {
+        if (GuildUtils.hasChannelByID(message.getGuild(), channel)) {
             // Kanal ID wurde als Parameter angegeben
             modlogChannel = message.getGuild().getChannelByID(Long.parseLong(channel));
         }

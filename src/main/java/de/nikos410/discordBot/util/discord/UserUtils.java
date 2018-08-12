@@ -6,7 +6,7 @@ import sx.blah.discord.handle.obj.IUser;
 
 import java.util.List;
 
-public class UserOperations {
+public class UserUtils {
 
     public static IRole getTopRole(final IUser user, final IGuild guild) {
         final List<IRole> roles = user.getRolesForGuild(guild);

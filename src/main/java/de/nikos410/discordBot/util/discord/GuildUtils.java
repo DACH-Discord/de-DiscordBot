@@ -4,7 +4,7 @@ import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IRole;
 
-public class GuildOperations {
+public class GuildUtils {
 
     public static boolean hasRoleByID(final IGuild guild, final long roleID) {
         // More reliable than guild.getRoleByID(roleID) != null

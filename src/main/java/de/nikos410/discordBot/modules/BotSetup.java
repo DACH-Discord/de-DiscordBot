@@ -6,8 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.util.discord.GuildOperations;
-import de.nikos410.discordBot.util.discord.UserOperations;
+import de.nikos410.discordBot.util.discord.GuildUtils;
+import de.nikos410.discordBot.util.discord.UserUtils;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
 import de.nikos410.discordBot.framework.CommandPermissions;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
@@ -84,7 +84,7 @@ public class BotSetup {
             pmAllowed = false, passContext = false)
     public void command_setupRoles(final IMessage message, final String modRoleID, final String adminRoleID) {
         // Check if user is allowed to use this command
-        final IRole userTopRole = UserOperations.getTopRole(message.getAuthor(), message.getGuild());
+        final IRole userTopRole = UserUtils.getTopRole(message.getAuthor(), message.getGuild());
         if (!userTopRole.getPermissions().contains(Permissions.MANAGE_SERVER) && !userTopRole.getPermissions().contains(Permissions.ADMINISTRATOR)) {
             DiscordIO.sendMessage(message.getChannel(), "Du benötigst die permission \"Server Verwalten\" oder \"Administrator\" um diesen Befehl zu benutzen");
             return;
@@ -97,11 +97,11 @@ public class BotSetup {
         }
 
         // Check if IDs are valid
-        if (!GuildOperations.hasRoleByID(message.getGuild(), Long.parseLong(modRoleID))) {
+        if (!GuildUtils.hasRoleByID(message.getGuild(), Long.parseLong(modRoleID))) {
             DiscordIO.sendMessage(message.getChannel(), String.format("Anscheinend existiert keine Rolle mit der ID `%s` auf diesem Server.", modRoleID));
             return;
         }
-        if (!GuildOperations.hasRoleByID(message.getGuild(), Long.parseLong(adminRoleID))) {
+        if (!GuildUtils.hasRoleByID(message.getGuild(), Long.parseLong(adminRoleID))) {
             DiscordIO.sendMessage(message.getChannel(), String.format("Anscheinend existiert keine Rolle mit der ID `%s` auf diesem Server.", adminRoleID));
             return;
         }
@@ -150,7 +150,7 @@ public class BotSetup {
         try {
             this.client.changeUsername(newUserName);
             DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Username gesetzt: `%s`", newUserName));
-            LOG.info(String.format("%s changed the bots username to %s.", UserOperations.makeUserString(message.getAuthor(), message.getGuild()), newUserName));
+            LOG.info(String.format("%s changed the bots username to %s.", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), newUserName));
         }
         catch (RateLimitException e) {
             DiscordIO.errorNotify(e, message.getChannel());

@@ -14,8 +14,8 @@ import java.util.regex.Pattern;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.util.discord.GuildOperations;
-import de.nikos410.discordBot.util.discord.UserOperations;
+import de.nikos410.discordBot.util.discord.GuildUtils;
+import de.nikos410.discordBot.util.discord.UserUtils;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
 import de.nikos410.discordBot.framework.CommandPermissions;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
@@ -97,8 +97,8 @@ public class ModStuff {
 
             // Modlog
             LOG.info(String.format("%s hat Nutzer %s vom Server gekickt. Hinweis: %s",
-                    UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserOperations.makeUserString(kickUser, message.getGuild()),
+                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
+                    UserUtils.makeUserString(kickUser, message.getGuild()),
                     customMessage));
 
             final IGuild guild = message.getGuild();
@@ -106,8 +106,8 @@ public class ModStuff {
 
             if (modLogChannel != null) {
                 final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**. \nHinweis: _%s _",
-                        UserOperations.makeUserString(message.getAuthor(), guild),
-                        UserOperations.makeUserString(kickUser, guild),
+                        UserUtils.makeUserString(message.getAuthor(), guild),
+                        UserUtils.makeUserString(kickUser, guild),
                         message.getChannel().mention(),
                         customMessage);
                 DiscordIO.sendMessage(modLogChannel, modLogMessage);
@@ -152,8 +152,8 @@ public class ModStuff {
 
             // Modlog
             LOG.info(String.format("%s hat Nutzer %s vom Server gebannt. Hinweis: %s",
-                    UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserOperations.makeUserString(banUser, message.getGuild()),
+                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
+                    UserUtils.makeUserString(banUser, message.getGuild()),
                     customMessage));
 
             final IGuild guild = message.getGuild();
@@ -161,8 +161,8 @@ public class ModStuff {
 
             if (modLogChannel != null) {
                 final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
-                        UserOperations.makeUserString(message.getAuthor(), guild),
-                        UserOperations.makeUserString(banUser, guild),
+                        UserUtils.makeUserString(message.getAuthor(), guild),
+                        UserUtils.makeUserString(banUser, guild),
                         message.getChannel().mention(),
                         customMessage);
                 DiscordIO.sendMessage(modLogChannel, modLogMessage);
@@ -181,7 +181,7 @@ public class ModStuff {
 
         if (modLogChannel != null) {
             final String modLogMessage = String.format("**%s** wurde vom Server **gebannt**.",
-                    UserOperations.makeUserString(event.getUser(), event.getGuild()));
+                    UserUtils.makeUserString(event.getUser(), event.getGuild()));
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
     }
@@ -248,14 +248,14 @@ public class ModStuff {
         }
 
         // Modlog
-        LOG.info(String.format("Nutzer %s wurde für %s gemuted.", UserOperations.makeUserString(muteUser, message.getGuild()), muteDurationInput));
+        LOG.info(String.format("Nutzer %s wurde für %s gemuted.", UserUtils.makeUserString(muteUser, message.getGuild()), muteDurationInput));
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
         if (modLogChannel != null) {
             final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
-                    UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserOperations.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
+                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
+                    UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
                     muteDuration, muteDurationUnitString, customMessage);
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
@@ -363,7 +363,7 @@ public class ModStuff {
         else {
             // Nutzer ist noch nicht gemuted
             user.addRole(muteRole);
-            LOG.info(String.format("Muted user %s.", UserOperations.makeUserString(user, guild)));
+            LOG.info(String.format("Muted user %s.", UserUtils.makeUserString(user, guild)));
         }
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
@@ -371,7 +371,7 @@ public class ModStuff {
             user.removeRole(muteRole);
             userMuteFutures.get(guild).remove(user);
 
-            LOG.info(String.format("Nutzer %s wurde entmuted.", UserOperations.makeUserString(user, guild)));
+            LOG.info(String.format("Nutzer %s wurde entmuted.", UserUtils.makeUserString(user, guild)));
         };
 
         // Unmute schedulen
@@ -479,15 +479,15 @@ public class ModStuff {
 
         // Modlog
         LOG.info(String.format("Nutzer %s wurde für %s %s für den Kanal %s auf dem Server %s gemuted. \nHinweis: %s",
-                UserOperations.makeUserString(muteUser, guild), muteDuration, muteDurationUnitString,
+                UserUtils.makeUserString(muteUser, guild), muteDuration, muteDurationUnitString,
                 muteChannel.getName(), guild.getName(), customMessage));
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
         if (modLogChannel != null) {
             final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s für den Kanal %s **gemuted**. \nHinweis: _%s _",
-                    UserOperations.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserOperations.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
+                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
+                    UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
                     muteDuration, muteDurationUnitString, muteChannel.mention(), customMessage);
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
@@ -542,7 +542,7 @@ public class ModStuff {
         }
         else {
             // Nutzer ist noch nicht gemuted
-            LOG.info(String.format("Muted user %s.", UserOperations.makeUserString(user, guild)));
+            LOG.info(String.format("Muted user %s.", UserUtils.makeUserString(user, guild)));
         }
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
@@ -592,12 +592,12 @@ public class ModStuff {
             else {
                 // Override existiert nicht mehr, wurde vmtl. von Hand entfernt
                 LOG.info(String.format("Can't unmute user %s for channel %s. Override does not exist.",
-                        UserOperations.makeUserString(user, guild), channel.getName()));
+                        UserUtils.makeUserString(user, guild), channel.getName()));
             }
 
             channelMuteFutures.get(guild).get(channel).remove(user);
 
-            LOG.info(String.format("Nutzer %s wurde entmuted.", UserOperations.makeUserString(user, guild)));
+            LOG.info(String.format("Nutzer %s wurde entmuted.", UserUtils.makeUserString(user, guild)));
         };
 
         // Unmute schedulen
@@ -649,7 +649,7 @@ public class ModStuff {
         final IChannel modlogChannel;
         final List<IChannel> channelMentions = message.getChannelMentions();
 
-        if (GuildOperations.hasChannelByID(message.getGuild(), channel)) {
+        if (GuildUtils.hasChannelByID(message.getGuild(), channel)) {
             // Kanal ID wurde als Parameter angegeben
             modlogChannel = message.getGuild().getChannelByID(Long.parseLong(channel));
         }
@@ -685,7 +685,7 @@ public class ModStuff {
         final IRole muteRole;
         final List<IRole> roleMentions = message.getRoleMentions();
 
-        if (GuildOperations.hasRoleByID(message.getGuild(), role)) {
+        if (GuildUtils.hasRoleByID(message.getGuild(), role)) {
             // Rollen ID wurde als Parameter angegeben
             muteRole = message.getGuild().getRoleByID(Long.parseLong(role));
         }

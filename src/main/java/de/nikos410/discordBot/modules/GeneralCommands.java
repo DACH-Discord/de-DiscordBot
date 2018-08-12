@@ -54,19 +54,19 @@ public class GeneralCommands {
         commandMessage.delete();
 
         final IUser quoteAuthor = quoteMessage.getAuthor();
-        final IRole quoteAuthorTopRole = UserOperations.getTopRole(quoteAuthor, quoteMessage.getGuild());
+        final IRole quoteAuthorTopRole = UserUtils.getTopRole(quoteAuthor, quoteMessage.getGuild());
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
 
         embedBuilder.withAuthorIcon(quoteAuthor.getAvatarURL());
-        embedBuilder.withAuthorName(UserOperations.makeUserString(quoteAuthor, guild));
+        embedBuilder.withAuthorName(UserUtils.makeUserString(quoteAuthor, guild));
         embedBuilder.withDesc(quoteMessage.getContent());
         embedBuilder.withColor(quoteAuthorTopRole.getColor());
 
         final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("dd.MM.YYYY, HH:mm");
         final String timestampString = quoteMessage.getTimestamp().format(timestampFormatter);
 
-        embedBuilder.withFooterText(String.format("%s | Zitiert von: %s", timestampString, UserOperations.makeUserString(commandAuthor, guild)));
+        embedBuilder.withFooterText(String.format("%s | Zitiert von: %s", timestampString, UserUtils.makeUserString(commandAuthor, guild)));
 
         DiscordIO.sendEmbed(commandMessage.getChannel(), embedBuilder.build());
     }

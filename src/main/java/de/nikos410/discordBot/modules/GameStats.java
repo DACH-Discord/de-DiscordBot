@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.util.discord.UserOperations;
+import de.nikos410.discordBot.util.discord.UserUtils;
 import de.nikos410.discordBot.util.io.IOUtil;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
@@ -175,7 +175,7 @@ public class GameStats {
         StringBuilder stringBuilder = new StringBuilder();
 
         for (IUser user : userList) {
-            stringBuilder.append(UserOperations.makeUserString(user, guild));
+            stringBuilder.append(UserUtils.makeUserString(user, guild));
             stringBuilder.append('\n');
         }
 
