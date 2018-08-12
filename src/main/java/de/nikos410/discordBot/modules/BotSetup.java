@@ -8,7 +8,6 @@ import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.GuildOperations;
 import de.nikos410.discordBot.util.discord.UserOperations;
-import de.nikos410.discordBot.framework.annotations.AlwaysLoaded;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
 import de.nikos410.discordBot.framework.CommandPermissions;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
@@ -27,7 +26,6 @@ import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
 
 @CommandModule(moduleName = "Bot-Setup", commandOnly = true)
-@AlwaysLoaded
 public class BotSetup {
     private final DiscordBot bot;
     private final IDiscordClient client;
@@ -205,6 +203,11 @@ public class BotSetup {
 
     @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = CommandPermissions.ADMIN)
     public void command_UnloadModule(final IMessage message, final String moduleName) {
+        if (moduleName.equalsIgnoreCase("Bot-Setup")) {
+            DiscordIO.sendMessage(message.getChannel(), ":x: Das Bot-Setup Modul kann nicht deaktiviert werden.");
+            return;
+        }
+
         final boolean result = bot.deactivateModule(moduleName);
         final String resultMessage;
 
