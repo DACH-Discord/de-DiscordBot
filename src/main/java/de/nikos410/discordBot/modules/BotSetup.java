@@ -192,9 +192,11 @@ public class BotSetup {
 
         final String resultMessage;
         if (result) {
+            // Method returned true, everything went fine
             resultMessage = String.format(":white_check_mark: Modul `%s` aktiviert.", moduleName);
         }
         else {
+            // Method returned false, module doesn't exist or is already activated
             resultMessage = String.format("Fehler! Modul `%s` ist bereits aktiviert oder existiert nicht.", moduleName);
         }
 
@@ -204,12 +206,14 @@ public class BotSetup {
     @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = CommandPermissions.ADMIN)
     public void command_UnloadModule(final IMessage message, final String moduleName) {
         final boolean result = bot.deactivateModule(moduleName);
-
         final String resultMessage;
+
         if (result) {
+            // Method returned true, everything went fine
             resultMessage = String.format(":white_check_mark: Modul `%s` deaktiviert.", moduleName);
         }
         else {
+            // Method returned false, module doesn't exist or is already deactivated
             resultMessage = String.format("Fehler! Modul `%s` ist bereits deaktiviert oder existiert nicht.", moduleName);
         }
 
