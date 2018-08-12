@@ -138,17 +138,17 @@ public class DiscordIO {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
         embedBuilder.withColor(new Color(255, 42, 50));
-        embedBuilder.appendField("Fehler aufgetreten", e.toString(), false);
+        embedBuilder.appendField("Interner Fehler", e.toString(), false);
         embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
         sendEmbed(channel, embedBuilder.build());
     }
 
-    public static void errorNotify(final String s, final IChannel channel) {
+    public static void errorNotify(final String errorMessage, final IChannel channel) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
         embedBuilder.withColor(new Color(255, 42, 50));
-        embedBuilder.appendField("Fehler aufgetreten", s, false);
+        embedBuilder.appendField("Interner Fehler", errorMessage, false);
         embedBuilder.withFooterText("Mehr Infos in der Konsole");
 
         sendEmbed(channel, embedBuilder.build());

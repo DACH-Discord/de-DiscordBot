@@ -1,5 +1,7 @@
 package de.nikos410.discordBot.modules;
 
+import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import de.nikos410.discordBot.DiscordBot;
@@ -16,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IRole;
@@ -31,10 +34,52 @@ public class BotSetup {
 
     private final static Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
 
-
     public BotSetup (final DiscordBot bot) {
         this.bot = bot;
         this.client = bot.client;
+    }
+
+    @CommandSubscriber(command = "help", help = "Zeigt diese Hilfe an")
+    public void command_help(final IMessage message) {
+        final EmbedBuilder embedBuilder = new EmbedBuilder();
+        final Map<String, Object> loadedModules = bot.getLoadedModules();
+
+        for (final String key : loadedModules.keySet()) {
+            final Object module = loadedModules.get(key);
+
+            final StringBuilder helpBuilder = new StringBuilder();
+
+            for (final Method method : module.getClass().getMethods()) {
+
+                if (method.isAnnotationPresent(CommandSubscriber.class)) {
+                    final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
+
+                    if (bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()) >= annotation.permissionLevel()) {
+                        final String command = annotation.command();
+                        final String help = annotation.help();
+
+                        helpBuilder.append(String.format("`%s` %s", command, help));
+                        helpBuilder.append('\n');
+                    }
+                }
+            }
+
+            final String moduleHelp = helpBuilder.toString();
+
+            final CommandModule[] annotations = module.getClass().getDeclaredAnnotationsByType(CommandModule.class);
+            final String moduleName = annotations[0].moduleName();
+
+            if (!moduleHelp.isEmpty()) {
+                embedBuilder.appendField(moduleName, moduleHelp, false);
+            }
+        }
+
+        final EmbedObject embedObject = embedBuilder.build();
+        DiscordIO.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
+
+        if (!message.getChannel().isPrivate()) {
+            DiscordIO.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+        }
     }
 
     @CommandSubscriber(command = "setupRoles", help = "Moderator- und Admin-Rolle setzen",
@@ -117,23 +162,24 @@ public class BotSetup {
 
     @CommandSubscriber(command = "modules", help = "Alle Module anzeigen")
     public void command_ListModules(final IMessage message) {
-
-        StringBuilder loadedBuilder = new StringBuilder();
+        // List loaded modules
+        final StringBuilder loadedBuilder = new StringBuilder();
         for (final String key : bot.getLoadedModules().keySet()) {
             loadedBuilder.append(key);
             loadedBuilder.append('\n');
         }
         final String loadedModulesString = loadedBuilder.toString().isEmpty() ? "_keine_" : loadedBuilder.toString();
 
-        StringBuilder unloadedBuilder = new StringBuilder();
+        // List unloaded modules
+        final StringBuilder unloadedBuilder = new StringBuilder();
         for (final String key : bot.getUnloadedModules()) {
             unloadedBuilder.append(key);
             unloadedBuilder.append('\n');
         }
         final String unloadedModulesString = unloadedBuilder.toString().isEmpty() ? "_keine_" : unloadedBuilder.toString();
 
+        // Build embed
         final EmbedBuilder embedBuilder = new EmbedBuilder();
-
         embedBuilder.appendField("Aktivierte Module", loadedModulesString, true);
         embedBuilder.appendField("Deaktivierte Module", unloadedModulesString, true);
 
@@ -142,26 +188,31 @@ public class BotSetup {
 
     @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = CommandPermissions.ADMIN)
     public void command_LoadModule(final IMessage message, final String moduleName) {
-        try {
-            String msg = bot.loadModule(moduleName);
-            DiscordIO.sendMessage(message.getChannel(), msg);
+        final boolean result = bot.activateModule(moduleName);
+
+        final String resultMessage;
+        if (result) {
+            resultMessage = String.format(":white_check_mark: Modul `%s` aktiviert.", moduleName);
         }
-        catch (NullPointerException e) {
-            DiscordIO.errorNotify(e, message.getChannel());
-            LOG.error(String.format("Something went wrong while activating module \"%s\"", moduleName));
+        else {
+            resultMessage = String.format("Fehler! Modul `%s` ist bereits aktiviert oder existiert nicht.", moduleName);
         }
+
+        DiscordIO.sendMessage(message.getChannel(), resultMessage);
     }
 
     @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = CommandPermissions.ADMIN)
     public void command_UnloadModule(final IMessage message, final String moduleName) {
-        try {
-            String msg = bot.unloadModule(moduleName);
-            DiscordIO.sendMessage(message.getChannel(), msg);
-        }
-        catch (NullPointerException e) {
-            DiscordIO.errorNotify(e, message.getChannel());
-            LOG.error(String.format("Something went wrong while deactivating module \"%s\"", moduleName));
-        }
-    }
+        final boolean result = bot.deactivateModule(moduleName);
 
+        final String resultMessage;
+        if (result) {
+            resultMessage = String.format(":white_check_mark: Modul `%s` deaktiviert.", moduleName);
+        }
+        else {
+            resultMessage = String.format("Fehler! Modul `%s` ist bereits deaktiviert oder existiert nicht.", moduleName);
+        }
+
+        DiscordIO.sendMessage(message.getChannel(), resultMessage);
+    }
 }
