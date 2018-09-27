@@ -29,8 +29,10 @@ import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
+import sx.blah.discord.handle.impl.events.guild.voice.VoiceChannelUpdateEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
+import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.cache.LongMap;
 
 @CommandModule(moduleName = "Modzeugs", commandOnly = false)
@@ -44,6 +46,8 @@ public class ModStuff {
 
     private final Map<IGuild, Map<IUser, ScheduledFuture>> userMuteFutures = new HashMap<>();
     private final Map<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> channelMuteFutures = new HashMap<>();
+
+    private final Map<IGuild, List<VoiceChannelUpdateEvent>> voiceLog = new HashMap<>();
 
     private final static Logger LOG = LoggerFactory.getLogger(ModStuff.class);
 
@@ -643,6 +647,51 @@ public class ModStuff {
         return false;
     }
 
+    @CommandSubscriber(command = "voicelog", help = "Die letzten Events in voicechannels anzeigen",
+    pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
+    public void command_voicelog(final IMessage message) {
+        final List<VoiceChannelUpdateEvent> voiceLog = getVoiceLogForGuild(message.getGuild());
+
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        for (int i = voiceLog.size()-1; i > (voiceLog.size() - 21) && i > 0; i--) {
+            final VoiceChannelUpdateEvent event = voiceLog.get(i);
+
+            final IVoiceChannel oldChannel = event.getOldVoiceChannel();
+            final List<IUser> oldUsers = oldChannel.getConnectedUsers();
+            final IVoiceChannel newChannel = event.getNewVoiceChannel();
+            final List<IUser> newUsers = newChannel.getConnectedUsers();
+
+            if (oldUsers.size() > newUsers.size()) {
+                oldUsers.removeAll(newUsers);
+
+                stringBuilder.append(String.format("**%s:** -- %s", newChannel.getName(),
+                        UserUtils.makeUserString(oldUsers.get(0), message.getGuild())));
+                stringBuilder.append('\n');
+            }
+            else {
+                newUsers.removeAll(oldUsers);
+
+                stringBuilder.append(String.format("**%s:** ++ %s", newChannel.getName(),
+                        UserUtils.makeUserString(newUsers.get(0), message.getGuild())));
+                stringBuilder.append('\n');
+            }
+        }
+
+        final EmbedBuilder responseBuilder = new EmbedBuilder();
+        final String content = stringBuilder.length() > 1 ? stringBuilder.toString() : "_keine_";
+        responseBuilder.appendField("Die letzten 20 Voice-Interaktionen", content, false);
+
+        DiscordIO.sendEmbed(message.getChannel(), responseBuilder.build());
+    }
+
+    @EventSubscriber
+    public void onVoiceChannelUpdate(final VoiceChannelUpdateEvent event) {
+        if (event.getOldVoiceChannel().getConnectedUsers().size() != event.getNewVoiceChannel().getConnectedUsers().size()) {
+            getVoiceLogForGuild(event.getGuild()).add(event);
+        }
+    }
+
     @CommandSubscriber(command = "setModlogChannel", help = "Kanal in dem die Modlog Nachrichten gesendet werden einstellen",
             pmAllowed = false, passContext = false, permissionLevel = CommandPermissions.ADMIN)
     public void command_setModlogChannel(final IMessage message, final String channel) {
@@ -780,6 +829,17 @@ public class ModStuff {
             LOG.warn(String.format("Modlog Channel nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
                     guild.getName(), guild.getStringID()));
             return null;
+        }
+    }
+
+    private List<VoiceChannelUpdateEvent> getVoiceLogForGuild(final IGuild guild) {
+        if (voiceLog.containsKey(guild)) {
+            return voiceLog.get(guild);
+        }
+        else {
+            final List<VoiceChannelUpdateEvent> guildVoiceLog = new ArrayList<>();
+            voiceLog.put(guild, guildVoiceLog);
+            return guildVoiceLog;
         }
     }
 
