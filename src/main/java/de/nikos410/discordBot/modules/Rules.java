@@ -45,7 +45,7 @@ public class Rules {
         }
     }
 
-    @CommandSubscriber(command = "regeln", help = "Die Regeln dieses Servers")
+    @CommandSubscriber(command = "regeln", help = "Die Regeln dieses Servers", pmAllowed = false)
     public void command_Regeln(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
@@ -62,7 +62,7 @@ public class Rules {
         }
     }
 
-    @CommandSubscriber(command = "rules", help = "The rules of this server")
+    @CommandSubscriber(command = "rules", help = "The rules of this server", pmAllowed = false)
     public void command_Rules(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
