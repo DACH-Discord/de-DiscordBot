@@ -28,7 +28,9 @@ hs_err_pid*
 # https://github.com/github/gitignore/blob/master/Gradle.gitignore
 
 .gradle
+/out/
 /build/
+/gradle/
 
 # Ignore Gradle GUI config
 gradle-app.setting
@@ -38,3 +40,6 @@ gradle-app.setting
 
 # Cache of project
 .gradletasknamecache
+
+# IntelliJ
+*.iml
