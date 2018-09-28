@@ -855,7 +855,16 @@ public class ModStuff {
 
     private List<String> getVoiceLogForGuild(final IGuild guild) {
         if (voiceLog.containsKey(guild)) {
-            return voiceLog.get(guild);
+            final List<String> log = voiceLog.get(guild);
+            final int maxSize = 100;
+            if (log.size() > maxSize) {
+                final List<String> newLog = log.subList(log.size() - maxSize, log.size());
+                voiceLog.put(guild, newLog);
+                return newLog;
+            }
+            else {
+                return log;
+            }
         }
         else {
             final List<String> guildVoiceLog = new ArrayList<>();
