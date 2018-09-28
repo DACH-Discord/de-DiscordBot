@@ -29,7 +29,9 @@ import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
-import sx.blah.discord.handle.impl.events.guild.voice.VoiceChannelUpdateEvent;
+import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
+import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelLeaveEvent;
+import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelMoveEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
@@ -47,7 +49,7 @@ public class ModStuff {
     private final Map<IGuild, Map<IUser, ScheduledFuture>> userMuteFutures = new HashMap<>();
     private final Map<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> channelMuteFutures = new HashMap<>();
 
-    private final Map<IGuild, List<VoiceChannelUpdateEvent>> voiceLog = new HashMap<>();
+    private final Map<IGuild, List<String>> voiceLog = new HashMap<>();
 
     private final static Logger LOG = LoggerFactory.getLogger(ModStuff.class);
 
@@ -647,49 +649,57 @@ public class ModStuff {
         return false;
     }
 
-    @CommandSubscriber(command = "voicelog", help = "Die letzten Events in voicechannels anzeigen",
+    @CommandSubscriber(command = "voicelog", help = "Die letzten 20 Aktivitäten in Sprachkanälen auflisten",
     pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
     public void command_voicelog(final IMessage message) {
-        final List<VoiceChannelUpdateEvent> voiceLog = getVoiceLogForGuild(message.getGuild());
+        final int listCount;
+        listCount = 20;
+
+        final List<String> voiceLog = getVoiceLogForGuild(message.getGuild());
 
         final StringBuilder stringBuilder = new StringBuilder();
 
-        for (int i = voiceLog.size()-1; i > (voiceLog.size() - 21) && i > 0; i--) {
-            final VoiceChannelUpdateEvent event = voiceLog.get(i);
-
-            final IVoiceChannel oldChannel = event.getOldVoiceChannel();
-            final List<IUser> oldUsers = oldChannel.getConnectedUsers();
-            final IVoiceChannel newChannel = event.getNewVoiceChannel();
-            final List<IUser> newUsers = newChannel.getConnectedUsers();
-
-            if (oldUsers.size() > newUsers.size()) {
-                oldUsers.removeAll(newUsers);
-
-                stringBuilder.append(String.format("**%s:** -- %s", newChannel.getName(),
-                        UserUtils.makeUserString(oldUsers.get(0), message.getGuild())));
-                stringBuilder.append('\n');
-            }
-            else {
-                newUsers.removeAll(oldUsers);
-
-                stringBuilder.append(String.format("**%s:** ++ %s", newChannel.getName(),
-                        UserUtils.makeUserString(newUsers.get(0), message.getGuild())));
-                stringBuilder.append('\n');
-            }
+        for (int i = voiceLog.size()-1; i > (voiceLog.size() - (listCount - 1)) && i > 0; i--) {
+            stringBuilder.append(voiceLog.get(i));
+            stringBuilder.append('\n');
         }
 
         final EmbedBuilder responseBuilder = new EmbedBuilder();
-        final String content = stringBuilder.length() > 1 ? stringBuilder.toString() : "_keine_";
-        responseBuilder.appendField("Die letzten 20 Voice-Interaktionen", content, false);
+        final String content = stringBuilder.length() > 0 ? stringBuilder.toString() : "_keine_";
+        responseBuilder.appendField(String.format("Die letzten %s Voice-Interaktionen", listCount), content, false);
 
         DiscordIO.sendEmbed(message.getChannel(), responseBuilder.build());
     }
 
     @EventSubscriber
-    public void onVoiceChannelUpdate(final VoiceChannelUpdateEvent event) {
-        if (event.getOldVoiceChannel().getConnectedUsers().size() != event.getNewVoiceChannel().getConnectedUsers().size()) {
-            getVoiceLogForGuild(event.getGuild()).add(event);
-        }
+    public void onUserMove (final UserVoiceChannelMoveEvent event) {
+        LOG.debug("Logged voice move event.");
+        final IUser user = event.getUser();
+        final IVoiceChannel oldChannel = event.getOldChannel();
+        final IVoiceChannel newChannel = event.getNewChannel();
+        final IGuild guild = event.getGuild();
+        final String eventString = String.format("**%s:** `%s` --> ` %s`", UserUtils.makeUserString(user, guild), oldChannel.getName(), newChannel.getName());
+        getVoiceLogForGuild(guild).add(eventString);
+    }
+
+    @EventSubscriber
+    public void onUserConnect(final UserVoiceChannelJoinEvent event) {
+        LOG.debug("Logged voice connect event.");
+        final IUser user = event.getUser();
+        final IVoiceChannel channel = event.getVoiceChannel();
+        final IGuild guild = event.getGuild();
+        final String eventString = String.format("**%s:** `%s` ++", UserUtils.makeUserString(user, guild), channel.getName());
+        getVoiceLogForGuild(guild).add(eventString);
+    }
+
+    @EventSubscriber
+    public void onUserDisconnect(final UserVoiceChannelLeaveEvent event) {
+        LOG.debug("Logged voice disconnect event.");
+        final IUser user = event.getUser();
+        final IVoiceChannel channel = event.getVoiceChannel();
+        final IGuild guild = event.getGuild();
+        final String eventString = String.format("**%s:** `%s` --", UserUtils.makeUserString(user, guild), channel.getName());
+        getVoiceLogForGuild(event.getGuild()).add(eventString);
     }
 
     @CommandSubscriber(command = "setModlogChannel", help = "Kanal in dem die Modlog Nachrichten gesendet werden einstellen",
@@ -832,12 +842,12 @@ public class ModStuff {
         }
     }
 
-    private List<VoiceChannelUpdateEvent> getVoiceLogForGuild(final IGuild guild) {
+    private List<String> getVoiceLogForGuild(final IGuild guild) {
         if (voiceLog.containsKey(guild)) {
             return voiceLog.get(guild);
         }
         else {
-            final List<VoiceChannelUpdateEvent> guildVoiceLog = new ArrayList<>();
+            final List<String> guildVoiceLog = new ArrayList<>();
             voiceLog.put(guild, guildVoiceLog);
             return guildVoiceLog;
         }
