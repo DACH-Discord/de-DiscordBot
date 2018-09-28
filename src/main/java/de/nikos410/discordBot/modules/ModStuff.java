@@ -671,7 +671,7 @@ public class ModStuff {
 
         final StringBuilder stringBuilder = new StringBuilder();
 
-        for (int i = voiceLog.size()-1; i > (voiceLog.size() - listCount - 1) && i > 0; i--) {
+        for (int i = voiceLog.size()-1; i > (voiceLog.size() - listCount - 1) && i >= 0; i--) {
             stringBuilder.append(voiceLog.get(i));
             stringBuilder.append('\n');
         }
