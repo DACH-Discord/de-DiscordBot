@@ -650,16 +650,28 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "voicelog", help = "Die letzten 20 Aktivitäten in Sprachkanälen auflisten",
-    pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
-    public void command_voicelog(final IMessage message) {
+    pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR, ignoreParameterCount = true)
+    public void command_voicelog(final IMessage message, final String listCountArg) {
         final int listCount;
-        listCount = 20;
+
+        if (listCountArg == null) {
+            listCount = 20;
+        }
+        else {
+            try {
+                listCount = Integer.parseInt(listCountArg);
+            }
+            catch (NumberFormatException e) {
+                DiscordIO.sendMessage(message.getChannel(), ":x: Die angegebene Anzahl ist keine gültige Zahl!");
+                return;
+            }
+        }
 
         final List<String> voiceLog = getVoiceLogForGuild(message.getGuild());
 
         final StringBuilder stringBuilder = new StringBuilder();
 
-        for (int i = voiceLog.size()-1; i > (voiceLog.size() - (listCount - 1)) && i > 0; i--) {
+        for (int i = voiceLog.size()-1; i > (voiceLog.size() - listCount - 1) && i > 0; i--) {
             stringBuilder.append(voiceLog.get(i));
             stringBuilder.append('\n');
         }
