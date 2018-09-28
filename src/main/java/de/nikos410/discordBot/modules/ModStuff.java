@@ -690,7 +690,7 @@ public class ModStuff {
         final IVoiceChannel oldChannel = event.getOldChannel();
         final IVoiceChannel newChannel = event.getNewChannel();
         final IGuild guild = event.getGuild();
-        final String eventString = String.format("**%s:** `%s` --> ` %s`", UserUtils.makeUserString(user, guild), oldChannel.getName(), newChannel.getName());
+        final String eventString = String.format("**%s:** `%s`  **➔**  ` %s`", UserUtils.makeUserString(user, guild), oldChannel.getName(), newChannel.getName());
         getVoiceLogForGuild(guild).add(eventString);
     }
 
@@ -700,7 +700,7 @@ public class ModStuff {
         final IUser user = event.getUser();
         final IVoiceChannel channel = event.getVoiceChannel();
         final IGuild guild = event.getGuild();
-        final String eventString = String.format("**%s:** `%s` ++", UserUtils.makeUserString(user, guild), channel.getName());
+        final String eventString = String.format("**%s:** `%s`  **++**", UserUtils.makeUserString(user, guild), channel.getName());
         getVoiceLogForGuild(guild).add(eventString);
     }
 
@@ -710,7 +710,8 @@ public class ModStuff {
         final IUser user = event.getUser();
         final IVoiceChannel channel = event.getVoiceChannel();
         final IGuild guild = event.getGuild();
-        final String eventString = String.format("**%s:** `%s` --", UserUtils.makeUserString(user, guild), channel.getName());
+        final String eventString = String.format("**%s:** `%s`  **" +
+                "--**", UserUtils.makeUserString(user, guild), channel.getName());
         getVoiceLogForGuild(event.getGuild()).add(eventString);
     }
 
