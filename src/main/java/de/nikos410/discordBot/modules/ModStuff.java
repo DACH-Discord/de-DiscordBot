@@ -678,7 +678,7 @@ public class ModStuff {
 
         final EmbedBuilder responseBuilder = new EmbedBuilder();
         final String content = stringBuilder.length() > 0 ? stringBuilder.toString() : "_keine_";
-        responseBuilder.appendField(String.format("Die letzten %s Voice-Interaktionen", listCount), content, false);
+        responseBuilder.appendField(String.format("Die letzten %s Voice-Interaktionen (von neu nach alt)", listCount), content, false);
 
         DiscordIO.sendEmbed(message.getChannel(), responseBuilder.build());
     }
@@ -687,10 +687,9 @@ public class ModStuff {
     public void onUserMove (final UserVoiceChannelMoveEvent event) {
         LOG.debug("Logged voice move event.");
         final IUser user = event.getUser();
-        final IVoiceChannel oldChannel = event.getOldChannel();
         final IVoiceChannel newChannel = event.getNewChannel();
         final IGuild guild = event.getGuild();
-        final String eventString = String.format("**%s:** `%s`  **➔**  ` %s`", UserUtils.makeUserString(user, guild), oldChannel.getName(), newChannel.getName());
+        final String eventString = String.format("**%s** :arrow_forward: ` %s`", UserUtils.makeUserString(user, guild), newChannel.getName());
         getVoiceLogForGuild(guild).add(eventString);
     }
 
@@ -700,7 +699,7 @@ public class ModStuff {
         final IUser user = event.getUser();
         final IVoiceChannel channel = event.getVoiceChannel();
         final IGuild guild = event.getGuild();
-        final String eventString = String.format("**%s:** `%s`  **++**", UserUtils.makeUserString(user, guild), channel.getName());
+        final String eventString = String.format("**%s** :arrow_forward: `%s`", UserUtils.makeUserString(user, guild), channel.getName());
         getVoiceLogForGuild(guild).add(eventString);
     }
 
@@ -710,9 +709,8 @@ public class ModStuff {
         final IUser user = event.getUser();
         final IVoiceChannel channel = event.getVoiceChannel();
         final IGuild guild = event.getGuild();
-        final String eventString = String.format("**%s:** `%s`  **" +
-                "--**", UserUtils.makeUserString(user, guild), channel.getName());
-        getVoiceLogForGuild(event.getGuild()).add(eventString);
+        final String eventString = String.format("**%s** :small_red_triangle_down: `%s`", UserUtils.makeUserString(user, guild), channel.getName());
+        getVoiceLogForGuild(guild).add(eventString);
     }
 
     @CommandSubscriber(command = "setModlogChannel", help = "Kanal in dem die Modlog Nachrichten gesendet werden einstellen",
