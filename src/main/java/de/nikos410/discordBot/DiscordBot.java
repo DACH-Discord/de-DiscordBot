@@ -251,10 +251,12 @@ public class DiscordBot {
                     final int permissionLevel = annotations[0].permissionLevel();
                     final int parameterCount = method.getParameterCount();
                     final boolean passContext = annotations[0].passContext();
+                    final boolean ignoreParameterCount = annotations[0].ignoreParameterCount();
 
                     // At least 1 (message), max 6 (message + 5 parameter)
-                    if (parameterCount > 0 && parameterCount <= 6) {
-                        final Command cmd = new Command(module, method, pmAllowed, permissionLevel, parameterCount-1, passContext);
+                    if ((parameterCount > 0 && parameterCount <= 6) || ignoreParameterCount) {
+                        final Command cmd = new Command(module, method, pmAllowed, permissionLevel,
+                                parameterCount-1, passContext, ignoreParameterCount);
                         this.commands.put(command.toLowerCase(), cmd);
 
                         LOG.debug(String.format("Registered command \"%s\".", command));
@@ -381,14 +383,22 @@ public class DiscordBot {
 
         final int parameterCount = command.parameterCount;
         final boolean passContext = command.passContext;
+        final boolean ignoreParameterCount = command.ignoreParameterCount;
         final List<String> parameters = parseParameters(messageContent, parameterCount, passContext);
 
         // Check if the user used the correct number of parameters
         if (parameters.size() < parameterCount) {
-            DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl benötigt mindestens %s Parameter! (Gegeben: %s)", parameterCount, parameters.size()));
-            LOG.info(String.format("Wrong number of arguments. Expected number: %s Actual number: %s",
-                    parameterCount, parameters.size()));
-            return;
+            if (ignoreParameterCount) {
+                while (parameters.size() < parameterCount) {
+                    parameters.add(null);
+                }
+            }
+            else {
+                DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl benötigt mindestens %s Parameter! (Gegeben: %s)", parameterCount, parameters.size()));
+                LOG.info(String.format("Wrong number of arguments. Expected number: %s Actual number: %s",
+                        parameterCount, parameters.size()));
+                return;
+            }
         }
 
         executeCommand(commandName, command, parameters, message);

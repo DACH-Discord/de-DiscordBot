@@ -15,4 +15,5 @@ public @interface CommandSubscriber {
     boolean pmAllowed() default true;
     int permissionLevel() default CommandPermissions.EVERYONE;
     boolean passContext() default true;
+    boolean ignoreParameterCount() default false;
 }

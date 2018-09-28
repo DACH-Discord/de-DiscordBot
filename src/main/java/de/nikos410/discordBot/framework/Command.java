@@ -10,13 +10,16 @@ public class Command {
     public final int permissionLevel;
     public final int parameterCount;
     public final boolean passContext;
+    public final boolean ignoreParameterCount;
 
-    public Command(final Object object, final Method method, final boolean pmAllowed, final int permissionLevel, final int parameterCount, final boolean passContext) {
+    public Command(final Object object, final Method method, final boolean pmAllowed, final int permissionLevel,
+                   final int parameterCount, final boolean passContext, final boolean ignoreParameterCount) {
         this.object = object;
         this.method = method;
         this.pmAllowed = pmAllowed;
         this.permissionLevel = permissionLevel;
         this.parameterCount = parameterCount;
         this.passContext = passContext;
+        this.ignoreParameterCount = ignoreParameterCount;
     }
 }
