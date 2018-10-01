@@ -3,6 +3,7 @@ package de.nikos410.discordBot.modules;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -11,6 +12,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Map.Entry;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
@@ -21,12 +23,14 @@ import de.nikos410.discordBot.framework.CommandPermissions;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 
 import de.nikos410.discordBot.util.io.IOUtil;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
@@ -45,6 +49,7 @@ public class ModStuff {
     private final JSONObject modstuffJSON;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
 
     private final Map<IGuild, Map<IUser, ScheduledFuture>> userMuteFutures = new HashMap<>();
     private final Map<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> channelMuteFutures = new HashMap<>();
@@ -265,6 +270,8 @@ public class ModStuff {
                     muteDuration, muteDurationUnitString, customMessage);
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
+
+        saveMutedUsers();
     }
 
     @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm", pmAllowed = false)
@@ -304,6 +311,8 @@ public class ModStuff {
         else {
             DiscordIO.sendMessage(message.getChannel(), output);
         }
+
+        saveMutedUsers();
     }
 
     @CommandSubscriber(command = "unmute", help = "Nutzer entmuten", pmAllowed = false,
@@ -378,6 +387,7 @@ public class ModStuff {
             userMuteFutures.get(guild).remove(user);
 
             LOG.info(String.format("Nutzer %s wurde entmuted.", UserUtils.makeUserString(user, guild)));
+            saveMutedUsers();
         };
 
         // Unmute schedulen
@@ -604,6 +614,8 @@ public class ModStuff {
             channelMuteFutures.get(guild).get(channel).remove(user);
 
             LOG.info(String.format("Nutzer %s wurde entmuted.", UserUtils.makeUserString(user, guild)));
+
+            saveMutedUsers();
         };
 
         // Unmute schedulen
@@ -798,56 +810,88 @@ public class ModStuff {
         }
     }
 
-    private IRole getMuteRoleForGuild(final IGuild guild) {
-        if (modstuffJSON.has(guild.getStringID())) {
-            final JSONObject guildJSON = modstuffJSON.getJSONObject(guild.getStringID());
-            if (guildJSON.has("muteRole")) {
-                final long muteRoleID = guildJSON.getLong("muteRole");
-                final IRole muteRole = guild.getRoleByID(muteRoleID);
-                if (muteRole != null) {
-                    return muteRole;
-                }
-                else {
-                    LOG.warn(String.format("Auf dem Server %s (ID: %s) wurde keine Rolle mit der ID %s gefunden!", guild.getName(), guild.getStringID(), muteRoleID));
-                    return null;
+    @EventSubscriber
+    public void onStartup(final ReadyEvent event) {
+        LOG.info("Restoring muted users.");
+
+        for (final String guildStringID : modstuffJSON.keySet()) {
+            LOG.debug(String.format("Processing JSON for guild with ID '%s'.", guildStringID));
+
+            final long guildLongID = Long.parseLong(guildStringID);
+            final IGuild guild = event.getClient().getGuildByID(guildLongID);
+            LOG.debug(String.format("Found guild '%s'.", guild.getName()));
+
+            restoreGuildUserMutes(guild);
+        }
+
+        LOG.info("Restored all mutes.");
+    }
+
+    private void restoreGuildUserMutes(final IGuild guild) {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        final JSONArray guildUserMutes = getUserMutesJSONForGuild(guild);
+        LOG.debug(String.format("Found %s mutes for guild.", guildUserMutes.length()));
+
+        for (int i = 0; i < guildUserMutes.length(); i++) {
+            final JSONObject currentUserMute = guildUserMutes.getJSONObject(i);
+            if (currentUserMute.has("user") && currentUserMute.has("mutedUntil")) {
+                final long userLongID = currentUserMute.getLong("user");
+                final IUser user = guild.getUserByID(userLongID);
+                final String unmuteTimestampString = currentUserMute.getString("mutedUntil");
+                final LocalDateTime unmuteTimestamp = LocalDateTime.parse(unmuteTimestampString, formatter);
+
+                if (LocalDateTime.now().isBefore(unmuteTimestamp)) {
+                    final int delaySeconds = (int)LocalDateTime.now().until(unmuteTimestamp, ChronoUnit.SECONDS);
+                    muteUserForGuild(user, guild, delaySeconds, ChronoUnit.SECONDS);
+                    LOG.info(String.format("Restored mute for user '%s' (ID: %s) for guild '%s' (ID: %s). Muted until %s",
+                            UserUtils.makeUserString(user, guild), user.getStringID(),
+                            guild.getName(), guild.getStringID(),
+                            unmuteTimestampString));
                 }
             }
             else {
-                LOG.warn(String.format("Keine Mute Rolle für Server %s (ID: %s) angegeben.",
-                        guild.getName(), guild.getStringID()));
+                LOG.warn(String.format("userMute at index %s doesn't contain necessary keys! Skipping.", i));
+            }
+        }
+    }
+
+    private IRole getMuteRoleForGuild(final IGuild guild) {
+        final JSONObject guildJSON = getJSONForGuild(guild);
+        if (guildJSON.has("muteRole")) {
+            final long muteRoleID = guildJSON.getLong("muteRole");
+            final IRole muteRole = guild.getRoleByID(muteRoleID);
+            if (muteRole != null) {
+                return muteRole;
+            }
+            else {
+                LOG.warn(String.format("Auf dem Server %s (ID: %s) wurde keine Rolle mit der ID %s gefunden!", guild.getName(), guild.getStringID(), muteRoleID));
                 return null;
             }
         }
         else {
-            LOG.warn(String.format("Mute Rolle nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
+            LOG.warn(String.format("Keine Mute Rolle für Server %s (ID: %s) angegeben.",
                     guild.getName(), guild.getStringID()));
             return null;
         }
     }
 
     private IChannel getModlogChannelForGuild(final IGuild guild) {
-        if (modstuffJSON.has(guild.getStringID())) {
-            final JSONObject guildJSON = modstuffJSON.getJSONObject(guild.getStringID());
-            if (guildJSON.has("modlogChannel")) {
-                final long modlogChannelID = guildJSON.getLong("modlogChannel");
-                final IChannel modlogChannel = guild.getChannelByID(modlogChannelID);
-                if (modlogChannel != null) {
-                    return modlogChannel;
-                }
-                else {
-                    LOG.warn(String.format("Auf dem Server %s (ID: %s) wurde kein Channel mit der ID %s gefunden!",
-                            guild.getName(), guild.getStringID(), modlogChannelID));
-                    return null;
-                }
+        final JSONObject guildJSON = getJSONForGuild(guild);
+        if (guildJSON.has("modlogChannel")) {
+            final long modlogChannelID = guildJSON.getLong("modlogChannel");
+            final IChannel modlogChannel = guild.getChannelByID(modlogChannelID);
+            if (modlogChannel != null) {
+                return modlogChannel;
             }
             else {
-                LOG.warn(String.format("Kein Modlog Channel für Server %s (ID: %s) angegeben.",
-                        guild.getName(), guild.getStringID()));
+                LOG.warn(String.format("Auf dem Server %s (ID: %s) wurde kein Channel mit der ID %s gefunden!",
+                        guild.getName(), guild.getStringID(), modlogChannelID));
                 return null;
             }
         }
         else {
-            LOG.warn(String.format("Modlog Channel nicht gefunden! Kein Eintrag für Server %s (ID: %s).",
+            LOG.warn(String.format("Kein Modlog Channel für Server %s (ID: %s) angegeben.",
                     guild.getName(), guild.getStringID()));
             return null;
         }
@@ -873,6 +917,55 @@ public class ModStuff {
         }
     }
 
+    private JSONArray getUserMutesJSONForGuild(final IGuild guild) {
+        final JSONObject guildJSON = getJSONForGuild(guild);
+        if (guildJSON.has("userMutes")) {
+            return guildJSON.getJSONArray("userMutes");
+        }
+        else {
+            final JSONArray jsonArray = new JSONArray();
+            guildJSON.put("userMutes", jsonArray);
+            return jsonArray;
+        }
+    }
+
+    private JSONArray getChannelMutesJSONForGuild(final IGuild guild) {
+        final JSONObject guildJSON = getJSONForGuild(guild);
+        if (guildJSON.has("channelMutes")) {
+            return guildJSON.getJSONArray("userMutes");
+        }
+        else {
+            final JSONArray jsonArray = new JSONArray();
+            guildJSON.put("channelMutes", jsonArray);
+            return jsonArray;
+        }
+    }
+
+    private JSONObject getJSONForGuild(final IGuild guild) {
+        return getJSONForGuild(guild, true);
+    }
+
+    private JSONObject getJSONForGuild(final IGuild guild, final boolean createIfNull) {
+        if (modstuffJSON.has(guild.getStringID())) {
+            // JSON for guild exists
+            return modstuffJSON.getJSONObject(guild.getStringID());
+
+        }
+        else {
+            // JSON for guild doesn't exist
+            if (createIfNull) {
+                final JSONObject guildJSON = new JSONObject();
+                modstuffJSON.put(guild.getStringID(), guildJSON);
+                return guildJSON;
+            }
+            else {
+                LOG.warn(String.format("No JSON Entry found for guild '%s' (ID: %s)",
+                        guild.getName(), guild.getStringID()));
+                return null;
+            }
+        }
+    }
+
     private static ChronoUnit parseChronoUnit (String chronoUnitString) {
         switch (chronoUnitString.toLowerCase()) {
             case "s": return ChronoUnit.SECONDS;
@@ -893,6 +986,32 @@ public class ModStuff {
 
             default: throw new UnsupportedOperationException("Unsupported ChronoUnit");
         }
+    }
+
+    private void saveMutedUsers() {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        for (Entry<IGuild, Map<IUser, ScheduledFuture>> guildEntry : userMuteFutures.entrySet()) {
+            final JSONArray guildUserMutesJSON = getUserMutesJSONForGuild(guildEntry.getKey());
+            // Clear Array
+            for (int i = 0; i < guildUserMutesJSON.length(); i++) {
+                guildUserMutesJSON.remove(i);
+            }
+            final Map<IUser, ScheduledFuture> guildUserMutesMap = guildEntry.getValue();
+
+            for (Entry<IUser, ScheduledFuture> userEntry : guildUserMutesMap.entrySet()) {
+                final JSONObject entryObject = new JSONObject();
+                entryObject.put("user", userEntry.getKey().getLongID());
+
+                final ScheduledFuture unmutefuture = userEntry.getValue();
+                final long delay = unmutefuture.getDelay(TimeUnit.SECONDS);
+                final LocalDateTime unmuteTimestamp = LocalDateTime.now().plusSeconds(delay);
+                entryObject.put("mutedUntil", unmuteTimestamp.format(formatter));
+                guildUserMutesJSON.put(entryObject);
+            }
+        }
+
+        saveJSON();
     }
 
     private void saveJSON() {
