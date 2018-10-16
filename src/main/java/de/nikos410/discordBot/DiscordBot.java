@@ -63,7 +63,7 @@ public class DiscordBot {
             System.exit(1);
         }
         this.configJSON = new JSONObject(configFileContent);
-        LOG.info(String.format("Loaded configuration with %s entries.", configJSON.keySet().size()));
+        LOG.info("Loaded configuration with {} entries.", configJSON.keySet().size());
 
         // Read roles file
         final String rolesFileContent = IOUtil.readFile(ROLES_PATH);
@@ -72,7 +72,7 @@ public class DiscordBot {
             System.exit(1);
         }
         this.rolesJSON = new JSONObject(rolesFileContent);
-        LOG.info(String.format("Loaded roles file for %s guilds.", rolesJSON.keySet().size()));
+        LOG.info("Loaded roles file for {} guilds.", rolesJSON.keySet().size());
 
         // Get token from config
         final String token = configJSON.getString("token");
@@ -118,7 +118,7 @@ public class DiscordBot {
         // Find classes that are annotated with @CommandModule
         final Set<Class<?>> moduleClasses = reflections.getTypesAnnotatedWith(CommandModule.class);
 
-        LOG.info(String.format("Found %s total module(s).", moduleClasses.size()));
+        LOG.info("Found {} total module(s).", moduleClasses.size());
 
         // Load modules from all found classes
         for (final Class<?> moduleClass : moduleClasses) {
@@ -127,7 +127,7 @@ public class DiscordBot {
 
         // Create command map
         this.makeCommandMap();
-        LOG.info(String.format("%s module(s) with %s command(s) active.", this.loadedModules.size(), this.commands.size()));
+        LOG.info("{} module(s) with {} command(s) active.", this.loadedModules.size(), this.commands.size());
     }
 
     /**
@@ -136,7 +136,7 @@ public class DiscordBot {
      * @param moduleClass The class containing the module
      */
     private void loadModule(final Class<?> moduleClass) {
-        LOG.debug(String.format("Loading module information from class %s.", moduleClass));
+        LOG.debug("Loading module information from class {}.", moduleClass);
 
         // Get module name from annotation parameters
         final CommandModule moduleAnnotation = moduleClass.getDeclaredAnnotationsByType(CommandModule.class)[0];
@@ -146,8 +146,8 @@ public class DiscordBot {
         if (this.unloadedModules.contains(moduleName)) {
             // BotSetup Module must always be loaded
             if (moduleClass.equals(BotSetup.class)) {
-                LOG.info(String.format("Module \"%s\" can not be deactivated. Loading anyways.",
-                        moduleName));
+                LOG.info("Module \"{}\" can not be deactivated. Loading anyways.",
+                        moduleName);
 
                 // Remove entry from unloaded list and JSON
                 LOG.debug("Removing module from unloaded list.");
@@ -162,12 +162,12 @@ public class DiscordBot {
                 this.saveConfig();
             }
             else {
-                LOG.info(String.format("Module \"%s\" is deactivated. Skipping.", moduleName));
+                LOG.info("Module \"{}\" is deactivated. Skipping.", moduleName);
                 return;
             }
         }
 
-        LOG.debug(String.format("Loading module \"%s\".", moduleName));
+        LOG.debug("Loading module \"{}\".", moduleName);
         // Create an instance of the class
         final Object moduleObject = makeModuleObject(moduleClass);
         if (moduleObject != null) {
@@ -179,7 +179,7 @@ public class DiscordBot {
                 dispatcher.registerListener(moduleObject);
             }
 
-            LOG.info(String.format("Successfully loaded module \"%s\".", moduleName));
+            LOG.info("Successfully loaded module \"{}\".", moduleName);
         }
     }
 
@@ -190,35 +190,35 @@ public class DiscordBot {
      * @return The created Object
      */
     private Object makeModuleObject (Class<?> moduleClass) {
-        LOG.debug(String.format("Creating object from class %s.", moduleClass));
+        LOG.debug("Creating object from class {}.", moduleClass);
 
         try {
             // Using try-catch to differentiate between two possible constructors
             Object moduleObject;
             try {
                 // Constructor with one parameter of type 'DiscordBot'
-                LOG.debug(String.format("Trying to create an object from class %s with parameter.", moduleClass.getName()));
+                LOG.debug("Trying to create an object from class {} with parameter.", moduleClass.getName());
                 moduleObject = moduleClass.getDeclaredConstructor(DiscordBot.class).newInstance(this);
 
-                LOG.debug(String.format("Successfully created object from class %s.", moduleClass));
+                LOG.debug("Successfully created object from class {}.", moduleClass);
                 return moduleObject;
             }
             catch (NoSuchMethodException e) {
                 // Constructor without parameters
-                LOG.debug(String.format("Failed to create an object from class %s with parameter. Trying without parameters.",
-                        moduleClass.getName()));
+                LOG.debug("Failed to create an object from class {} with parameter. Trying without parameters.",
+                        moduleClass.getName());
                 moduleObject = moduleClass.newInstance();
 
-                LOG.debug(String.format("Successfully created object from class %s.", moduleClass));
+                LOG.debug("Successfully created object from class {}.", moduleClass);
                 return moduleObject;
             }
         }
         catch (InstantiationException | IllegalAccessException e) {
-            LOG.warn(String.format("Something went wrong while creating object from class \"%s\". Skipping.", moduleClass.getName()), e);
+            LOG.warn("Something went wrong while creating object from class \"{}\". Skipping.", moduleClass.getName(), e);
             return null;
         }
         catch (InvocationTargetException e) {
-            LOG.warn(String.format("Something went wrong while creating object from class \"%s\". Skipping.", moduleClass.getName()), e.getCause());
+            LOG.warn("Something went wrong while creating object from class \"{}\". Skipping.", moduleClass.getName(), e.getCause());
             return null;
         }
     }
@@ -235,7 +235,7 @@ public class DiscordBot {
         for (final String key : this.loadedModules.keySet()) {
             Object module = this.loadedModules.get(key);
 
-            LOG.debug(String.format("Registering command(s) for module \"%s\".", key));
+            LOG.debug("Registering command(s) for module \"{}\".", key);
 
             for (final Method method : module.getClass().getMethods()) {
 
@@ -259,10 +259,10 @@ public class DiscordBot {
                                 parameterCount-1, passContext, ignoreParameterCount);
                         this.commands.put(command.toLowerCase(), cmd);
 
-                        LOG.debug(String.format("Registered command \"%s\".", command));
+                        LOG.debug("Registered command \"{}\".", command);
                     }
                     else {
-                        LOG.warn(String.format("Command \"%s\" has an invalid number of arguments. Skipping", command));
+                        LOG.warn("Command \"{}\" has an invalid number of arguments. Skipping", command);
                     }
                 }
             }
@@ -277,16 +277,16 @@ public class DiscordBot {
     @EventSubscriber
     public void onMessageReceived(final MessageReceivedEvent event) {
         if (event.getChannel().isPrivate()) {
-            LOG.debug(String.format("Received PM from user with ID %s. Message length: %s",
+            LOG.debug("Received PM from user with ID {}. Message length: {}",
                     event.getAuthor().getStringID(),
-                    event.getMessage().getContent().length()));
+                    event.getMessage().getContent().length());
         }
         else {
-            LOG.debug(String.format("Guild %s: Received message from user with ID %s in channel with ID %s. Message length: %s",
+            LOG.debug("Guild {}: Received message from user with ID {} in channel with ID {}. Message length: {}",
                     event.getGuild().getStringID(),
                     event.getAuthor().getStringID(),
                     event.getChannel().getStringID(),
-                    event.getMessage().getContent().length()));
+                    event.getMessage().getContent().length());
         }
 
         handleMessage(event.getMessage());
@@ -308,18 +308,18 @@ public class DiscordBot {
             final long messageAge = messageTimestamp.until(editTimestamp, ChronoUnit.SECONDS);
 
             if (event.getChannel().isPrivate()) {
-                LOG.debug(String.format("PM from user with ID %s was edited. Message length: %s | Message age: %s seconds",
+                LOG.debug("PM from user with ID {} was edited. Message length: {} | Message age: {} seconds",
                         event.getAuthor().getStringID(),
                         event.getMessage().getContent().length(),
-                        messageAge));
+                        messageAge);
             }
             else {
-                LOG.debug(String.format("Guild %s: Message in channel with ID %s by user %s was edited. Message length: %s | Message age: %s seconds",
+                LOG.debug("Guild {}: Message in channel with ID {} by user {} was edited. Message length: {} | Message age: {} seconds",
                         event.getGuild().getStringID(),
                         event.getAuthor().getStringID(),
                         event.getChannel().getStringID(),
                         event.getMessage().getContent().length(),
-                        messageAge));
+                        messageAge);
             }
 
             if (messageAge < 20) {
@@ -360,24 +360,24 @@ public class DiscordBot {
 
         final Command command = commands.get(commandName);
 
-        LOG.info(String.format("User %s used command %s", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), commandName));
+        LOG.info("User {} used command {}", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), commandName);
 
         // Check if the user is allowed to use that command
         final int userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
-        LOG.debug(String.format("Checking permissions. User: %s | Required: %s", userPermissionLevel, command.permissionLevel));
+        LOG.debug("Checking permissions. User: {} | Required: {}", userPermissionLevel, command.permissionLevel);
         if (userPermissionLevel < command.permissionLevel) {
             DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
                     CommandPermissions.getPermissionLevelName(userPermissionLevel)));
-            LOG.info(String.format("User %s doesn't have the required permissions for using the command %s.",
+            LOG.info("User {} doesn't have the required permissions for using the command {}.",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
-                    commandName));
+                    commandName);
             return;
         }
 
         // The command was received in a PM but is only available on guilds
         if (message.getChannel().isPrivate() && !command.pmAllowed) {
             DiscordIO.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
-            LOG.info(String.format("Command %s is not available in PMs.", commandName));
+            LOG.info("Command {} is not available in PMs.", commandName);
             return;
         }
 
@@ -395,8 +395,8 @@ public class DiscordBot {
             }
             else {
                 DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl benötigt mindestens %s Parameter! (Gegeben: %s)", parameterCount, parameters.size()));
-                LOG.info(String.format("Wrong number of arguments. Expected number: %s Actual number: %s",
-                        parameterCount, parameters.size()));
+                LOG.info("Wrong number of arguments. Expected number: {} Actual number: {}",
+                        parameterCount, parameters.size());
                 return;
             }
         }
@@ -413,7 +413,7 @@ public class DiscordBot {
      * @param message The message that triggered the command
      */
     private void executeCommand(final String commandName, final Command command, final List<String> parameters, final IMessage message) {
-        LOG.debug(String.format("Executing command %s with %s parameters.", commandName, parameters.size()));
+        LOG.debug("Executing command {} with {} parameters.", commandName, parameters.size());
 
         try {
             switch (parameters.size()) {
@@ -444,8 +444,8 @@ public class DiscordBot {
                     break;
                 }
                 default: {
-                    LOG.error(String.format("Command \"%s\" has an invalid number of arguments. This should never happen.",
-                            commandName));
+                    LOG.error("Command \"{}\" has an invalid number of arguments. This should never happen.",
+                            commandName);
                     DiscordIO.errorNotify("Befehl kann wegen einer ungültigen Anzahl an Argumenten nicht " +
                             "ausgeführt werden. Dies sollte niemals passieren!", message.getChannel());
                 }
@@ -454,7 +454,7 @@ public class DiscordBot {
         catch (IllegalAccessException | InvocationTargetException e) {
             final Throwable cause = e.getCause();
 
-            LOG.error(String.format("Command \"%s\" could not be executed.", commandName), e.getCause());
+            LOG.error("Command \"{}\" could not be executed.", commandName, e.getCause());
             DiscordIO.errorNotify(cause.toString(), message.getChannel());
         }
     }
@@ -525,7 +525,7 @@ public class DiscordBot {
 
         // If no roles are configured for this guild return the lowest level
         if (!rolesJSON.has(guild.getStringID())) {
-            LOG.warn(String.format("Rollen für Server %s (ID: %s) nicht konfiguriert!", guild.getName(), guild.getStringID()));
+            LOG.warn("Rollen für Server {} (ID: {}) nicht konfiguriert!", guild.getName(), guild.getStringID());
             return CommandPermissions.EVERYONE;
         }
 
@@ -549,8 +549,8 @@ public class DiscordBot {
      */
     @EventSubscriber
     public void onStartup(final ReadyEvent event) {
-        LOG.info(String.format("[INFO] Bot ready. Prefix: %s", this.prefix));
-        LOG.info(String.format("Add this bot to a server: https://discordapp.com/oauth2/authorize?client_id=%s&scope=bot", client.getApplicationClientID()));
+        LOG.info("[INFO] Bot ready. Prefix: {}", this.prefix);
+        LOG.info("Add this bot to a server: https://discordapp.com/oauth2/authorize?client_id={}&scope=bot", client.getApplicationClientID());
         client.changePlayingText(String.format("%shelp | WIP", this.prefix));
     }
 
@@ -584,7 +584,7 @@ public class DiscordBot {
             return false;
         }
 
-        LOG.info(String.format("Activating module \"%s\".", moduleName));
+        LOG.info("Activating module \"{}\".", moduleName);
 
         LOG.debug("Removing module from unloaded list");
         this.unloadedModules.remove(moduleName);
@@ -598,7 +598,7 @@ public class DiscordBot {
         }
         this.saveConfig();
 
-        LOG.info(String.format("Reloading modules to include %s", moduleName));
+        LOG.info("Reloading modules to include {}", moduleName);
         this.loadModules();
 
         // Everything went fine
@@ -617,7 +617,7 @@ public class DiscordBot {
             return false;
         }
 
-        LOG.info(String.format("Deactivating module \"%s\".", moduleName));
+        LOG.info("Deactivating module \"{}\".", moduleName);
 
         // Unregister module from EventListener
         final Object moduleObject = loadedModules.get(moduleName);
@@ -638,7 +638,7 @@ public class DiscordBot {
         jsonUnloadedModules.put(moduleName);
         this.saveConfig();
 
-        LOG.info(String.format("Reloading modules to remove %s", moduleName));
+        LOG.info("Reloading modules to remove {}", moduleName);
         this.loadModules();
 
         // Everything went fine
