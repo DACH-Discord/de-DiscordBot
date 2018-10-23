@@ -39,38 +39,42 @@ public class BotSetup {
 
     @CommandSubscriber(command = "help", help = "Zeigt diese Hilfe an")
     public void command_help(final IMessage message) {
-        final EmbedBuilder embedBuilder = new EmbedBuilder();
+        final EmbedBuilder helpEmbedBuilder = new EmbedBuilder();
         final Map<String, Object> loadedModules = bot.getLoadedModules();
 
+        // Visit all modules that are loaded
         for (final Object module : loadedModules.values()) {
-            final StringBuilder helpBuilder = new StringBuilder();
+            final StringBuilder helpStringBuilder = new StringBuilder();
 
+            // Visit all Methods of that module
             for (final Method method : module.getClass().getMethods()) {
 
+                // Ignore methods that are not a command
                 if (method.isAnnotationPresent(CommandSubscriber.class)) {
                     final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
 
+                    // Only list commands that are available to that user
                     if (bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()) >= annotation.permissionLevel()) {
                         final String command = annotation.command();
                         final String help = annotation.help();
 
-                        helpBuilder.append(String.format("`%s` %s", command, help));
-                        helpBuilder.append('\n');
+                        helpStringBuilder.append(String.format("`%s` %s", command, help));
+                        helpStringBuilder.append('\n');
                     }
                 }
             }
 
-            final String moduleHelp = helpBuilder.toString();
+            final String helpString = helpStringBuilder.toString();
 
             final CommandModule[] annotations = module.getClass().getDeclaredAnnotationsByType(CommandModule.class);
             final String moduleName = annotations[0].moduleName();
 
-            if (!moduleHelp.isEmpty()) {
-                embedBuilder.appendField(moduleName, moduleHelp, false);
+            if (!helpString.isEmpty()) {
+                helpEmbedBuilder.appendField(moduleName, helpString, false);
             }
         }
 
-        final EmbedObject embedObject = embedBuilder.build();
+        final EmbedObject embedObject = helpEmbedBuilder.build();
         DiscordIO.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
 
         if (!message.getChannel().isPrivate()) {
@@ -99,9 +103,12 @@ public class BotSetup {
         final IGuild guild = message.getGuild();
         final IChannel channel = message.getChannel();
 
+        LOG.info("Setting role {} for guild {} (ID: {})", fieldName, guild.getName(), guild.getStringID());
+
         // User needs to have the permission "Manage Server" or "Admin"
         if (!canUserSetup(message.getAuthor(), guild)) {
             DiscordIO.sendMessage(channel, "Du benötigst die permission \"Server Verwalten\" oder \"Administrator\" um diesen Befehl zu benutzen");
+            LOG.info("Missing permissions. Aborting.");
             return;
         }
 
@@ -115,6 +122,8 @@ public class BotSetup {
             else {
                 DiscordIO.sendMessage(channel, String.format("Fehler! Es existiert keine Rolle mit " +
                         "der ID %s auf dem Server.", roleIDParameter));
+                LOG.info("No role with ID {} found for guild {} (ID: {}). Aborting.",
+                        roleIDParameter, guild.getName(), guild.getStringID());
                 return;
             }
         }
@@ -126,11 +135,13 @@ public class BotSetup {
             }
             else {
                 DiscordIO.sendMessage(channel, "Fehler! Bitte nur eine Rolle angeben.");
+                LOG.info("More than one role mentioned. Aborting.");
                 return;
             }
         }
         else {
-            DiscordIO.sendMessage(channel, "Keine gültige Rolle angegeben.");
+            DiscordIO.sendMessage(channel, "Keine Rolle angegeben.");
+            LOG.info("No role specified. Aborting.");
             return;
         }
 
@@ -138,14 +149,16 @@ public class BotSetup {
         final JSONObject rolesJSON = bot.rolesJSON;
         final String guildID = guild.getStringID();
 
-        final JSONObject serverRoles;
+        final JSONObject guildRoles;
         if (rolesJSON.has(guildID)) {
-            serverRoles = rolesJSON.getJSONObject(guildID);
+            guildRoles = rolesJSON.getJSONObject(guildID);
         }
         else {
-            serverRoles = new JSONObject();
+            LOG.debug("No JSON object found for this guild. Creating.");
+            guildRoles = new JSONObject();
+            LOG.debug("Successfully created JSON object for this guild.");
         }
-        serverRoles.put(fieldName, Long.parseLong(roleID));
+        guildRoles.put(fieldName, Long.parseLong(roleID));
 
         bot.saveRoles();
 
