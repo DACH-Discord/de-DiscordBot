@@ -176,7 +176,12 @@ public class BotSetup {
      * @return true if the user is authorized, false if not
      */
     private boolean canUserSetup(final IUser user, final IGuild guild) {
+        LOG.trace("Checking if user {} (ID: {}) is authorized to setup roles for guild {} (ID: {})...",
+                UserUtils.makeUserString(user, guild), user.getStringID(),
+                guild.getName(), guild.getStringID());
+
         for (IRole role : user.getRolesForGuild(guild)) {
+            LOG.trace("Checking role {} (ID: {})", role.getName(), role.getStringID());
             final EnumSet<Permissions> rolePermissions = role.getPermissions();
             if (rolePermissions.contains(Permissions.MANAGE_SERVER) ||
             rolePermissions.contains(Permissions.ADMINISTRATOR)) {
