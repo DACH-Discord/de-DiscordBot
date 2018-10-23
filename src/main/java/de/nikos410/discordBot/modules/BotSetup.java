@@ -202,13 +202,13 @@ public class BotSetup {
     @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = CommandPermissions.OWNER)
     public void command_SetUsername(final IMessage message, final String newUserName) {
         try {
+            LOG.info("Changing the username to {}.", newUserName);
             this.client.changeUsername(newUserName);
             DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Username gesetzt: `%s`", newUserName));
-            LOG.info(String.format("%s changed the bots username to %s.", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), newUserName));
         }
         catch (RateLimitException e) {
             DiscordIO.errorNotify(e, message.getChannel());
-            LOG.warn("Bot was ratelimited while trying to change its username.");
+            LOG.warn("Ratelimited while trying to change username.");
         }
     }
 
