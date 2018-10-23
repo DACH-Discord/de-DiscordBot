@@ -42,9 +42,7 @@ public class BotSetup {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
         final Map<String, Object> loadedModules = bot.getLoadedModules();
 
-        for (final String key : loadedModules.keySet()) {
-            final Object module = loadedModules.get(key);
-
+        for (final Object module : loadedModules.values()) {
             final StringBuilder helpBuilder = new StringBuilder();
 
             for (final Method method : module.getClass().getMethods()) {
