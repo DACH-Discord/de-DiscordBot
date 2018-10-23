@@ -196,19 +196,7 @@ public class BotSetup {
     public void command_Shutdown(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
         LOG.info("Shutting down.");
-        
-        try {
-            this.client.logout();
-
-            while (this.client.isLoggedIn()) {
-                TimeUnit.SECONDS.sleep(1);
-            }
-
-            System.exit(0);
-        }
-        catch (InterruptedException e) {
-            DiscordIO.errorNotify(e, message.getChannel());
-        }
+        this.client.logout();
     }
 
     @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = CommandPermissions.OWNER)
