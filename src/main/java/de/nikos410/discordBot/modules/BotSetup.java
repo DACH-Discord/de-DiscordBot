@@ -156,6 +156,7 @@ public class BotSetup {
         else {
             LOG.debug("No JSON object found for this guild. Creating.");
             guildRoles = new JSONObject();
+            rolesJSON.put(guildID, guildRoles);
             LOG.debug("Successfully created JSON object for this guild.");
         }
         guildRoles.put(fieldName, Long.parseLong(roleID));
