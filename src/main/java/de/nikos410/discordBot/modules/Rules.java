@@ -79,7 +79,8 @@ public class Rules {
         }
     }
 
-    @CommandSubscriber(command = "welcomeTest", help = "Begrüßungsnachricht testen", permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "welcomeTest", help = "Begrüßungsnachricht testen", permissionLevel = CommandPermissions.ADMIN,
+            pmAllowed = false)
     public void command_WelcomeTest(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
