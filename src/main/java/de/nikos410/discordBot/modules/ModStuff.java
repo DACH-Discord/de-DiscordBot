@@ -683,15 +683,25 @@ public class ModStuff {
         final List<String> voiceLog = getVoiceLogForGuild(message.getGuild());
 
         final StringBuilder stringBuilder = new StringBuilder();
+        boolean entriesSkipped = false;
 
         for (int i = voiceLog.size()-1; i > (voiceLog.size() - listCount - 1) && i >= 0; i--) {
-            stringBuilder.append(voiceLog.get(i));
-            stringBuilder.append('\n');
+            final String lineToAdd = voiceLog.get(i);
+            if (stringBuilder.length() + lineToAdd.length() <= 1024) {
+                stringBuilder.append(voiceLog.get(i));
+                stringBuilder.append('\n');
+            }
+            else {
+                entriesSkipped = true;
+            }
         }
 
         final EmbedBuilder responseBuilder = new EmbedBuilder();
         final String content = stringBuilder.length() > 0 ? stringBuilder.toString() : "_keine_";
         responseBuilder.appendField(String.format("Die letzten %s Voice-Interaktionen (von neu nach alt)", listCount), content, false);
+        if (entriesSkipped) {
+            responseBuilder.withFooterText("Einer oder mehrere Einträge wurden ignoriert, weil die maximale Textlänge erreicht wurde.");
+        }
 
         DiscordIO.sendEmbed(message.getChannel(), responseBuilder.build());
     }
