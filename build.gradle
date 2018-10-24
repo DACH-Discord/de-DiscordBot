@@ -32,6 +32,7 @@ dependencies {
     compile "org.json:json:20160810"
     compile group: 'org.reflections', name: 'reflections', version: '0.9.10'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '0.9.26'
+    compile 'io.sentry:sentry-logback:1.7.10'
 }
 
 repositories {
