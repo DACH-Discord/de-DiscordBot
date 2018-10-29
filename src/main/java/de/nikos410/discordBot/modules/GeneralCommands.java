@@ -43,6 +43,11 @@ public class GeneralCommands {
 
         final IUser commandAuthor = commandMessage.getAuthor();
         final IGuild guild = commandMessage.getGuild();
+
+        if (!id.matches("^[0-9]{18}$")) {
+            DiscordIO.sendMessage(commandMessage.getChannel(), "Keine gültige ID eingegeben!");
+            return;
+        }
         final long quoteMessageID = Long.parseLong(id);
         final IMessage quoteMessage = guild.getMessageByID(quoteMessageID);
 
