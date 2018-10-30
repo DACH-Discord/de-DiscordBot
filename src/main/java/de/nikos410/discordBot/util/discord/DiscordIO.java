@@ -58,13 +58,13 @@ public class DiscordIO {
      */
     public static synchronized List<IMessage> sendMessage(final IChannel channel, final String message) {
         if (message.length() <= 2000 ) {
-            // Nachricht ist maximal 2000 Zeichen lang
+            // Content fits into a single message
             final List<IMessage> sentMessages = new ArrayList<>();
             sentMessages.add(sendSingleMessage(channel, message));
             return sentMessages;
         }
         else {
-            // Nachricht ist länger als 2000 Zeichen -> umbrechen und aufteilen
+            // Content does not fit into a single message -> split
             final List<IMessage> sentMessages = new ArrayList<>();
             sentMessages.add(sendSingleMessage(channel, message.substring(0,1999)));
             sentMessages.addAll(sendMessage(channel, message.substring(1999)));
