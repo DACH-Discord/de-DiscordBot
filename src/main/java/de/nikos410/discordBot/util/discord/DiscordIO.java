@@ -28,17 +28,20 @@ public class DiscordIO {
      */
     public static synchronized List<IMessage> sendMessage(final IChannel channel, final List<String> lines) {
         final List<IMessage> sentMessages = new ArrayList<>();
-
         StringBuilder builder = new StringBuilder();
         for (String line : lines) {
+
             if (builder.length() + line.length() > 2000) {
+                // The message will be too long if we add the current line
                 sentMessages.add(sendSingleMessage(channel, builder.toString()));
                 builder = new StringBuilder();
             }
 
+            // Add a line break if the builder already contains a line
             if (builder.length() > 0) {
                 builder.append('\n');
             }
+
             builder.append(line);
         }
 
