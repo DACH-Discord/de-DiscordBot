@@ -67,7 +67,7 @@ public class DiscordIO {
             // Nachricht ist länger als 2000 Zeichen -> umbrechen und aufteilen
             final List<IMessage> sentMessages = new ArrayList<>();
             sentMessages.add(sendSingleMessage(channel, message.substring(0,1999)));
-            sentMessages.addAll(sendMessage(channel, message.substring(2000)));
+            sentMessages.addAll(sendMessage(channel, message.substring(1999)));
             return sentMessages;
         }
     }
