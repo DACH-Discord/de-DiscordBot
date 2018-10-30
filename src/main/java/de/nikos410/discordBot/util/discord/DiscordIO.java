@@ -19,12 +19,12 @@ public class DiscordIO {
     private final static Logger LOG = LoggerFactory.getLogger(DiscordIO.class);
 
     /**
-     * Eine Nachricht senden. Wenn die Nachricht zu lang (>2000 Zeichen) ist, wird sie in mehrere kürzere
-     * Nachrichten aufgeteilt.
+     * Send a list of lines to the specified channel. If the message gets too long (>2000 characters)
+     * it will be split into multiple messages. The individual lines will not be split.
      *
-     * @param channel der Kanal in dem die Nachricht gesendet werden soll
-     * @param lines die Zeilen der Nachricht
-     * @return Die gesendete(n) Nachricht(en)
+     * @param channel the channel in which the message(s) will be sent
+     * @param lines the lines to send
+     * @return a list containing the sent message(s).
      */
     public static synchronized List<IMessage> sendMessage(final IChannel channel, final List<String> lines) {
         final List<IMessage> sentMessages = new ArrayList<>();
