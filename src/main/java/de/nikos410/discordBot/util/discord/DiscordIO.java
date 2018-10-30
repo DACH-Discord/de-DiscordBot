@@ -49,12 +49,12 @@ public class DiscordIO {
     }
 
     /**
-     * Eine Nachricht senden. Wenn die Nachricht zu lang (>2000 Zeichen) ist, wird sie in mehrere kürzere
-     * Nachrichten umgebrochen
+     * Send a string to a channel. If the string is too long (>2000 characters), it will be split into
+     * multiple messages. Will split in the middle of lines or words.
      *
-     * @param channel der Kanal in dem die Nachricht gesendet werden soll
-     * @param message der Inhalt der Nachricht
-     * @return Die gesendete(n) Nachricht(en)
+     * @param channel the channel in which the message(s) will be sent
+     * @param message the content of the message
+     * @return a list containing the sent message(s).
      */
     public static synchronized List<IMessage> sendMessage(final IChannel channel, final String message) {
         if (message.length() <= 2000 ) {
