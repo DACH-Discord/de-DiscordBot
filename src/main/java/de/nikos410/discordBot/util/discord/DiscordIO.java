@@ -32,6 +32,9 @@ public class DiscordIO {
         StringBuilder builder = new StringBuilder();
         for (String line : lines) {
             if (builder.length() + line.length() <= 2000) {
+                if (builder.length() > 0) {
+                    builder.append('\n');
+                }
                 // Zeile passt
                 builder.append(line);
             }
