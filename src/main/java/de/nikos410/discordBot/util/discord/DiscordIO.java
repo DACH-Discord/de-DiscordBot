@@ -70,7 +70,7 @@ public class DiscordIO {
     }
 
     private static synchronized IMessage sendSingleMessage(final IChannel channel, final String message){
-        return sendSingleMessage(channel, message, 0);
+        return sendSingleMessage(channel, message, 20);
     }
 
     private static synchronized IMessage sendSingleMessage(final IChannel channel, final String message, final int tries){
@@ -78,8 +78,10 @@ public class DiscordIO {
             return channel.sendMessage(message);
         }
         catch (RateLimitException rle) {
+            LOG.info("Ratelimited");
             // 20 Versuche im Abstand von 0,5 Sekunden
-            if (tries < 20) {
+            if (tries > 0) {
+                LOG.info("waiting");
                 // 500ms warten
                 try {
                     TimeUnit.MILLISECONDS.sleep(500);
@@ -87,12 +89,11 @@ public class DiscordIO {
                 catch (InterruptedException ie) {
                     LOG.error("Sleep was interrupted.", ie);
                 }
-                finally {
-                    sendSingleMessage(channel, message, tries+1);
-                }
+
+                return sendSingleMessage(channel, message, tries - 1);
             }
             else {
-                LOG.warn("Bot was ratelimited while trying to send message. (20 tries)", rle);
+                LOG.warn("Bot was ratelimited while trying to send message.", rle);
             }
         }
         catch (DiscordException de) {
@@ -103,7 +104,7 @@ public class DiscordIO {
     }
 
     public static synchronized IMessage sendEmbed(final IChannel channel, final EmbedObject embedObject) {
-        return sendEmbed(channel, embedObject, 0);
+        return sendEmbed(channel, embedObject, 20);
     }
 
     private static IMessage sendEmbed(final IChannel channel, final EmbedObject embedObject, final int tries) {
@@ -112,19 +113,19 @@ public class DiscordIO {
         }
         catch (RateLimitException rle) {
             // 20 Versuche im Abstand von 0,5 Sekunden
-            if (tries < 20) {
+            if (tries > 0) {
+                // 500ms warten
                 try {
                     TimeUnit.MILLISECONDS.sleep(500);
                 }
                 catch (InterruptedException ie) {
                     LOG.error("Sleep was interrupted.", ie);
                 }
-                finally {
-                    sendEmbed(channel, embedObject, tries + 1);
-                }
+
+                return sendEmbed(channel, embedObject, tries - 1);
             }
             else {
-                LOG.warn("Bot was ratelimited while trying to send embed. (20 tries)", rle);
+                LOG.warn("Bot was ratelimited while trying to send embed.", rle);
             }
         }
         catch (DiscordException de) {
