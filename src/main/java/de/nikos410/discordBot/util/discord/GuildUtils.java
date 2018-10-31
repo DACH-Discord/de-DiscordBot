@@ -10,17 +10,6 @@ import sx.blah.discord.handle.obj.IRole;
 public class GuildUtils {
 
     /**
-     * Check whether a role exists on a guild.
-     *
-     * @param guild The guild on which to search for the role.
-     * @param role The role for which to search.
-     * @return True if the role exists on that guild, otherwise false.
-     */
-    public static boolean roleExists(final IGuild guild, final IRole role) {
-        return roleExists(guild, role.getLongID());
-    }
-
-    /**
      * Check whether a role with a given ID exists on a guild.
      *
      * @param guild The guild on which to search for the role.
@@ -54,17 +43,6 @@ public class GuildUtils {
             }
         }
         return false;
-    }
-
-    /**
-     * Check whether a channel exists on a guild.
-     *
-     * @param guild The guild on which to search for the channel.
-     * @param channel The channel for which to search.
-     * @return True if the channel exists on that guild, otherwise false.
-     */
-    public static boolean channelExists(final IGuild guild, final IChannel channel) {
-        return channelExists(guild, channel.getLongID());
     }
 
     /**

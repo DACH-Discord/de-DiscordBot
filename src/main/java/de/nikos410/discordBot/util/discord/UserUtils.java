@@ -6,8 +6,18 @@ import sx.blah.discord.handle.obj.IUser;
 
 import java.util.List;
 
+/**
+ * Contains some helper methods for doing stuff involving users.
+ */
 public class UserUtils {
 
+    /**
+     * Returns the highest role of a user.
+     *
+     * @param user The user whose highest role will be returned.
+     * @param guild The guild for which to get the user's highest role.
+     * @return The highest role of the given user for the given guild.
+     */
     public static IRole getTopRole(final IUser user, final IGuild guild) {
         final List<IRole> roles = user.getRolesForGuild(guild);
         IRole topRole = guild.getEveryoneRole();
