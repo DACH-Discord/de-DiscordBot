@@ -12,6 +12,12 @@ public class IOUtil {
 
     private final static Logger LOG = LoggerFactory.getLogger(IOUtil.class);
 
+    /**
+     * Read the contents of a plaintext file.
+     *
+     * @param path The path to the file containing the text.
+     * @return The contents of the file.
+     */
     public static String readFile(Path path) {
         try {
             return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
@@ -22,6 +28,13 @@ public class IOUtil {
         }
     }
 
+    /**
+     * Write a string to a file.
+     *
+     * @param path The path to the file which the text will be written to.
+     * @param text The string that will be written to the file.
+     * @return The path.
+     */
     public static Path writeToFile(Path path, String text) {
         try {
             return Files.write(path, text.getBytes(StandardCharsets.UTF_8));
