@@ -31,10 +31,10 @@ public class UserUtils {
     }
 
     public static boolean hasRole(final IUser user, final IRole role, final IGuild guild) {
-        return hasRoleByID(user, role.getLongID(), guild);
+        return hasRole(user, role.getLongID(), guild);
     }
 
-    public static boolean hasRoleByID(final IUser user, final long roleID, final IGuild guild) {
+    public static boolean hasRole(final IUser user, final long roleID, final IGuild guild) {
         final List<IRole> roles = user.getRolesForGuild(guild);
 
         for (IRole role : roles) {

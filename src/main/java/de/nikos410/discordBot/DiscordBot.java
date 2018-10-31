@@ -532,12 +532,12 @@ public class DiscordBot {
         final JSONObject guildRoles = rolesJSON.getJSONObject(guild.getStringID());
 
         final long adminRoleID = guildRoles.getLong("adminRole");
-        if (UserUtils.hasRoleByID(user, adminRoleID, guild)) {
+        if (UserUtils.hasRole(user, adminRoleID, guild)) {
             return CommandPermissions.ADMIN;
         }
 
         final long modRoleID = guildRoles.getLong("modRole");
-        if (UserUtils.hasRoleByID(user, modRoleID, guild)) {
+        if (UserUtils.hasRole(user, modRoleID, guild)) {
             return CommandPermissions.MODERATOR;
         }
 
