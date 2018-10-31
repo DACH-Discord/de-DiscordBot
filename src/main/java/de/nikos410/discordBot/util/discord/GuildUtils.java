@@ -4,6 +4,9 @@ import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IRole;
 
+/**
+ * Contains some helper methods for doing stuff involving guilds.
+ */
 public class GuildUtils {
 
     public static boolean roleExists(final IGuild guild, final IRole role) {
