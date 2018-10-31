@@ -63,13 +63,14 @@ public class UserUtils {
 
     public static String makeUserString(final IUser user, final IGuild guild) {
         final String name = user.getName();
+        final String discriminator = user.getDiscriminator();
         final String displayName = user.getDisplayName(guild);
 
         if (name.equals(displayName)) {
-            return name;
+            return String.format("%s#%s", name, discriminator);
         }
         else {
-            return String.format("%s (%s#%s)", displayName, name, user.getDiscriminator());
+            return String.format("\"%s\" (%s#%s)", displayName, name, discriminator);
         }
 
     }
