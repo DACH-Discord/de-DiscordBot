@@ -22,7 +22,7 @@ public class Authorization {
                 return clientBuilder.build(); // Creates the client instance but it doesn't log the client in yet, you would have to call client.login() yourself
             }
         } catch (DiscordException e) { // This is thrown if there was a problem building the client
-            log.error("Could not auhorize the bot. Please make sure your token is correct.", e);
+            log.error("Could not authorize the bot. Please make sure your token is correct.", e);
             throw e;
         }
     }
