@@ -160,7 +160,7 @@ public class UserLog {
         final IChannel modlogChannel;
         final List<IChannel> channelMentions = message.getChannelMentions();
 
-        if (GuildUtils.hasChannelByID(message.getGuild(), channel)) {
+        if (GuildUtils.channelExists(message.getGuild(), channel)) {
             // Kanal ID wurde als Parameter angegeben
             modlogChannel = message.getGuild().getChannelByID(Long.parseLong(channel));
         }

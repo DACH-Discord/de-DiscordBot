@@ -9,10 +9,24 @@ import sx.blah.discord.handle.obj.IRole;
  */
 public class GuildUtils {
 
+    /**
+     * Check whether a role exists on a guild.
+     *
+     * @param guild The guild on which to search for the role.
+     * @param role The role for which to search.
+     * @return True if the role exists on that guild, otherwise false.
+     */
     public static boolean roleExists(final IGuild guild, final IRole role) {
         return roleExists(guild, role.getLongID());
     }
 
+    /**
+     * Check whether a role with a given ID exists on a guild.
+     *
+     * @param guild The guild on which to search for the role.
+     * @param roleID The ID of the role for which to search.
+     * @return True if the role exists on that guild, otherwise false.
+     */
     public static boolean roleExists(final IGuild guild, final long roleID) {
         // More reliable than guild.getRoleByID(roleID) != null
 
@@ -23,6 +37,14 @@ public class GuildUtils {
         }
         return false;
     }
+
+    /**
+     * Check whether a role with a given ID exists on a guild.
+     *
+     * @param guild The guild on which to search for the role.
+     * @param roleID The ID of the role for which to search.
+     * @return True if the role exists on that guild, otherwise false.
+     */
     public static boolean roleExists(final IGuild guild, final String roleID) {
         // More reliable than guild.getRoleByID(roleID) != null
 
@@ -34,7 +56,25 @@ public class GuildUtils {
         return false;
     }
 
-    public static boolean hasChannelByID(final IGuild guild, final long channelID) {
+    /**
+     * Check whether a channel exists on a guild.
+     *
+     * @param guild The guild on which to search for the channel.
+     * @param channel The channel for which to search.
+     * @return True if the channel exists on that guild, otherwise false.
+     */
+    public static boolean channelExists(final IGuild guild, final IChannel channel) {
+        return channelExists(guild, channel.getLongID());
+    }
+
+    /**
+     * Check whether a channel with a given ID exists on a guild.
+     *
+     * @param guild The guild on which to search for the channel.
+     * @param channelID The ID of the channel for which to search.
+     * @return True if the channel exists on that guild, otherwise false.
+     */
+    public static boolean channelExists(final IGuild guild, final long channelID) {
         for (IChannel channel : guild.getChannels()) {
             if (channelID == channel.getLongID()) {
                 return true;
@@ -42,7 +82,15 @@ public class GuildUtils {
         }
         return false;
     }
-    public static boolean hasChannelByID(final IGuild guild, final String channelID) {
+
+    /**
+     * Check whether a channel with a given ID exists on a guild.
+     *
+     * @param guild The guild on which to search for the channel.
+     * @param channelID The ID of the channel for which to search.
+     * @return True if the channel exists on that guild, otherwise false.
+     */
+    public static boolean channelExists(final IGuild guild, final String channelID) {
         for (IChannel channel : guild.getChannels()) {
             if (channelID.equals(channel.getStringID())) {
                 return true;
