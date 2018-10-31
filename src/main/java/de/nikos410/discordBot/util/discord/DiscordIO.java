@@ -85,11 +85,8 @@ public class DiscordIO {
             return channel.sendMessage(message);
         }
         catch (RateLimitException rle) {
-            LOG.info("Ratelimited");
-            // 20 Versuche im Abstand von 0,5 Sekunden
             if (tries > 0) {
-                LOG.info("waiting");
-                // 500ms warten
+                // Try again after 500ms
                 try {
                     TimeUnit.MILLISECONDS.sleep(500);
                 }
@@ -119,9 +116,8 @@ public class DiscordIO {
             return channel.sendMessage(embedObject);
         }
         catch (RateLimitException rle) {
-            // 20 Versuche im Abstand von 0,5 Sekunden
             if (tries > 0) {
-                // 500ms warten
+                // Try again after 500ms
                 try {
                     TimeUnit.MILLISECONDS.sleep(500);
                 }
