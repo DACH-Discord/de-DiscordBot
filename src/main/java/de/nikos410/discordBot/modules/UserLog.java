@@ -8,11 +8,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import de.nikos410.discordBot.framework.PermissionLevel;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.GuildUtils;
 import de.nikos410.discordBot.util.io.IOUtil;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
-import de.nikos410.discordBot.framework.CommandPermissions;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 
 import org.json.JSONObject;
@@ -155,7 +155,8 @@ public class UserLog {
         DiscordIO.sendEmbed(channel, embedObject);
     }
 
-    @CommandSubscriber(command = "setUserlogChannel", help = "Kanal für Userlog ändern", permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "setUserlogChannel", help = "Kanal für Userlog ändern",
+            permissionLevel = PermissionLevel.ADMIN)
     public void command_SetUserlogChannel(final IMessage message, final String channel) {
         final IChannel modlogChannel;
         final List<IChannel> channelMentions = message.getChannelMentions();
@@ -183,7 +184,8 @@ public class UserLog {
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "enableUserlog", help = "Userlog aktivieren", permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "enableUserlog", help = "Userlog aktivieren",
+            permissionLevel = PermissionLevel.ADMIN)
     public void command_EnableUserlog(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
@@ -198,7 +200,8 @@ public class UserLog {
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "disableUserlog", help = "Userlog deaktivieren", permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "disableUserlog", help = "Userlog deaktivieren",
+            permissionLevel = PermissionLevel.ADMIN)
     public void command_DisableUserlog(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
@@ -209,7 +212,8 @@ public class UserLog {
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "userlogTest", help = "Userlog-Ausgabe testen", permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "userlogTest", help = "Userlog-Ausgabe testen",
+            permissionLevel = PermissionLevel.ADMIN)
     public void command_UserlogTest(final IMessage message) {
         final IUser user = message.getAuthor();
 

@@ -5,12 +5,12 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import de.nikos410.discordBot.DiscordBot;
+import de.nikos410.discordBot.framework.PermissionLevel;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.GuildUtils;
 import de.nikos410.discordBot.util.discord.UserUtils;
 import de.nikos410.discordBot.util.io.IOUtil;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
-import de.nikos410.discordBot.framework.CommandPermissions;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 
 import org.json.JSONObject;
@@ -43,7 +43,8 @@ public class UserGroups {
         usergroupsJSON = new JSONObject(jsonContent);
     }
 
-    @CommandSubscriber(command = "createGroup", help = "Neue Gruppe erstellen", pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
+    @CommandSubscriber(command = "createGroup", help = "Neue Gruppe erstellen", pmAllowed = false,
+            permissionLevel = PermissionLevel.MODERATOR)
     public void command_createGroup(final IMessage message, final String groupName) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
@@ -67,7 +68,8 @@ public class UserGroups {
         LOG.info(String.format("%s created new group %s.", UserUtils.makeUserString(message.getAuthor(), guild), groupName));
     }
 
-    @CommandSubscriber(command = "removeGroup", help = "Gruppe entfernen", pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
+    @CommandSubscriber(command = "removeGroup", help = "Gruppe entfernen", pmAllowed = false,
+            permissionLevel = PermissionLevel.MODERATOR)
     public void command_removeGroup(final IMessage message, final String groupName) {
         final IGuild guild = message.getGuild();
 

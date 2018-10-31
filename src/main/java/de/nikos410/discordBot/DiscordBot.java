@@ -248,7 +248,7 @@ public class DiscordBot {
                     // Get command properties from annotation
                     final String command = annotations[0].command();
                     final boolean pmAllowed = annotations[0].pmAllowed();
-                    final int permissionLevel = annotations[0].permissionLevel();
+                    final PermissionLevel permissionLevel = annotations[0].permissionLevel();
                     final int parameterCount = method.getParameterCount();
                     final boolean passContext = annotations[0].passContext();
                     final boolean ignoreParameterCount = annotations[0].ignoreParameterCount();
@@ -363,11 +363,11 @@ public class DiscordBot {
         LOG.info("User {} used command {}", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), commandName);
 
         // Check if the user is allowed to use that command
-        final int userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
+        final PermissionLevel userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
         LOG.debug("Checking permissions. User: {} | Required: {}", userPermissionLevel, command.permissionLevel);
-        if (userPermissionLevel < command.permissionLevel) {
+        if (userPermissionLevel.getLevel() < command.permissionLevel.getLevel()) {
             DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
-                    CommandPermissions.getPermissionLevelName(userPermissionLevel)));
+                    userPermissionLevel.getName()));
             LOG.info("User {} doesn't have the required permissions for using the command {}.",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     commandName);
@@ -517,31 +517,41 @@ public class DiscordBot {
      * @param guild The guild on which the permission level counts
      * @return The user's permission level on the guiild
      */
-    public int getUserPermissionLevel(final IUser user, final IGuild guild) {
+    public PermissionLevel getUserPermissionLevel(final IUser user, final IGuild guild) {
         // User is the configured owner of the bot
         if (user.getLongID() == this.ownerID) {
-            return CommandPermissions.OWNER;
+            return PermissionLevel.OWNER;
         }
 
         // If no roles are configured for this guild return the lowest level
         if (!rolesJSON.has(guild.getStringID())) {
-            LOG.warn("Rollen für Server {} (ID: {}) nicht konfiguriert!", guild.getName(), guild.getStringID());
-            return CommandPermissions.EVERYONE;
+            LOG.warn("Roles for server {} (ID: {}) are not configured!", guild.getName(), guild.getStringID());
+            return PermissionLevel.EVERYONE;
         }
 
         final JSONObject guildRoles = rolesJSON.getJSONObject(guild.getStringID());
 
-        final long adminRoleID = guildRoles.getLong("adminRole");
-        if (UserUtils.hasRole(user, adminRoleID, guild)) {
-            return CommandPermissions.ADMIN;
+        if (guildRoles.has("adminRole")) {
+            final long adminRoleID = guildRoles.getLong("adminRole");
+            if (UserUtils.hasRole(user, adminRoleID, guild)) {
+                return PermissionLevel.ADMIN;
+            }
+        }
+        else {
+            LOG.warn("Admin role for server {} (ID: {}) is not configured!");
         }
 
-        final long modRoleID = guildRoles.getLong("modRole");
-        if (UserUtils.hasRole(user, modRoleID, guild)) {
-            return CommandPermissions.MODERATOR;
+        if (guildRoles.has("modRole")) {
+            final long adminRoleID = guildRoles.getLong("modRole");
+            if (UserUtils.hasRole(user, adminRoleID, guild)) {
+                return PermissionLevel.ADMIN;
+            }
+        }
+        else {
+            LOG.warn("Moderator role for server {} (ID: {}) is not configured!");
         }
 
-        return CommandPermissions.EVERYONE;
+        return PermissionLevel.EVERYONE;
     }
 
     /**

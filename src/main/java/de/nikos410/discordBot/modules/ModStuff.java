@@ -1,7 +1,7 @@
 package de.nikos410.discordBot.modules;
 
 import de.nikos410.discordBot.DiscordBot;
-import de.nikos410.discordBot.framework.CommandPermissions;
+import de.nikos410.discordBot.framework.PermissionLevel;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordBot.util.discord.DiscordIO;
@@ -75,7 +75,8 @@ public class ModStuff {
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false)
     public void command_Kick(final IMessage message, final String kickUserString, String customMessage) {
-        if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()) >= CommandPermissions.MODERATOR) {
+        if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel() >=
+                PermissionLevel.MODERATOR.getLevel()) {
 
             final List<IUser> mentions = message.getMentions();
             if (mentions.size() <1) {
@@ -134,7 +135,8 @@ public class ModStuff {
     @CommandSubscriber(command = "ban", help = "Bannt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false)
     public void command_Ban(final IMessage message, final String banUserString, String customMessage) {
-        if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()) >= CommandPermissions.MODERATOR) {
+        if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel() >=
+                PermissionLevel.MODERATOR.getLevel()) {
 
             final List<IUser> mentions = message.getMentions();
             if (mentions.size() <1) {
@@ -199,7 +201,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
-            permissionLevel = CommandPermissions.MODERATOR)
+            permissionLevel = PermissionLevel.MODERATOR)
     public void command_Mute(final IMessage message, final String muteUserString, final String muteDurationInput) {
         // Nutzer der gemuted werden soll auslesen
         final List<IUser> mentions = message.getMentions();
@@ -317,7 +319,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "unmute", help = "Nutzer entmuten", pmAllowed = false,
-            permissionLevel = CommandPermissions.MODERATOR)
+            permissionLevel = PermissionLevel.MODERATOR)
     public void command_Unmute(final IMessage message) {
         final List<IUser> mentions = message.getMentions();
         if (mentions.size() <1) {
@@ -410,7 +412,7 @@ public class ModStuff {
         return (userMuteFutures.containsKey(guild) && userMuteFutures.get(guild).containsKey(user));
     }
 
-    @CommandSubscriber(command = "channelMute", help = "Nutzer in einem Channel für eine bestimmte Zeit stummschalten", pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR)
+    @CommandSubscriber(command = "channelMute", help = "Nutzer in einem Channel für eine bestimmte Zeit stummschalten", pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR)
     public void command_channelMute(final IMessage message, final String user, final String channelOrMuteDurationInput, final String muteDurationInput) {
         // Nutzer auslesen
         final List<IUser> userMentions = message.getMentions();
@@ -663,7 +665,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "voicelog", help = "Die letzten 20 Aktivitäten in Sprachkanälen auflisten",
-    pmAllowed = false, permissionLevel = CommandPermissions.MODERATOR, ignoreParameterCount = true)
+    pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR, ignoreParameterCount = true)
     public void command_voicelog(final IMessage message, final String listCountArg) {
         final int listCount;
 
@@ -737,7 +739,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "setModlogChannel", help = "Kanal in dem die Modlog Nachrichten gesendet werden einstellen",
-            pmAllowed = false, passContext = false, permissionLevel = CommandPermissions.ADMIN)
+            pmAllowed = false, passContext = false, permissionLevel = PermissionLevel.ADMIN)
     public void command_setModlogChannel(final IMessage message, final String channel) {
         final IChannel modlogChannel;
         final List<IChannel> channelMentions = message.getChannelMentions();
@@ -773,7 +775,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "setMuteRole", help = "Mute Rolle einstellen einstellen",
-            pmAllowed = false, passContext = false, permissionLevel = CommandPermissions.ADMIN)
+            pmAllowed = false, passContext = false, permissionLevel = PermissionLevel.ADMIN)
     public void command_setMuteRole(final IMessage message, final String role) {
         final IRole muteRole;
         final List<IRole> roleMentions = message.getRoleMentions();

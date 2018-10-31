@@ -10,7 +10,7 @@ public class Command {
     public final Method method;
 
     public final boolean pmAllowed;
-    public final int permissionLevel;
+    public final PermissionLevel permissionLevel;
     public final int parameterCount;
     public final boolean passContext;
     public final boolean ignoreParameterCount;
@@ -26,7 +26,7 @@ public class Command {
      * @param passContext Set whether to append additional parameters or to ignore them.
      * @param ignoreParameterCount Don't check if enough parameters are given when executing.
      */
-    public Command(final Object object, final Method method, final boolean pmAllowed, final int permissionLevel,
+    public Command(final Object object, final Method method, final boolean pmAllowed, final PermissionLevel permissionLevel,
                    final int parameterCount, final boolean passContext, final boolean ignoreParameterCount) {
         this.object = object;
         this.method = method;

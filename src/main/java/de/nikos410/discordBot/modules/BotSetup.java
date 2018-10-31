@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Map;
 
 import de.nikos410.discordBot.DiscordBot;
+import de.nikos410.discordBot.framework.PermissionLevel;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.GuildUtils;
 import de.nikos410.discordBot.util.discord.UserUtils;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
-import de.nikos410.discordBot.framework.CommandPermissions;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
 
 import org.json.JSONObject;
@@ -53,7 +53,8 @@ public class BotSetup {
                     final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
 
                     // Only list commands that are available to that user
-                    if (bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()) >= annotation.permissionLevel()) {
+                    if (bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel()
+                            >= annotation.permissionLevel().getLevel()) {
                         final String command = annotation.command();
                         final String help = annotation.help();
 
@@ -191,14 +192,14 @@ public class BotSetup {
     }
 
 
-    @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = CommandPermissions.OWNER)
+    @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = PermissionLevel.OWNER)
     public void command_Shutdown(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
         LOG.info("Shutting down.");
         this.client.logout();
     }
 
-    @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = CommandPermissions.OWNER)
+    @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = PermissionLevel.OWNER)
     public void command_SetUsername(final IMessage message, final String newUserName) {
         try {
             LOG.info("Changing the username to {}.", newUserName);
@@ -237,7 +238,7 @@ public class BotSetup {
         DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
-    @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = PermissionLevel.ADMIN)
     public void command_LoadModule(final IMessage message, final String moduleName) {
         final boolean result = bot.activateModule(moduleName);
 
@@ -254,7 +255,7 @@ public class BotSetup {
         DiscordIO.sendMessage(message.getChannel(), resultMessage);
     }
 
-    @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = CommandPermissions.ADMIN)
+    @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = PermissionLevel.ADMIN)
     public void command_UnloadModule(final IMessage message, final String moduleName) {
         if (moduleName.equalsIgnoreCase("Bot-Setup")) {
             DiscordIO.sendMessage(message.getChannel(), ":x: Das Bot-Setup Modul kann nicht deaktiviert werden.");
