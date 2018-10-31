@@ -147,6 +147,12 @@ public class DiscordIO {
         return null;
     }
 
+    /**
+     * Send a notification about an error to a channel.
+     *
+     * @param e The exception that will be shown in the notification.
+     * @param channel The channel in which to send the notification.
+     */
     public static void errorNotify(final Exception e, final IChannel channel) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
@@ -157,6 +163,12 @@ public class DiscordIO {
         sendEmbed(channel, embedBuilder.build());
     }
 
+    /**
+     * Send a notification about an error to a channel.
+     *
+     * @param errorMessage The message that will be included in the notification.
+     * @param channel The channel in which to send the notification.
+     */
     public static void errorNotify(final String errorMessage, final IChannel channel) {
         final EmbedBuilder embedBuilder = new EmbedBuilder();
 
