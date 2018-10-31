@@ -61,6 +61,17 @@ public class UserUtils {
         return false;
     }
 
+    /**
+     * Create a String that can be used to identify a user on a guild.
+     * If the user does not have a nickname for that guild, returns the username followed by the users discriminator.
+     * (e.g. {@code Nikos#0410})
+     *
+     * If the user does have a nickname, that nickname will be included. (e.g. {@code "Sokin" (Nikos#0410) })
+     *
+     * @param user The user for which to create the String.
+     * @param guild The guild on which to look for a nickname of that user.
+     * @return The generated String.
+     */
     public static String makeUserString(final IUser user, final IGuild guild) {
         final String name = user.getName();
         final String discriminator = user.getDiscriminator();
