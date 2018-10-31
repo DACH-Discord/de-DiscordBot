@@ -6,7 +6,11 @@ import sx.blah.discord.handle.obj.IRole;
 
 public class GuildUtils {
 
-    public static boolean hasRoleByID(final IGuild guild, final long roleID) {
+    public static boolean roleExists(final IGuild guild, final IRole role) {
+        return roleExists(guild, role.getLongID());
+    }
+
+    public static boolean roleExists(final IGuild guild, final long roleID) {
         // More reliable than guild.getRoleByID(roleID) != null
 
         for (IRole role : guild.getRoles()) {
@@ -16,7 +20,7 @@ public class GuildUtils {
         }
         return false;
     }
-    public static boolean hasRoleByID(final IGuild guild, final String roleID) {
+    public static boolean roleExists(final IGuild guild, final String roleID) {
         // More reliable than guild.getRoleByID(roleID) != null
 
         for (IRole role : guild.getRoles()) {

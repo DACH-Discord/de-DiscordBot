@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.util.discord.DiscordIO;
@@ -116,7 +115,7 @@ public class BotSetup {
         // Check if parameters are valid
         if (roleIDParameter.matches("^[0-9]{18}$")) {
             // A role ID was specified as the parameter
-            if (GuildUtils.hasRoleByID(guild, Long.parseLong(roleIDParameter))) {
+            if (GuildUtils.roleExists(guild, Long.parseLong(roleIDParameter))) {
                 roleID = roleIDParameter;
             }
             else {

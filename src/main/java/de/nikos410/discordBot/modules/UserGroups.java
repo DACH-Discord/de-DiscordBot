@@ -211,7 +211,7 @@ public class UserGroups {
             final String groupName = keyIterator.next();
             final long roleID = guildJSON.getLong(groupName);
 
-            if (!GuildUtils.hasRoleByID(guild, roleID)) {
+            if (!GuildUtils.roleExists(guild, roleID)) {
                 keyIterator.remove();
                 saveJSON();
             }
@@ -232,7 +232,7 @@ public class UserGroups {
 
         final long roleID = guildJSON.getLong(groupName);
 
-        if (!GuildUtils.hasRoleByID(guild, roleID)) {
+        if (!GuildUtils.roleExists(guild, roleID)) {
             guildJSON.remove(groupName);
             saveJSON();
         }

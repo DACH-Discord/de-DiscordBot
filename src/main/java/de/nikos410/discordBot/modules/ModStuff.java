@@ -778,7 +778,7 @@ public class ModStuff {
         final IRole muteRole;
         final List<IRole> roleMentions = message.getRoleMentions();
 
-        if (GuildUtils.hasRoleByID(message.getGuild(), role)) {
+        if (GuildUtils.roleExists(message.getGuild(), role)) {
             // Rollen ID wurde als Parameter angegeben
             muteRole = message.getGuild().getRoleByID(Long.parseLong(role));
         }
