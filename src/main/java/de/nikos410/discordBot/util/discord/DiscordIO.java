@@ -107,6 +107,15 @@ public class DiscordIO {
         return null;
     }
 
+    /**
+     * Send an embed to a channel.
+     *
+     * Will try 20 times, once every 0.5 seconds, if the bot gets rate limited.
+     *
+     * @param channel The channel in which the message(s) will be sent
+     * @param embedObject The embed to send
+     * @return A list containing the sent message(s).
+     */
     public static synchronized IMessage sendEmbed(final IChannel channel, final EmbedObject embedObject) {
         return sendEmbed(channel, embedObject, 20);
     }
