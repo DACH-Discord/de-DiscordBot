@@ -14,6 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Contains some helper methods to send content to Discord channels.
+ */
 public class DiscordIO {
 
     private final static Logger LOG = LoggerFactory.getLogger(DiscordIO.class);
