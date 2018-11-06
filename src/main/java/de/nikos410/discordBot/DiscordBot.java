@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.nikos410.discordBot.exception.InitializationException;
 import de.nikos410.discordBot.framework.*;
 import de.nikos410.discordBot.framework.annotations.*;
 import de.nikos410.discordBot.modules.BotSetup;
@@ -30,6 +31,7 @@ import sx.blah.discord.handle.obj.*;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
+import sx.blah.discord.util.DiscordException;
 
 /**
  * The bots main class, containing most of the modular framework
@@ -59,8 +61,7 @@ public class DiscordBot {
         // Read config file
         final String configFileContent = IOUtil.readFile(CONFIG_PATH);
         if (configFileContent == null) {
-            LOG.error("Could not read configuration file.");
-            System.exit(1);
+            throw new InitializationException("Could not read configuration file.", DiscordBot.class);
         }
         this.configJSON = new JSONObject(configFileContent);
         LOG.info("Loaded configuration with {} entries.", configJSON.keySet().size());
@@ -68,20 +69,33 @@ public class DiscordBot {
         // Read roles file
         final String rolesFileContent = IOUtil.readFile(ROLES_PATH);
         if (rolesFileContent == null) {
-            LOG.error("Could not read roles file.");
-            System.exit(1);
+            throw new InitializationException("Could not read roles file.", DiscordBot.class);
         }
         this.rolesJSON = new JSONObject(rolesFileContent);
         LOG.info("Loaded roles file for {} guilds.", rolesJSON.keySet().size());
 
         // Get token from config
+        if (!configJSON.has("token")) {
+            throw new InitializationException("No token configured.", DiscordBot.class);
+        }
         final String token = configJSON.getString("token");
         // Authorize using token
-        this.client = Authorization.createClient(token, true);
+        try {
+            this.client = Authorization.createClient(token, true);
+        }
+        catch (DiscordException e) {
+            throw new InitializationException("Could not log in client.", e, DiscordBot.class);
+        }
         LOG.info("Bot authorized.");
 
         // Get prefix and owner ID from config
+        if (!configJSON.has("prefix")) {
+            throw new InitializationException("No prefix configured.", DiscordBot.class);
+        }
         this.prefix = configJSON.getString("prefix");
+        if (!configJSON.has("owner")) {
+            throw new InitializationException("No owner configured.", DiscordBot.class);
+        }
         this.ownerID = configJSON.getLong("owner");
 
         // Register Eventlistener
@@ -89,15 +103,17 @@ public class DiscordBot {
             this.client.getDispatcher().registerListener(this);
         }
         catch (NullPointerException e) {
-            LOG.error("Could not get EventDispatcher", e);
+            throw new InitializationException("Could not get EventDispatcher.", e, DiscordBot.class);
         }
 
         // Get unloaded modules
+        if (!configJSON.has("unloadedModules")) {
+            throw new InitializationException("Could not find unloaded modules.", DiscordBot.class);
+        }
         final JSONArray unloadedModulesJSON = this.configJSON.getJSONArray("unloadedModules");
 
         for (int i = 0; i < unloadedModulesJSON.length(); i++) {
-            final String unloadedModuleName = unloadedModulesJSON.getString(i);
-            this.unloadedModules.add(unloadedModuleName);
+            this.unloadedModules.add(unloadedModulesJSON.getString(i));
         }
 
         this.loadModules();

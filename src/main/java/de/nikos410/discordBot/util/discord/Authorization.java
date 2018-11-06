@@ -19,18 +19,15 @@ public class Authorization {
      * @param login Choose whether to log in the client after authorizing.
      * @return The created client instance.
      */
-    public static IDiscordClient createClient(final String token, final boolean login) {
+    public static IDiscordClient createClient(final String token, final boolean login) throws DiscordException {
         final ClientBuilder clientBuilder = new ClientBuilder();
         clientBuilder.withToken(token);
-        try {
-            if (login) {
-                return clientBuilder.login();
-            } else {
-                return clientBuilder.build();
-            }
-        } catch (DiscordException e) {
-            log.error("Could not authorize the bot. Please make sure your token is correct.", e);
-            throw e;
+
+        if (login) {
+            return clientBuilder.login();
+        }
+        else {
+            return clientBuilder.build();
         }
     }
 }
