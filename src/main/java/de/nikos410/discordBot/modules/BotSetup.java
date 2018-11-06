@@ -242,17 +242,15 @@ public class BotSetup {
     public void command_LoadModule(final IMessage message, final String moduleName) {
         final boolean result = bot.activateModule(moduleName);
 
-        final String resultMessage;
         if (result) {
             // Method returned true, everything went fine
-            resultMessage = String.format(":white_check_mark: Modul `%s` aktiviert.", moduleName);
+            message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
         }
         else {
             // Method returned false, module doesn't exist or is already activated
-            resultMessage = String.format("Fehler! Modul `%s` ist bereits aktiviert oder existiert nicht.", moduleName);
+            DiscordIO.sendMessage(message.getChannel(),
+                    String.format("Fehler! Modul `%s` ist bereits aktiviert oder existiert nicht.", moduleName));
         }
-
-        DiscordIO.sendMessage(message.getChannel(), resultMessage);
     }
 
     @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = PermissionLevel.ADMIN)
@@ -263,17 +261,15 @@ public class BotSetup {
         }
 
         final boolean result = bot.deactivateModule(moduleName);
-        final String resultMessage;
 
         if (result) {
             // Method returned true, everything went fine
-            resultMessage = String.format(":white_check_mark: Modul `%s` deaktiviert.", moduleName);
+            message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
         }
         else {
             // Method returned false, module doesn't exist or is already deactivated
-            resultMessage = String.format("Fehler! Modul `%s` ist bereits deaktiviert oder existiert nicht.", moduleName);
+            DiscordIO.sendMessage(message.getChannel(),
+                    String.format("Fehler! Modul `%s` ist bereits deaktiviert oder existiert nicht.", moduleName));
         }
-
-        DiscordIO.sendMessage(message.getChannel(), resultMessage);
     }
 }
