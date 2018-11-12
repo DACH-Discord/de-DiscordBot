@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import de.nikos410.discordBot.DiscordBot;
 import de.nikos410.discordBot.exception.InitializationException;
@@ -85,25 +86,20 @@ public class GameStats {
         final IGuild guild = message.getGuild();
 
         // Similar games
-        StringBuilder similarBuilder = new StringBuilder();
-        for (String s : findSimilarKeys(game, guild)) {
-            similarBuilder.append(s);
-            similarBuilder.append('\n');
-        }
-        String similarGames = similarBuilder.toString();
+        final List<String> similarGames = findSimilarKeys(game, guild);
 
         // Users who play the game right now
-        List<IUser> usersPlayingNow = new ArrayList<>();
+        List<IUser> playingNowUsers = new ArrayList<>();
         for (IUser user : guild.getUsers()) {
             final Optional<String> playing = user.getPresence().getPlayingText();
 
             if (playing.isPresent() && playing.get().equalsIgnoreCase(game)) {
-                usersPlayingNow.add(user);
+                playingNowUsers.add(user);
             }
         }
 
         // Users who played the game at any point
-        List<IUser> usersPlayingAny = new ArrayList<>();
+        List<IUser> playingAnyUsers = new ArrayList<>();
 
         if (gameStatsJSON.has(guild.getStringID())) {
             final JSONObject guildJSON = gameStatsJSON.getJSONObject(guild.getStringID());
@@ -115,8 +111,8 @@ public class GameStats {
                     if (user != null) {
 
                         // Only add if user isn't playing right now
-                        if (!usersPlayingNow.contains(user)) {
-                            usersPlayingAny.add(user);
+                        if (!playingNowUsers.contains(user)) {
+                            playingAnyUsers.add(user);
                         }
                     }
                 }
@@ -124,26 +120,36 @@ public class GameStats {
             }
         }
 
-        if (usersPlayingNow.isEmpty() && usersPlayingAny.isEmpty()) {
+        if (playingNowUsers.isEmpty() && playingAnyUsers.isEmpty()) {
             // Nobody has ever played the specified game
-            final String output = similarGames.isEmpty() ? String.format("Niemand auf diesem Server spielt **_%s_**.", game) :
-                    String.format("Niemand auf diesem Server spielt **_%s_**.\n**Meintest du...**\n%s", game, similarGames);
+            final List<String> outputLines = new ArrayList<>();
+            outputLines.add(String.format("Niemand auf diesem Server spielt **_%s_**.", game));
+            if (!similarGames.isEmpty()) {
+                outputLines.add("**Meintest du...**");
+                outputLines.addAll(similarGames);
+            }
 
-            DiscordIO.sendMessage(message.getChannel(), output);
+            DiscordIO.sendMessage(message.getChannel(), outputLines);
             return;
         }
 
-        // TODO: Nachricht in einzelnen Zeilen übergeben um saubereren Zeilenumbruch zu gewährleisten
+        // The lines that will be sent
+        final List<String> outputLines = new ArrayList<>();
 
-        DiscordIO.sendMessage(message.getChannel(), String.format("**Nutzer, die __jetzt__ _%s_ spielen**\n%s",
-                game, userListToString(usersPlayingNow, guild)));
+        // Add users that play the game right now
+        outputLines.add(String.format("**Nutzer, die __jetzt__ _%s_ spielen**", game));
+        playingNowUsers.forEach(e -> outputLines.add(UserUtils.makeUserString(e, guild)));
 
-        DiscordIO.sendMessage(message.getChannel(), String.format("**__Alle anderen__ Nutzer, die _%s_ spielen**\n%s",
-                game, userListToString(usersPlayingAny, guild)));
+        // Add users that have played the game in the past
+        outputLines.add(String.format("**__Alle anderen__ Nutzer, die _%s_ spielen**", game));
+        playingAnyUsers.forEach(e -> outputLines.add(UserUtils.makeUserString(e, guild)));
 
         if (!similarGames.isEmpty()) {
-            DiscordIO.sendMessage(message.getChannel(), String.format("**Ähnliche Spiele:** \n%s", similarGames));
+            outputLines.add("**Ähnliche Spiele:**");
+            outputLines.addAll(similarGames);
         }
+
+        DiscordIO.sendMessage(message.getChannel(), outputLines);
     }
 
     /**
@@ -173,24 +179,6 @@ public class GameStats {
         }
 
         return similarKeys;
-    }
-
-    /**
-     * Convert a list of users to a String, using the nicknames on the given guild.
-     *
-     * @param userList The users.
-     * @param guild The guild.
-     * @return The String consisting of all users.
-     */
-    private String userListToString (final List<IUser> userList, final IGuild guild) {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        for (IUser user : userList) {
-            stringBuilder.append(UserUtils.makeUserString(user, guild));
-            stringBuilder.append('\n');
-        }
-
-        return stringBuilder.toString().isEmpty() ? "_niemand_" : stringBuilder.toString();
     }
 
     @EventSubscriber
