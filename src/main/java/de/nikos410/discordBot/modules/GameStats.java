@@ -136,11 +136,21 @@ public class GameStats {
 
         // Add users that play the game right now
         outputLines.add(String.format("**Nutzer, die __jetzt__ _%s_ spielen**", game));
-        playingNowUsers.forEach(e -> outputLines.add(UserUtils.makeUserString(e, guild)));
+        if (playingNowUsers.isEmpty()) {
+            outputLines.add("_Niemand_");
+        }
+        else {
+            playingNowUsers.forEach(e -> outputLines.add(UserUtils.makeUserString(e, guild)));
+        }
 
         // Add users that have played the game in the past
         outputLines.add(String.format("**__Alle anderen__ Nutzer, die _%s_ spielen**", game));
-        playingAnyUsers.forEach(e -> outputLines.add(UserUtils.makeUserString(e, guild)));
+        if (playingAnyUsers.isEmpty()) {
+            outputLines.add("_Niemand_");
+        }
+        else {
+            playingAnyUsers.forEach(e -> outputLines.add(UserUtils.makeUserString(e, guild)));
+        }
 
         if (!similarGames.isEmpty()) {
             outputLines.add("**Ähnliche Spiele:**");
