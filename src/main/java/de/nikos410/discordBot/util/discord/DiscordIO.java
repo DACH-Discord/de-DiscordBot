@@ -49,6 +49,9 @@ public class DiscordIO {
 
             builder.append(line);
         }
+        if (builder.length() != 0) {
+            sentMessages.add(sendSingleMessage(channel, builder.toString()));
+        }
 
         return sentMessages;
     }
