@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import de.nikos410.discordBot.DiscordBot;
+import de.nikos410.discordBot.exception.InitializationException;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.UserUtils;
 import de.nikos410.discordBot.util.io.IOUtil;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.user.PresenceUpdateEvent;
 import sx.blah.discord.handle.obj.*;
 
@@ -41,43 +43,48 @@ public class GameStats {
         this.bot = bot;
         this.client = bot.client;
 
-        // Spiel-Liste einlesen
+        // Read game list
         final String jsonContent = IOUtil.readFile(GAMESTATS_PATH);
+        if (jsonContent == null) {
+            throw new InitializationException("Could not read module data.", GameStats.class);
+        }
         this.gameStatsJSON = new JSONObject(jsonContent);
         LOG.info(String.format("Loaded GameStats file for %s guilds.", gameStatsJSON.keySet().size()));
 
-        // Darauf warten, dass der Client ready ist
-        if (!bot.client.isReady()) {
-            try {
-                TimeUnit.SECONDS.sleep(1);
-            }
-            catch (InterruptedException e) {
-                LOG.warn("Sleep was interrupted!", e);
-            }
-            finally {
-                updateAllUsers();
-            }
+        // If the client is not ready, the module was loaded on startup, in this case we use the Event Subscriber method.
+        if (bot.client.isReady()) {
+            updateAllUsers();
+            LOG.info("Gamestats Module ready.");
         }
     }
 
+    @EventSubscriber
+    public void onStartUp(final ReadyEvent event) {
+        updateAllUsers();
+        LOG.info("Gamestats Module ready.");
+    }
+
+    /**
+     * Update the status of every user known to the bot.
+     */
     private void updateAllUsers() {
         for(IUser user : bot.client.getUsers()) {
             this.updateUserStatus(user);
         }
         saveJSON();
-        LOG.info("Gamestats Module ready.");
     }
 
     @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
     public void command_Playing(final IMessage message, final String game) {
-        if (game.isEmpty()) {  // Kein Spiel angegeben
+        if (game.isEmpty()) {
+            // No game specified
             DiscordIO.sendMessage(message.getChannel(), "Kein Spiel angegeben!");
             return;
         }
 
         final IGuild guild = message.getGuild();
 
-        // Ähnliche Spiele
+        // Similar games
         StringBuilder similarBuilder = new StringBuilder();
         for (String s : findSimilarKeys(game, guild)) {
             similarBuilder.append(s);
@@ -85,9 +92,7 @@ public class GameStats {
         }
         String similarGames = similarBuilder.toString();
 
-        /*
-         * Nutzer, die gerade das Spiel spielen
-         */
+        // Users who play the game right now
         List<IUser> usersPlayingNow = new ArrayList<>();
         for (IUser user : guild.getUsers()) {
             final Optional<String> playing = user.getPresence().getPlayingText();
@@ -97,9 +102,7 @@ public class GameStats {
             }
         }
 
-        /*
-         * Nutzer, die jemals das Spiel gespielt haben
-         */
+        // Users who played the game at any point
         List<IUser> usersPlayingAny = new ArrayList<>();
 
         if (gameStatsJSON.has(guild.getStringID())) {
@@ -111,7 +114,7 @@ public class GameStats {
                     final IUser user = guild.getUserByID(gameArray.getLong(i));
                     if (user != null) {
 
-                        // Nutzer nur hinzufügen wenn er nicht schon in der anderen Liste enthalten ist
+                        // Only add if user isn't playing right now
                         if (!usersPlayingNow.contains(user)) {
                             usersPlayingAny.add(user);
                         }
@@ -121,19 +124,12 @@ public class GameStats {
             }
         }
 
-
-        /*
-         * Ausgabe
-         */
-
-        // Keine Nutzer spielen gerade oder haben jemals gespielt
         if (usersPlayingNow.isEmpty() && usersPlayingAny.isEmpty()) {
+            // Nobody has ever played the specified game
+            final String output = similarGames.isEmpty() ? String.format("Niemand auf diesem Server spielt **_%s_**.", game) :
+                    String.format("Niemand auf diesem Server spielt **_%s_**.\n**Meintest du...**\n%s", game, similarGames);
 
-            DiscordIO.sendMessage(message.getChannel(), String.format("**Niemand auf diesem Server spielt _%s_**.", game));
-            if (!similarGames.isEmpty()) {
-                DiscordIO.sendMessage(message.getChannel(), String.format("**Meintest du...**\n%s", similarGames));
-            }
-
+            DiscordIO.sendMessage(message.getChannel(), output);
             return;
         }
 
@@ -150,15 +146,23 @@ public class GameStats {
         }
     }
 
+    /**
+     * Find games that have names similar to the given one.
+     *
+     * @param inputKey The given game name.
+     * @param guild The guild on which to look for similar games.
+     * @return A list containing similar keys.
+     */
     @SuppressWarnings("deprecation")
     private List<String> findSimilarKeys (final String inputKey, final IGuild guild) {
+        // Calculate how big the difference between the strings may be
         final int levDistTreshold = 2 + StringUtils.countMatches(inputKey, " ");
 
-        // Alle Spiele in der Liste, die zu dem Input passen
-        List<String> similarKeys = new ArrayList<>();
+        final List<String> similarKeys = new ArrayList<>();
 
         if (gameStatsJSON.has(guild.getStringID())) {
             JSONObject guildJSON = gameStatsJSON.getJSONObject(guild.getStringID());
+            // Iterate over all games and check if they are similar
             for (Object obj : guildJSON.keySet()) {
                 final String gameKey = obj.toString();
                 if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), inputKey.toLowerCase()) <= levDistTreshold &&
@@ -171,6 +175,13 @@ public class GameStats {
         return similarKeys;
     }
 
+    /**
+     * Convert a list of users to a String, using the nicknames on the given guild.
+     *
+     * @param userList The users.
+     * @param guild The guild.
+     * @return The String consisting of all users.
+     */
     private String userListToString (final List<IUser> userList, final IGuild guild) {
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -188,6 +199,11 @@ public class GameStats {
         saveJSON();
     }
 
+    /**
+     * Fetch the current status of a user and update the games list if a new game was detected.
+     *
+     * @param user The user whose status to update.
+     */
     private synchronized void updateUserStatus(final IUser user) {
         if (user.isBot()) {
             return;
@@ -196,14 +212,14 @@ public class GameStats {
         final IPresence presence = user.getPresence();
         final StatusType status = presence.getStatus();
         if (status.equals(StatusType.ONLINE)) {
-            // User ist (jetzt) online
+            // User is online now
             final Optional<String> gameStatus = presence.getPlayingText();
             if (gameStatus.isPresent()) {
-                // User spielt (jetzt) ein Spiel
+                // User is now playing a game
                 final String gameName = gameStatus.get().toLowerCase();
                 final long userID = user.getLongID();
 
-                // Für alle Server eintragen auf denen der Nutzer Mitglied ist
+                // Add game info for all guilds this user is on
                 for (IGuild guild : client.getGuilds()) {
                     if (guild.getUsers().contains(user)) {
                         if (!hasGame(gameName, guild)) {
@@ -238,6 +254,12 @@ public class GameStats {
         gameArray.put(userID);
     }
 
+    /**
+     * Add an empty entry for a game to a guild's JSON object. Will not check if entry already exists.
+     *
+     * @param game The game for which to add the entry.
+     * @param guild The guild for which to create the entry.
+     */
     private void addGame(final String game, final IGuild guild) {
         final JSONObject guildJSON;
         if (gameStatsJSON.has(guild.getStringID())) {
@@ -252,6 +274,13 @@ public class GameStats {
         guildJSON.put(game, gameArray);
     }
 
+    /**
+     * Check whether a game has been played by anyone on a guild.
+     *
+     * @param game The name of the game.
+     * @param guild The guild for which to check.
+     * @return True is anyone on the guild has played the game.
+     */
     private boolean hasGame(final String game, final IGuild guild) {
         if (gameStatsJSON.has(guild.getStringID())) {
             JSONObject guildJSON = gameStatsJSON.getJSONObject(guild.getStringID());
@@ -262,16 +291,24 @@ public class GameStats {
         }
     }
 
+    /**
+     * Check whether a user has ever played a game
+     *
+     * @param userID The ID of the user.
+     * @param game The name of the game.
+     * @param guild The guild the user is on.
+     * @return True if the user has ever played the game.
+     */
     private boolean doesUserPlay(final long userID, final String game, final IGuild guild) {
         if (gameStatsJSON.has(guild.getStringID())) {
             JSONObject guildJSON = gameStatsJSON.getJSONObject(guild.getStringID());
             if (guildJSON.has(game)) {
-                // Spiel ist vorhanden
+                // Game has been played by at least one user of this server
 
                 JSONArray gameArray = guildJSON.getJSONArray(game);
                 for (int i = 0; i < gameArray.length(); i++) {
                     if (gameArray.getLong(i) == userID) {
-                        // User ist in Array Vorhanden
+                        // User has played the game
                         return true;
                     }
                 }
