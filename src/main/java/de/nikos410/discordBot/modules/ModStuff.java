@@ -88,7 +88,7 @@ public class ModStuff {
             }
 
             // Set a default message if no message was specified.
-            if (customMessage.isEmpty()) {
+            if (customMessage == null || customMessage.isEmpty()) {
                 customMessage = "kein";
             }
 
@@ -141,7 +141,7 @@ public class ModStuff {
             }
 
             // Set a default message if no message was specified.
-            if (customMessage.isEmpty()) {
+            if (customMessage == null || customMessage.isEmpty()) {
                 customMessage = "kein";
             }
 
@@ -222,7 +222,7 @@ public class ModStuff {
 
         // Get custom message
         String customMessage = matcher.group(3);
-        if (customMessage.isEmpty()) {
+        if (customMessage == null || customMessage.isEmpty()) {
             customMessage = "kein";
         }
 
@@ -486,7 +486,7 @@ public class ModStuff {
         // Hinweis auslesen
         String customMessage = matcher.group(3);
 
-        if (customMessage.isEmpty()) {
+        if (customMessage == null || customMessage.isEmpty()) {
             customMessage = "kein";
         }
 
