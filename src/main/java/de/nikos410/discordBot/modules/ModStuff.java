@@ -93,7 +93,7 @@ public class ModStuff {
             }
 
             final List<String> kickMessage = Arrays.asList("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.)",
-            String.format("Hinweis: %s", customMessage));
+                    String.format("Hinweis: %s", customMessage));
 
 
             DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
@@ -127,34 +127,30 @@ public class ModStuff {
 
     @CommandSubscriber(command = "ban", help = "Bannt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false)
-    public void command_Ban(final IMessage message, final String banUserString, String customMessage) {
+    public void command_Ban(final IMessage message, final String userString, String customMessage) {
+        // Only Moderators and upwards are allowed to use the command.
+        // If a user is not a moderator they will be kicked instead.
         if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel() >=
                 PermissionLevel.MODERATOR.getLevel()) {
 
-            final List<IUser> mentions = message.getMentions();
-            if (mentions.size() <1) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein Nutzer angegeben!");
-            }
-            else if (mentions.size() > 1) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: In der Nachricht keine Nutzer erwähnen!");
-            }
-
-            final IUser banUser = mentions.get(0);
+            // Find the user to ban
+            final IUser banUser = UserUtils.getUserFromMessage(message, userString);
             if (banUser == null) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Nutzer nicht gefunden!");
+                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
                 return;
             }
 
+            // Set a default message if no message was specified.
             if (customMessage.isEmpty()) {
                 customMessage = "kein";
             }
 
-            final String banMessage = String.format("**Du wurdest gebannt!** \nHinweis: _%s_", customMessage);
+            final List<String> banMessage = Arrays.asList("**Du wurdest gebannt!**",
+                    String.format("Hinweis: _%s_", customMessage));
 
             DiscordIO.sendMessage(banUser.getOrCreatePMChannel(), banMessage);
             message.getGuild().banUser(banUser, customMessage, 0);
 
-            //Util.sendMessage(message.getChannel(), ":hammer:");
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
@@ -177,7 +173,7 @@ public class ModStuff {
         }
         else {
             message.getGuild().kickUser(message.getAuthor(), customMessage);
-            message.addReaction(ReactionEmoji.of("tja", 401835325434888192L));
+            DiscordIO.sendMessage(message.getChannel(), "¯\\_(ツ)_/¯");
         }
     }
 
@@ -195,41 +191,32 @@ public class ModStuff {
 
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
             permissionLevel = PermissionLevel.MODERATOR)
-    public void command_Mute(final IMessage message, final String muteUserString, final String muteDurationInput) {
-        // Nutzer der gemuted werden soll auslesen
-        final List<IUser> mentions = message.getMentions();
-        if (mentions.size() < 1) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein Nutzer angegeben!");
-            return;
-        }
-        else if (mentions.size() > 1) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: mehrere Nutzer erwähnt");
-            return;
-        }
-
-        final IUser muteUser = mentions.get(0);
+    public void command_Mute(final IMessage message, final String userString, final String muteDurationInput) {
+        // Find the user to mute
+        final IUser muteUser = UserUtils.getUserFromMessage(message, userString);
         if (muteUser == null) {
             DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Nutzer nicht gefunden!");
             return;
         }
 
-        // Mute Dauer auslesen
+        // Parse mute direction
         final Pattern pattern = Pattern.compile("(\\d+)\\s*([smhd])\\s*(.*)");
         final Matcher matcher = pattern.matcher(muteDurationInput);
 
         if (!matcher.matches()) {
+            // No valid duration was specified
             DiscordIO.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
             return;
         }
 
         final int muteDuration = Integer.parseInt(matcher.group(1));
         final String muteDurationUnitString = matcher.group(2);
-        ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
+        final ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
 
         final IGuild guild = message.getGuild();
 
-        // Nutzer muten und unmuten schedulen
-        // Es wird nur ein String returned wenn der mute nicht erfolgt ist
+        // Mute the user and schedule unmute
+        // Only returns a message if the user could not be muted
         final String output = muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit);
         if (output.isEmpty()) {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
@@ -239,17 +226,18 @@ public class ModStuff {
             return;
         }
 
-        // Hinweis auslesen
+        // Get custom message
         String customMessage = matcher.group(3);
-
         if (customMessage.isEmpty()) {
             customMessage = "kein";
         }
 
-        final String muteMessage = String.format("**Du wurdest für %s %s gemuted!** \nHinweis: _%s_",
-                muteDuration, muteDurationUnitString, customMessage);
+        final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest für %s %s gemuted!",
+                muteDuration,
+                muteDurationUnitString),
+                String.format("Hinweis: _%s_", customMessage));
 
-        // Einen Bot nicht benachrichtigen
+        // Notify the user about the mute
         if (!muteUser.isBot()) {
             DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
