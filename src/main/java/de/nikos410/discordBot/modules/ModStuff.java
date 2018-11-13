@@ -74,39 +74,32 @@ public class ModStuff {
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false)
-    public void command_Kick(final IMessage message, final String kickUserString, String customMessage) {
+    public void command_Kick(final IMessage message, final String userString, String customMessage) {
+        // Only Moderators and upwards are allowed to use the command.
+        // If a user is not a moderator they will be kicked instead.
         if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel() >=
                 PermissionLevel.MODERATOR.getLevel()) {
 
-            final List<IUser> mentions = message.getMentions();
-            if (mentions.size() <1) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein Nutzer angegeben!");
-                return;
-            }
-            else if (mentions.size() > 1) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: In der Nachricht keine Nutzer erwähnen!");
-                return;
-            }
-
-            final IUser kickUser = mentions.get(0);
+            // Find the user to kick
+            final IUser kickUser = UserUtils.getUserFromMessage(message, userString);
             if (kickUser == null) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Nutzer nicht gefunden!");
+                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
                 return;
             }
 
+            // Set a default message if no message was specified.
             if (customMessage.isEmpty()) {
                 customMessage = "kein";
             }
 
-            final String kickMessage = String.format("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.) \nHinweis: _%s_",
-                    customMessage);
+            final List<String> kickMessage = Arrays.asList("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.)",
+            String.format("Hinweis: %s", customMessage));
 
 
             DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
             message.getGuild().kickUser(kickUser, customMessage);
 
             message.addReaction(ReactionEmoji.of("\uD83D\uDEAA")); // :door:
-            //Util.sendMessage(message.getChannel(), ":door:");
 
             // Modlog
             LOG.info("{} hat Nutzer {} vom Server gekickt. Hinweis: {}",
@@ -118,7 +111,7 @@ public class ModStuff {
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
             if (modLogChannel != null) {
-                final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**. \nHinweis: _%s _",
+                final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**.\nHinweis: _%s _",
                         UserUtils.makeUserString(message.getAuthor(), guild),
                         UserUtils.makeUserString(kickUser, guild),
                         message.getChannel().mention(),
@@ -128,7 +121,7 @@ public class ModStuff {
         }
         else {
             message.getGuild().kickUser(message.getAuthor());
-            message.addReaction(ReactionEmoji.of("tja", 401835325434888192L));
+            DiscordIO.sendMessage(message.getChannel(), "¯\\_(ツ)_/¯");
         }
     }
 
