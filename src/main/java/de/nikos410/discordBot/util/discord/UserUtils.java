@@ -1,6 +1,7 @@
 package de.nikos410.discordBot.util.discord;
 
 import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IRole;
 import sx.blah.discord.handle.obj.IUser;
 
@@ -10,6 +11,37 @@ import java.util.List;
  * Contains some helper methods for doing stuff involving users.
  */
 public class UserUtils {
+
+    /**
+     * Get the user that was specified in the given message. First, checks if the parameter contains a valid user ID
+     * and returns the corresponding user. Second, checks if the message contains exactly one user Mention and returns
+     * the mentionend user.
+     *
+     * @param message The message that should be checked for mentions.
+     * @param userParameter The parameter that should be checked for a valid user ID.
+     * @return The user that was specified, or null if none was found.
+     */
+    public static IUser getUserFromMessage(final IMessage message, final String userParameter) {
+        if (userParameter.matches("^[0-9]{18}$")) {
+            // The user parameter looks like a user ID
+            // Try to find a user with that ID
+            final IUser user = message.getGuild().getUserByID(Long.parseLong(userParameter));
+            if (user != null) {
+                // A user was found
+                return user;
+            }
+        }
+
+        final List<IUser> mentions = message.getMentions();
+        if (mentions.size() == 1) {
+            // Exactly one mention found
+            return mentions.get(0);
+        }
+        else {
+            // Too many or no mentions found
+            return null;
+        }
+    }
 
     /**
      * Get the highest role of a user.
