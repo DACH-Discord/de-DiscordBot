@@ -1,6 +1,7 @@
 package de.nikos410.discordBot.modules;
 
 import de.nikos410.discordBot.DiscordBot;
+import de.nikos410.discordBot.exception.InitializationException;
 import de.nikos410.discordBot.framework.PermissionLevel;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
@@ -28,6 +29,7 @@ import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.cache.LongMap;
 
+import javax.xml.bind.ValidationException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -51,7 +53,6 @@ public class ModStuff {
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-
     private final Map<IGuild, Map<IUser, ScheduledFuture>> userMuteFutures = new HashMap<>();
     private final Map<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> channelMuteFutures = new HashMap<>();
 
@@ -66,10 +67,10 @@ public class ModStuff {
         final String rolesFileContent = IOUtil.readFile(MODSTUFF_PATH);
         if (rolesFileContent == null) {
             LOG.error("Could not read modstuff file.");
-            System.exit(1);
+            throw new InitializationException("Could not read modstuff file.", ModStuff.class) ;
         }
         this.modstuffJSON = new JSONObject(rolesFileContent);
-        LOG.info(String.format("Loaded modstuff file for %s guilds.", modstuffJSON.keySet().size()));
+        LOG.info("Loaded modstuff file for {} guilds.", modstuffJSON.keySet().size());
     }
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
@@ -109,10 +110,10 @@ public class ModStuff {
             //Util.sendMessage(message.getChannel(), ":door:");
 
             // Modlog
-            LOG.info(String.format("%s hat Nutzer %s vom Server gekickt. Hinweis: %s",
+            LOG.info("{} hat Nutzer {} vom Server gekickt. Hinweis: {}",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(kickUser, message.getGuild()),
-                    customMessage));
+                    customMessage);
 
             final IGuild guild = message.getGuild();
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
@@ -165,10 +166,10 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
-            LOG.info(String.format("%s hat Nutzer %s vom Server gebannt. Hinweis: %s",
+            LOG.info("{} hat Nutzer {} vom Server gebannt. Hinweis: {}",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(banUser, message.getGuild()),
-                    customMessage));
+                    customMessage);
 
             final IGuild guild = message.getGuild();
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
@@ -262,7 +263,7 @@ public class ModStuff {
         }
 
         // Modlog
-        LOG.info(String.format("Nutzer %s wurde für %s gemuted.", UserUtils.makeUserString(muteUser, message.getGuild()), muteDurationInput));
+        LOG.info("Nutzer {} wurde für {} gemuted.", UserUtils.makeUserString(muteUser, message.getGuild()), muteDurationInput);
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
@@ -381,7 +382,7 @@ public class ModStuff {
         else {
             // Nutzer ist noch nicht gemuted
             user.addRole(muteRole);
-            LOG.info(String.format("Muted user %s.", UserUtils.makeUserString(user, guild)));
+            LOG.info("Muted user {}.", UserUtils.makeUserString(user, guild));
         }
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
@@ -392,7 +393,7 @@ public class ModStuff {
             }
             userMuteFutures.get(guild).remove(user);
 
-            LOG.info(String.format("Nutzer %s wurde entmuted.", UserUtils.makeUserString(user, guild)));
+            LOG.info("Nutzer {} wurde entmuted.", UserUtils.makeUserString(user, guild));
             saveMutedUsers();
         };
 
@@ -500,9 +501,12 @@ public class ModStuff {
         }
 
         // Modlog
-        LOG.info(String.format("Nutzer %s wurde für %s %s für den Kanal %s auf dem Server %s gemuted. \nHinweis: %s",
-                UserUtils.makeUserString(muteUser, guild), muteDuration, muteDurationUnitString,
-                muteChannel.getName(), guild.getName(), customMessage));
+        LOG.info("Nutzer {} wurde für {} {} für den Kanal {} auf dem Server {} gemuted. \nHinweis: {}",
+                UserUtils.makeUserString(muteUser, guild), muteDuration,
+                muteDurationUnitString,
+                muteChannel.getName(),
+                guild.getName(),
+                customMessage);
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
@@ -564,7 +568,7 @@ public class ModStuff {
         }
         else {
             // Nutzer ist noch nicht gemuted
-            LOG.info(String.format("Muted user %s.", UserUtils.makeUserString(user, guild)));
+            LOG.info("Muted user {}.", UserUtils.makeUserString(user, guild));
         }
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
@@ -613,13 +617,13 @@ public class ModStuff {
             }
             else {
                 // Override existiert nicht mehr, wurde vmtl. von Hand entfernt
-                LOG.info(String.format("Can't unmute user %s for channel %s. Override does not exist.",
-                        UserUtils.makeUserString(user, guild), channel.getName()));
+                LOG.info("Can't unmute user {} for channel {}. Override does not exist.",
+                        UserUtils.makeUserString(user, guild), channel.getName());
             }
 
             channelMuteFutures.get(guild).get(channel).remove(user);
 
-            LOG.info(String.format("Nutzer %s wurde entmuted.", UserUtils.makeUserString(user, guild)));
+            LOG.info("Nutzer {} wurde entmuted.", UserUtils.makeUserString(user, guild));
 
             saveMutedUsers();
         };
@@ -831,11 +835,11 @@ public class ModStuff {
         LOG.info("Restoring muted users.");
 
         for (final String guildStringID : modstuffJSON.keySet()) {
-            LOG.debug(String.format("Processing JSON for guild with ID '%s'.", guildStringID));
+            LOG.debug("Processing JSON for guild with ID '{}'.", guildStringID);
 
             final long guildLongID = Long.parseLong(guildStringID);
             final IGuild guild = event.getClient().getGuildByID(guildLongID);
-            LOG.debug(String.format("Found guild '%s'.", guild.getName()));
+            LOG.debug("Found guild '{}'.", guild.getName());
 
             restoreGuildUserMutes(guild);
         }
@@ -847,7 +851,7 @@ public class ModStuff {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         final JSONArray guildUserMutes = getUserMutesJSONForGuild(guild);
-        LOG.debug(String.format("Found %s mutes for guild.", guildUserMutes.length()));
+        LOG.debug("Found {} mutes for guild.", guildUserMutes.length());
 
         for (int i = 0; i < guildUserMutes.length(); i++) {
             final JSONObject currentUserMute = guildUserMutes.getJSONObject(i);
@@ -860,10 +864,10 @@ public class ModStuff {
                 if (LocalDateTime.now().isBefore(unmuteTimestamp)) {
                     final int delaySeconds = (int)LocalDateTime.now().until(unmuteTimestamp, ChronoUnit.SECONDS);
                     muteUserForGuild(user, guild, delaySeconds, ChronoUnit.SECONDS);
-                    LOG.info(String.format("Restored mute for user '%s' (ID: %s) for guild '%s' (ID: %s). Muted until %s",
+                    LOG.info("Restored mute for user '{}' (ID: {}) for guild '{}' (ID: {}). Muted until {}",
                             UserUtils.makeUserString(user, guild), user.getStringID(),
                             guild.getName(), guild.getStringID(),
-                            unmuteTimestampString));
+                            unmuteTimestampString);
                 }
             }
             else {
