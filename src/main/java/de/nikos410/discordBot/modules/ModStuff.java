@@ -386,7 +386,10 @@ public class ModStuff {
 
         // Wird ausgeführt, um Nutzer wieder zu entmuten
         final Runnable unmuteTask = () -> {
-            user.removeRole(muteRole);
+            // Only remove the mute role if th user is still a member of the guild
+            if (guild.getUsers().contains(user)) {
+                user.removeRole(muteRole);
+            }
             userMuteFutures.get(guild).remove(user);
 
             LOG.info(String.format("Nutzer %s wurde entmuted.", UserUtils.makeUserString(user, guild)));
