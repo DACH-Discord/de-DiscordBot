@@ -102,7 +102,7 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDEAA")); // :door:
 
             // Modlog
-            LOG.info("{} hat Nutzer {} vom Server gekickt. Hinweis: {}",
+            LOG.info("{} kicked user {}. Message: {}",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(kickUser, message.getGuild()),
                     customMessage);
@@ -154,7 +154,7 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
-            LOG.info("{} hat Nutzer {} vom Server gebannt. Hinweis: {}",
+            LOG.info("{} banned user {}. Message: {}",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(banUser, message.getGuild()),
                     customMessage);
@@ -216,15 +216,9 @@ public class ModStuff {
         final IGuild guild = message.getGuild();
 
         // Mute the user and schedule unmute
-        // Only returns a message if the user could not be muted
-        final String output = muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit);
-        if (output.isEmpty()) {
-            message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
-        }
-        else {
-            DiscordIO.sendMessage(message.getChannel(), output);
-            return;
-        }
+        muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit, message.getChannel());
+
+        message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
 
         // Get custom message
         String customMessage = matcher.group(3);
@@ -243,7 +237,10 @@ public class ModStuff {
         }
 
         // Modlog
-        LOG.info("Nutzer {} wurde für {} gemuted.", UserUtils.makeUserString(muteUser, message.getGuild()), muteDurationInput);
+        LOG.info("User {} was muted for {} {}.",
+                UserUtils.makeUserString(muteUser, message.getGuild()),
+                muteDuration,
+                muteDurationUnit.name());
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
@@ -288,99 +285,81 @@ public class ModStuff {
         final IGuild guild = message.getGuild();
 
         // Mute the user and schedule unmute
-        // Only returns a message if the user could not be muted
-        final String output = muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit);
-        if (output.isEmpty()) {
-            message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
-        }
-        else {
-            DiscordIO.sendMessage(message.getChannel(), output);
-        }
+        muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit, message.getChannel());
 
-        saveMutedUsers();
+        message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
     }
 
     @CommandSubscriber(command = "unmute", help = "Nutzer entmuten", pmAllowed = false,
             permissionLevel = PermissionLevel.MODERATOR)
-    public void command_Unmute(final IMessage message) {
-        final List<IUser> mentions = message.getMentions();
-        if (mentions.size() <1) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein Nutzer angegeben!");
-            return;
-        }
-        else if (mentions.size() > 1) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: mehrere Nutzer erwähnt");
-            return;
-        }
+    public void command_Unmute(final IMessage message, final String userString) {
+        final IUser muteUser = UserUtils.getUserFromMessage(message, userString);
 
-        final IUser muteUser = mentions.get(0);
-        final IRole muteRole = getMuteRoleForGuild(message.getGuild());
-
-        if (muteRole == null) {
-            DiscordIO.sendMessage(message.getChannel(), "Keine gültige Mute Rolle konfiguriert!");
-            return;
-        }
-
-        muteUser.removeRole(muteRole);
-
-        if (userMuteFutures.containsKey(message.getGuild()) &&
-                userMuteFutures.get(message.getGuild()).containsKey(muteUser)) {
-            ScheduledFuture future = userMuteFutures.get(message.getGuild()).remove(muteUser);
-            future.cancel(false);
-        }
+        unmuteUserForGuild(muteUser, message.getGuild(), message.getChannel());
 
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    private String muteUserForGuild(final IUser user, final IGuild guild, final int muteDuration, final ChronoUnit muteDurationUnit) {
-        // Mute Rolle für diesen Server auslesen
+    /**
+     * Mute a user for a specific duration on a guild by adding the mute role that is configured for the given guild.
+     * An existing mute will be overridden, if the new mute lasts longer than the existing one. You can not override an
+     * existing mute with one that will end before the existing one does.
+     *
+     * @param user The user that will be muted.
+     * @param guild The guild for which the user will me muted.
+     * @param muteDuration The duration until the user will be unmuted.
+     * @param muteDurationUnit The time unit for the mute duration.
+     * @param channel The channel to send error messages to. Can be null.
+     */
+    private void muteUserForGuild(final IUser user, final IGuild guild, final int muteDuration, final ChronoUnit muteDurationUnit, final IChannel channel) {
+        // Get mute role for this guild
         final IRole muteRole = getMuteRoleForGuild(guild);
         if (muteRole == null) {
-            return "Keine gültige Mute Rolle konfiguriert!";
+            if (channel != null) {
+                DiscordIO.sendMessage(channel, ":x: Keine Mute-Rolle konfiguriert. Nutzer kann nicht gemuted werden.");
+            }
+            else {
+                LOG.warn("No mute role configured for guild {} (ID: {}). Cannot mute user.",
+                        guild.getName(), guild.getStringID());
+            }
+            return;
         }
 
-        // Prüfen ob Nutzer bereits gemuted ist
         if (isUserMutedForGuild(user, guild)) {
-            // Nutzer ist bereits gemuted
-            // Überprüfen, ob angegebener Zeitpunkt nach dem bisherigen Zeitpunkt liegt
+            // User is already muted
             final ScheduledFuture oldFuture = userMuteFutures.get(guild).get(user);
 
-            // Unmute Zeitpunkte in LocalDateTime
+            // Check which mute lasts longer
             final LocalDateTime oldDateTime = LocalDateTime.now().plusSeconds(oldFuture.getDelay(TimeUnit.SECONDS));
             final LocalDateTime newDateTime = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
 
-            // Prüfen welcher Unmute Zeitpunkt zuerst eintritt
             if (newDateTime.isBefore(oldDateTime)) {
-                // neuer Zeitpunkt ist vor altem -> nichts tun (längerer Mute bleibt bestehen)
-                return "Nutzer ist bereits für einen längeren Zeitraum gemuted!";
+                // Existing mute lasts longer than the existing one -> Do nothing
+                if (channel != null) {
+                    DiscordIO.sendMessage(channel, ":x: Nutzer ist bereits für einen längeren Zeitraum gemuted.");
+                }
+                return;
             }
             else {
-                // neuer Zeitpunkt ist nach altem -> neu schedulen
+                // New mute lasts longer than the existing one -> override
                 userMuteFutures.get(guild).remove(user, oldFuture);
                 oldFuture.cancel(false);
             }
         }
         else {
-            // Nutzer ist noch nicht gemuted
+            // User is not muted yet
             user.addRole(muteRole);
-            LOG.info("Muted user {}.", UserUtils.makeUserString(user, guild));
+            LOG.info("Muted user {} for {} {}.", UserUtils.makeUserString(user, guild), muteDuration, muteDurationUnit.name());
         }
 
-        // Wird ausgeführt, um Nutzer wieder zu entmuten
-        final Runnable unmuteTask = () -> {
-            // Only remove the mute role if th user is still a member of the guild
-            if (guild.getUsers().contains(user)) {
-                user.removeRole(muteRole);
-            }
-            userMuteFutures.get(guild).remove(user);
+        // Task that will be run to unmute user
+        final Runnable unmuteTask = () -> unmuteUserForGuild(user, guild, null);
 
-            LOG.info("Nutzer {} wurde entmuted.", UserUtils.makeUserString(user, guild));
-            saveMutedUsers();
-        };
 
-        // Unmute schedulen
+        // Schedule the unmute task
         final ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
 
+        // Save the mute, so it can be restored after a restart of the bot
         if (userMuteFutures.containsKey(guild)) {
             userMuteFutures.get(guild).put(user, newFuture);
         }
@@ -390,14 +369,53 @@ public class ModStuff {
             userMuteFutures.put(guild, guildMap);
         }
 
-        return "";
+        saveMutedUsers();
     }
 
+    /**
+     * Unmutes a user for a guild, by removing the configured mute role.
+     *
+     * @param user The user to unmute.
+     * @param guild The guild the user should be unmuted on.
+     * @param channel The channel to send error messages to. Can be null.
+     */
+    private void unmuteUserForGuild (final IUser user, final IGuild guild, final IChannel channel) {
+        // Get mute role for this guild
+        final IRole muteRole = getMuteRoleForGuild(guild);
+        if (muteRole == null) {
+            if (channel != null) {
+                DiscordIO.sendMessage(channel, ":x: Keine Mute-Rolle konfiguriert. Nutzer kann nicht entmuted werden.");
+            }
+            else {
+                LOG.warn("No mute role configured for guild {} (ID: {}). Cannot unmute user.",
+                        guild.getName(), guild.getStringID());
+            }
+            return;
+        }
+
+        // Only remove the mute role if th user is still a member of the guild
+        if (guild.getUsers().contains(user) && user.hasRole(muteRole)) {
+            user.removeRole(muteRole);
+        }
+        userMuteFutures.get(guild).remove(user);
+
+        LOG.info("User {} was unmuted.", UserUtils.makeUserString(user, guild));
+        saveMutedUsers();
+    }
+
+    /**
+     * Check if a user is muted on a guild by checking if the user is in the {@link #userMuteFutures} map for the given guild.
+     *
+     * @param user The user.
+     * @param guild The guild.
+     * @return True if the user is muted on the given guild, otherwise false.
+     */
     private boolean isUserMutedForGuild (final IUser user, final IGuild guild) {
         return (userMuteFutures.containsKey(guild) && userMuteFutures.get(guild).containsKey(user));
     }
 
-    @CommandSubscriber(command = "channelMute", help = "Nutzer in einem Channel für eine bestimmte Zeit stummschalten", pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR)
+    @CommandSubscriber(command = "channelMute", help = "Nutzer in einem Channel für eine bestimmte Zeit stummschalten",
+            pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR)
     public void command_channelMute(final IMessage message, final String user, final String channelOrMuteDurationInput, final String muteDurationInput) {
         // Nutzer auslesen
         final List<IUser> userMentions = message.getMentions();
@@ -635,8 +653,6 @@ public class ModStuff {
         return "";
     }
 
-
-
     private boolean isUserMutedForChannel (final IUser user, final IChannel channel) {
         final IGuild guild = channel.getGuild();
         if (channelMuteFutures.containsKey(guild)) {
@@ -800,6 +816,7 @@ public class ModStuff {
 
     @EventSubscriber
     public void onUserJoin(final UserJoinEvent event) {
+        // Check if the user that joined should still be muted
         final IUser user = event.getUser();
         if (userMuteFutures.containsKey(event.getGuild()) && userMuteFutures.get(event.getGuild()).containsKey(user)) {
             final IRole muteRole = getMuteRoleForGuild(event.getGuild());
@@ -813,6 +830,7 @@ public class ModStuff {
 
     @EventSubscriber
     public void onStartup(final ReadyEvent event) {
+        // Restire all mutes that can be found in the JSON file
         LOG.info("Restoring muted users.");
 
         for (final String guildStringID : modstuffJSON.keySet()) {
@@ -828,14 +846,20 @@ public class ModStuff {
         LOG.info("Restored all mutes.");
     }
 
+    /**
+     * Restore all mutes for the specified guild that can be found in the JSON file.
+     *
+     * @param guild The guild for which to restore the mutes
+     */
     private void restoreGuildUserMutes(final IGuild guild) {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         final JSONArray guildUserMutes = getUserMutesJSONForGuild(guild);
         LOG.debug("Found {} mutes for guild.", guildUserMutes.length());
 
-        for (int i = 0; i < guildUserMutes.length(); i++) {
-            final JSONObject currentUserMute = guildUserMutes.getJSONObject(i);
+        final Iterator<Object> muteIterator = guildUserMutes.iterator();
+        while (muteIterator.hasNext()) {
+            final JSONObject currentUserMute = (JSONObject)muteIterator.next();
             if (currentUserMute.has("user") && currentUserMute.has("mutedUntil")) {
                 final long userLongID = currentUserMute.getLong("user");
                 final IUser user = guild.getUserByID(userLongID);
@@ -844,17 +868,26 @@ public class ModStuff {
 
                 if (LocalDateTime.now().isBefore(unmuteTimestamp)) {
                     final int delaySeconds = (int)LocalDateTime.now().until(unmuteTimestamp, ChronoUnit.SECONDS);
-                    muteUserForGuild(user, guild, delaySeconds, ChronoUnit.SECONDS);
-                    LOG.info("Restored mute for user '{}' (ID: {}) for guild '{}' (ID: {}). Muted until {}",
+                    muteUserForGuild(user, guild, delaySeconds, ChronoUnit.SECONDS, null);
+                    LOG.info("Restored mute for user '{}' (ID: {}) on guild '{}' (ID: {}). Muted until {}",
                             UserUtils.makeUserString(user, guild), user.getStringID(),
                             guild.getName(), guild.getStringID(),
                             unmuteTimestampString);
                 }
+                else {
+                    LOG.info("Mute for user '{}' (ID: {}) on guild '{}' (ID: {}) was found, but mute duration has elapsed. Removing from JSON.",
+                            UserUtils.makeUserString(user, guild), user.getStringID(),
+                            guild.getName(), guild.getStringID());
+                }
             }
             else {
-                LOG.warn(String.format("userMute at index %s doesn't contain necessary keys! Skipping.", i));
+                LOG.warn(String.format("userMute doesn't contain necessary keys! Skipping. userMute: %s", currentUserMute.toString(4)));
             }
         }
+
+        // Update JSON
+        getJSONForGuild(guild).remove("userMutes");
+        saveMutedUsers();
     }
 
     private IRole getMuteRoleForGuild(final IGuild guild) {
