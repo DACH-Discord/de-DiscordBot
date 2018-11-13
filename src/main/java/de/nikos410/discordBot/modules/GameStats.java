@@ -48,7 +48,7 @@ public class GameStats {
             throw new InitializationException("Could not read module data.", GameStats.class);
         }
         this.gameStatsJSON = new JSONObject(jsonContent);
-        LOG.info(String.format("Loaded GameStats file for %s guilds.", gameStatsJSON.keySet().size()));
+        LOG.info("Loaded GameStats file for {} guilds.", gameStatsJSON.keySet().size());
 
         // If the client is not ready, the module was loaded on startup, in this case we use the Event Subscriber method.
         if (bot.client.isReady()) {
