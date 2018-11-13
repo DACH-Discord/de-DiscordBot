@@ -73,7 +73,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
-            pmAllowed = false)
+            pmAllowed = false, ignoreParameterCount = true)
     public void command_Kick(final IMessage message, final String userString, String customMessage) {
         // Only Moderators and upwards are allowed to use the command.
         // If a user is not a moderator they will be kicked instead.
@@ -126,7 +126,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "ban", help = "Bannt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
-            pmAllowed = false)
+            pmAllowed = false, ignoreParameterCount = true)
     public void command_Ban(final IMessage message, final String userString, String customMessage) {
         // Only Moderators and upwards are allowed to use the command.
         // If a user is not a moderator they will be kicked instead.
@@ -190,7 +190,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
-            permissionLevel = PermissionLevel.MODERATOR)
+            permissionLevel = PermissionLevel.MODERATOR, ignoreParameterCount = true)
     public void command_Mute(final IMessage message, final String userString, final String muteDurationInput) {
         // Find the user to mute
         final IUser muteUser = UserUtils.getUserFromMessage(message, userString);
@@ -255,7 +255,8 @@ public class ModStuff {
         saveMutedUsers();
     }
 
-    @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm", pmAllowed = false)
+    @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm",
+            pmAllowed = false, ignoreParameterCount = true)
     public void command_Selfmute(final IMessage message, final String muteDurationInput) {
         // The author of the message will be muted
         final IUser muteUser = message.getAuthor();
@@ -415,7 +416,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "channelMute", help = "Nutzer in einem Channel für eine bestimmte Zeit stummschalten",
-            pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR)
+            pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR, ignoreParameterCount = true)
     public void command_channelMute(final IMessage message, final String user, final String channelOrMuteDurationInput, final String muteDurationInput) {
         // Nutzer auslesen
         final List<IUser> userMentions = message.getMentions();
