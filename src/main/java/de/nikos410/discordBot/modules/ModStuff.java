@@ -93,7 +93,7 @@ public class ModStuff {
             }
 
             final List<String> kickMessage = Arrays.asList("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.)",
-                    String.format("Hinweis: %s", customMessage));
+                    String.format("Hinweis: _%s_", customMessage));
 
 
             DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
