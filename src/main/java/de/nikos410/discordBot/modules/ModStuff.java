@@ -260,14 +260,15 @@ public class ModStuff {
 
     @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm", pmAllowed = false)
     public void command_Selfmute(final IMessage message, final String muteDurationInput) {
-        // Autor der Nachricht soll gemuted werden
+        // The author of the message will be muted
         final IUser muteUser = message.getAuthor();
 
-        // Mute Dauer auslesen
+        // Parse mute duration
         final Pattern pattern = Pattern.compile("(\\d+)\\s*([smhd])\\s*(.*)");
         final Matcher matcher = pattern.matcher(muteDurationInput);
 
         if (!matcher.matches()) {
+            // No valid duration was specified
             DiscordIO.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
             return;
         }
@@ -276,7 +277,7 @@ public class ModStuff {
         final String muteDurationUnitString = matcher.group(2);
         ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
 
-        // Nutzer können sich für maximal einen Tag selber muten
+        // Users can only mute themselves for a maximum of 1 day
         final LocalDateTime muteEnd = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
         if (muteEnd.isAfter(LocalDateTime.now().plusDays(1))) {
             // Länger als 1 Tag
@@ -286,8 +287,8 @@ public class ModStuff {
 
         final IGuild guild = message.getGuild();
 
-        // Nutzer muten und unmuten schedulen
-        // Es wird nur ein String returned wenn der mute nicht erfolgt ist
+        // Mute the user and schedule unmute
+        // Only returns a message if the user could not be muted
         final String output = muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit);
         if (output.isEmpty()) {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
