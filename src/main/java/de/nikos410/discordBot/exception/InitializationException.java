@@ -12,4 +12,8 @@ public class InitializationException extends RuntimeException {
         super(message, cause);
         this.module = module;
     }
+
+    public Class<?> getModule() {
+        return this.module;
+    }
 }
