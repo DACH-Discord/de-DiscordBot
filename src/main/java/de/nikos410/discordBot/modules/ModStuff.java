@@ -199,7 +199,7 @@ public class ModStuff {
             return;
         }
 
-        // Parse mute direction
+        // Parse mute duration
         final Pattern pattern = Pattern.compile("(\\d+)\\s*([smhd])\\s*(.*)");
         final Matcher matcher = pattern.matcher(muteDurationInput);
 
