@@ -400,7 +400,7 @@ public class DiscordBot {
         final int parameterCount = command.parameterCount;
         final boolean passContext = command.passContext;
         final boolean ignoreParameterCount = command.ignoreParameterCount;
-        final List<String> parameters = parseParameters(messageContent, parameterCount, passContext);
+        final List<String> parameters = parseParameters(messageContent, commandName, parameterCount, passContext);
 
         // Check if the user used the correct number of parameters
         if (parameters.size() < parameterCount) {
@@ -483,23 +483,21 @@ public class DiscordBot {
      * @param passContext If true, additional words are appended to last parameter. If false, additional words are ignored
      * @return The list containing the parsed parameters
      */
-    private List<String> parseParameters(final String messageContent, int parameterCount, boolean passContext) {
+    private List<String> parseParameters(final String messageContent, final String command, int parameterCount, boolean passContext) {
         final LinkedList<String> parameters = new LinkedList<>();
 
-        // Remove prefix
-        // Necessary because prefix might contain spaces
-        final String content = messageContent.substring(prefix.length());
+        // Remove prefix and command
+        final String content = messageContent.substring(prefix.length() + command.length());
 
-        // Remove command
-        final Pattern pattern = Pattern.compile("(\\S*)\\s+(.*)");
-        final Matcher matcher = pattern.matcher(content);
-        if (!matcher.matches() || matcher.groupCount() != 2) {
-            return parameters;
+        // Remove leading whitespace
+        int parameterStart = 0;
+        while (content.charAt(parameterStart) == '\n' || content.charAt(parameterStart) == ' ') {
+            parameterStart++;
         }
-        final String parameterContent = matcher.group(2);   // The String containing only the parameters
+        final String parameterContent = content.substring(parameterStart);   // The String containing only the parameters
 
         // Seperate the individual parameters
-        final String[] contentParts = parameterContent.split("\\s+");
+        final String[] contentParts = parameterContent.split("[\\t ]+");
 
         int i;
         for (i = 0; i < parameterCount; i++) {
