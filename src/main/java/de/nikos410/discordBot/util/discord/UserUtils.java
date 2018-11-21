@@ -22,6 +22,10 @@ public class UserUtils {
      * @return The user that was specified, or null if none was found.
      */
     public static IUser getUserFromMessage(final IMessage message, final String userParameter) {
+        if (message == null || userParameter == null) {
+            return null;
+        }
+
         if (userParameter.matches("^[0-9]{18}$")) {
             // The user parameter looks like a user ID
             // Try to find a user with that ID

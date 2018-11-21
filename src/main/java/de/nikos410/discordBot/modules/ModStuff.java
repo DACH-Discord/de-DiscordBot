@@ -199,6 +199,12 @@ public class ModStuff {
             return;
         }
 
+        // Check if mute duration was specified
+        if (muteDurationInput == null) {
+            DiscordIO.sendMessage(message.getChannel(), "Fehler! Es muss eine Mute-Dauer angegeben werden.");
+            return;
+        }
+
         // Parse mute duration
         final Pattern pattern = Pattern.compile("(\\d+)\\s*([smhd])\\s*(.*)");
         final Matcher matcher = pattern.matcher(muteDurationInput);
