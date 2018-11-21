@@ -7,8 +7,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import de.nikos410.discordBot.exception.InitializationException;
 import de.nikos410.discordBot.framework.*;
@@ -397,22 +395,22 @@ public class DiscordBot {
             return;
         }
 
-        final int parameterCount = command.parameterCount;
+        final int expectedParameterCount = command.expectedParameterCount;
         final boolean passContext = command.passContext;
         final boolean ignoreParameterCount = command.ignoreParameterCount;
-        final List<String> parameters = parseParameters(messageContent, commandName, parameterCount, passContext);
+        final List<String> parameters = parseParameters(messageContent, commandName, expectedParameterCount, passContext);
 
         // Check if the user used the correct number of parameters
-        if (parameters.size() < parameterCount) {
+        if (parameters.size() < expectedParameterCount) {
             if (ignoreParameterCount) {
-                while (parameters.size() < parameterCount) {
+                while (parameters.size() < expectedParameterCount) {
                     parameters.add(null);
                 }
             }
             else {
-                DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl benötigt mindestens %s Parameter! (Gegeben: %s)", parameterCount, parameters.size()));
+                DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl benötigt mindestens %s Parameter! (Gegeben: %s)", expectedParameterCount, parameters.size()));
                 LOG.info("Wrong number of arguments. Expected number: {} Actual number: {}",
-                        parameterCount, parameters.size());
+                        expectedParameterCount, parameters.size());
                 return;
             }
         }
@@ -491,7 +489,7 @@ public class DiscordBot {
 
         // Remove leading whitespace
         int parameterStart = 0;
-        while (content.charAt(parameterStart) == '\n' || content.charAt(parameterStart) == ' ') {
+        while (parameterStart < content.length() && (content.charAt(parameterStart) == '\n' || content.charAt(parameterStart) == ' ')) {
             parameterStart++;
         }
         final String parameterContent = content.substring(parameterStart);   // The String containing only the parameters
@@ -499,22 +497,29 @@ public class DiscordBot {
         // Seperate the individual parameters
         final String[] contentParts = parameterContent.split("[\\t ]+");
 
-        int i;
-        for (i = 0; i < parameterCount; i++) {
-            if (i < contentParts.length) {
-                parameters.add(contentParts[i]);
+        int contentPartIndex;
+        for (contentPartIndex = 0; contentPartIndex < parameterCount; contentPartIndex++) {
+            if (contentPartIndex < contentParts.length) {
+                final String currentParameter = contentParts[contentPartIndex];
+                if (!currentParameter.isEmpty()) {
+                    parameters.add(currentParameter);
+                }
             }
         }
 
         // If passContext is true, append possible additional words to last parameter
-        if (passContext && i < contentParts.length) {
-            final String last = parameters.removeLast();
+        if (passContext && contentPartIndex < contentParts.length && parameters.size() > 0) {
             final StringBuilder builder = new StringBuilder();
-            builder.append(last);
+                final String last = parameters.removeLast();
+                builder.append(last);
 
-            for (; i < contentParts.length; i++) {
-                builder.append(' ');
-                builder.append(contentParts[i]);
+
+            while (contentPartIndex < contentParts.length) {
+                if (builder.length() == 0) {
+                    builder.append(' ');
+                }
+                builder.append(contentParts[contentPartIndex]);
+                contentPartIndex++;
             }
 
             parameters.add(builder.toString());

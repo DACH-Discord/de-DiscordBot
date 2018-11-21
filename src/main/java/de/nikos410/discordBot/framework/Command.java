@@ -11,7 +11,7 @@ public class Command {
 
     public final boolean pmAllowed;
     public final PermissionLevel permissionLevel;
-    public final int parameterCount;
+    public final int expectedParameterCount;
     public final boolean passContext;
     public final boolean ignoreParameterCount;
 
@@ -22,17 +22,17 @@ public class Command {
      * @param method The method that should be invoked to execute the command.
      * @param pmAllowed Set whether the command should be available in private messages.
      * @param permissionLevel Which permission level is necessary to execute the command.
-     * @param parameterCount The number of parameters the command accepts.
+     * @param expectedParameterCount The number of parameters the command accepts.
      * @param passContext Set whether to append additional parameters or to ignore them.
      * @param ignoreParameterCount Don't check if enough parameters are given when executing.
      */
     public Command(final Object object, final Method method, final boolean pmAllowed, final PermissionLevel permissionLevel,
-                   final int parameterCount, final boolean passContext, final boolean ignoreParameterCount) {
+                   final int expectedParameterCount, final boolean passContext, final boolean ignoreParameterCount) {
         this.object = object;
         this.method = method;
         this.pmAllowed = pmAllowed;
         this.permissionLevel = permissionLevel;
-        this.parameterCount = parameterCount;
+        this.expectedParameterCount = expectedParameterCount;
         this.passContext = passContext;
         this.ignoreParameterCount = ignoreParameterCount;
     }
