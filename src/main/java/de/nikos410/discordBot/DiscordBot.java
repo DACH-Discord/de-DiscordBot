@@ -510,14 +510,12 @@ public class DiscordBot {
         // If passContext is true, append possible additional words to last parameter
         if (passContext && contentPartIndex < contentParts.length && parameters.size() > 0) {
             final StringBuilder builder = new StringBuilder();
-                final String last = parameters.removeLast();
-                builder.append(last);
+            final String last = parameters.removeLast();
+            builder.append(last);
 
 
             while (contentPartIndex < contentParts.length) {
-                if (builder.length() == 0) {
-                    builder.append(' ');
-                }
+                builder.append(' ');
                 builder.append(contentParts[contentPartIndex]);
                 contentPartIndex++;
             }
