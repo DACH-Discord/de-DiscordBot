@@ -40,7 +40,7 @@ public class DiscordBot {
 
     private final Map<String, Command> commands = new HashMap<>();
 
-    public final IDiscordClient client;
+    public IDiscordClient client;
 
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
     public final JSONObject rolesJSON;
@@ -72,6 +72,28 @@ public class DiscordBot {
         this.rolesJSON = new JSONObject(rolesFileContent);
         LOG.info("Loaded roles file for {} guilds.", rolesJSON.keySet().size());
 
+        // Get prefix and owner ID from config
+        if (!configJSON.has("prefix")) {
+            throw new InitializationException("No prefix configured.", DiscordBot.class);
+        }
+        this.prefix = configJSON.getString("prefix");
+        if (!configJSON.has("owner")) {
+            throw new InitializationException("No owner configured.", DiscordBot.class);
+        }
+        this.ownerID = configJSON.getLong("owner");
+
+        // Get unloaded modules
+        if (!configJSON.has("unloadedModules")) {
+            throw new InitializationException("Could not find unloaded modules.", DiscordBot.class);
+        }
+        final JSONArray unloadedModulesJSON = this.configJSON.getJSONArray("unloadedModules");
+
+        for (int i = 0; i < unloadedModulesJSON.length(); i++) {
+            this.unloadedModules.add(unloadedModulesJSON.getString(i));
+        }
+    }
+
+    private void start() {
         // Get token from config
         if (!configJSON.has("token")) {
             throw new InitializationException("No token configured.", DiscordBot.class);
@@ -86,16 +108,6 @@ public class DiscordBot {
         }
         LOG.info("Bot authorized.");
 
-        // Get prefix and owner ID from config
-        if (!configJSON.has("prefix")) {
-            throw new InitializationException("No prefix configured.", DiscordBot.class);
-        }
-        this.prefix = configJSON.getString("prefix");
-        if (!configJSON.has("owner")) {
-            throw new InitializationException("No owner configured.", DiscordBot.class);
-        }
-        this.ownerID = configJSON.getLong("owner");
-
         // Register Eventlistener
         try {
             this.client.getDispatcher().registerListener(this);
@@ -104,16 +116,7 @@ public class DiscordBot {
             throw new InitializationException("Could not get EventDispatcher.", e, DiscordBot.class);
         }
 
-        // Get unloaded modules
-        if (!configJSON.has("unloadedModules")) {
-            throw new InitializationException("Could not find unloaded modules.", DiscordBot.class);
-        }
-        final JSONArray unloadedModulesJSON = this.configJSON.getJSONArray("unloadedModules");
-
-        for (int i = 0; i < unloadedModulesJSON.length(); i++) {
-            this.unloadedModules.add(unloadedModulesJSON.getString(i));
-        }
-
+        // Initialize Modules
         this.loadModules();
     }
 
@@ -693,6 +696,6 @@ public class DiscordBot {
     }
 
     public static void main(String[] args) {
-        new DiscordBot();
+        new DiscordBot().start();
     }
 }
