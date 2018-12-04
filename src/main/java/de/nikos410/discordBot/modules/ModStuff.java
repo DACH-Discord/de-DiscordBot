@@ -5,6 +5,8 @@ import de.nikos410.discordBot.exception.InitializationException;
 import de.nikos410.discordBot.framework.PermissionLevel;
 import de.nikos410.discordBot.framework.annotations.CommandModule;
 import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
+import de.nikos410.discordBot.util.CommandUtils;
+import de.nikos410.discordBot.util.discord.ChannelUtils;
 import de.nikos410.discordBot.util.discord.DiscordIO;
 import de.nikos410.discordBot.util.discord.GuildUtils;
 import de.nikos410.discordBot.util.discord.UserUtils;
@@ -16,7 +18,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
@@ -40,8 +41,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @CommandModule(moduleName = "Modzeugs", commandOnly = false)
 public class ModStuff {
@@ -205,38 +204,33 @@ public class ModStuff {
         }
 
         // Parse mute duration
-        final Pattern pattern = Pattern.compile("(\\d+)\\s*([smhd])\\s*(.*)");
-        final Matcher matcher = pattern.matcher(muteDurationInput);
-
-        if (!matcher.matches()) {
-            // No valid duration was specified
-            DiscordIO.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
+        final CommandUtils.DurationParameters durationParameters = CommandUtils.parseDurationParameters(muteDurationInput);
+        if (durationParameters == null) {
+            DiscordIO.sendMessage(message.getChannel(),
+                    "Ungültige Dauer angegeben. Mögliche Einheiten sind: s, m, h, d");
             return;
         }
 
-        final int muteDuration = Integer.parseInt(matcher.group(1));
-        final String muteDurationUnitString = matcher.group(2);
-        final ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
+        final int muteDuration = durationParameters.getDuration();
+        final ChronoUnit muteDurationUnit = durationParameters.getDurationUnit();
+        String customMessage = durationParameters.getMessage();
+        if (customMessage == null || customMessage.isEmpty()) {
+            customMessage = "kein";
+        }
 
         final IGuild guild = message.getGuild();
 
         // Mute the user and schedule unmute
         muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit, message.getChannel());
-
         message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
 
-        // Get custom message
-        String customMessage = matcher.group(3);
-        if (customMessage == null || customMessage.isEmpty()) {
-            customMessage = "kein";
-        }
-
+        // Notify the user about the mute
         final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest für %s %s gemuted!",
-                muteDuration,
-                muteDurationUnitString),
+                    muteDuration,
+                    muteDurationUnit.name()),
                 String.format("Hinweis: _%s_", customMessage));
 
-        // Notify the user about the mute
+        // Do not send a message to a bot user
         if (!muteUser.isBot()) {
             DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
@@ -253,7 +247,7 @@ public class ModStuff {
             final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
-                    muteDuration, muteDurationUnitString, customMessage);
+                    muteDuration, muteDurationUnit.name(), customMessage);
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
 
@@ -267,31 +261,17 @@ public class ModStuff {
         final IUser muteUser = message.getAuthor();
 
         // Parse mute duration
-        final Pattern pattern = Pattern.compile("(\\d+)\\s*([smhd])\\s*(.*)");
-        final Matcher matcher = pattern.matcher(muteDurationInput);
-
-        if (!matcher.matches()) {
-            // No valid duration was specified
-            DiscordIO.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
-            return;
-        }
-
-        final int muteDuration = Integer.parseInt(matcher.group(1));
-        final String muteDurationUnitString = matcher.group(2);
-        ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
-
-        // Users can only mute themselves for a maximum of 1 day
-        final LocalDateTime muteEnd = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
-        if (muteEnd.isAfter(LocalDateTime.now().plusDays(1))) {
-            // Länger als 1 Tag
-            DiscordIO.sendMessage(message.getChannel(), "Du kannst dich für maximal einen Tag muten!");
+        final CommandUtils.DurationParameters durationParameters = CommandUtils.parseDurationParameters(muteDurationInput);
+        if (durationParameters == null) {
+            DiscordIO.sendMessage(message.getChannel(),
+                    "Ungültige Dauer angegeben. Mögliche Einheiten sind: s, m, h, d");
             return;
         }
 
         final IGuild guild = message.getGuild();
 
         // Mute the user and schedule unmute
-        muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit, message.getChannel());
+        muteUserForGuild(muteUser, guild, durationParameters.getDuration(), durationParameters.getDurationUnit(), message.getChannel());
 
         message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
     }
@@ -363,7 +343,7 @@ public class ModStuff {
 
 
         // Schedule the unmute task
-        final ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
+        final ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, CommandUtils.toTimeUnit(muteDurationUnit));
 
         // Save the mute, so it can be restored after a restart of the bot
         if (userMuteFutures.containsKey(guild)) {
@@ -422,63 +402,52 @@ public class ModStuff {
 
     @CommandSubscriber(command = "channelMute", help = "Nutzer in einem Channel für eine bestimmte Zeit stummschalten",
             pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR, ignoreParameterCount = true)
-    public void command_channelMute(final IMessage message, final String user, final String channelOrMuteDurationInput, final String muteDurationInput) {
-        // Nutzer auslesen
-        final List<IUser> userMentions = message.getMentions();
-        if (userMentions.size() < 1) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein Nutzer angegeben!");
-            return;
-        }
-        else if (userMentions.size() > 1) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: mehrere Nutzer erwähnt");
-            return;
-        }
-
-        final IUser muteUser = userMentions.get(0);
+    public void command_channelMute(final IMessage message, final String userInput, final String channelOrMuteDuration) {
+        // Parse user
+        final IUser muteUser = UserUtils.getUserFromMessage(message, userInput);
         if (muteUser == null) {
             DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Nutzer nicht gefunden!");
             return;
         }
 
-        // Kanal auslesen
-        final List<IChannel> channelMentions = message.getChannelMentions();
-        final IChannel muteChannel;
-
-        if (channelMentions.size() > 1) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: mehrere Kanäle erwähnt");
-            return;
+        // Parse channel
+        if (channelOrMuteDuration == null || !channelOrMuteDuration.contains(" ")) {
+            DiscordIO.sendMessage(message.getChannel(),
+                    "Befehl ungültig! Format: `channelmute <Nutzer> [Kanal] <Dauer> [Hinweis]`");
+                    return;
         }
-        else if (channelMentions.size() < 1) {
-            // Kein Kanal erwähnt -> Kanal der Nachricht verwenden
+
+        final int firstSpaceIndex = channelOrMuteDuration.indexOf(' ');
+        IChannel muteChannel = ChannelUtils.getChannelFromMessage(message,
+                channelOrMuteDuration.substring(0, firstSpaceIndex));
+
+        // Parse mute duration and message
+        final CommandUtils.DurationParameters durationParameters;
+        if (muteChannel == null) {
+            durationParameters = CommandUtils.parseDurationParameters(channelOrMuteDuration);
+
+            // If channel is null, no channel was specified as a parameter -> Use the channel the command was sent in
             muteChannel = message.getChannel();
         }
         else {
-            // Kanal erwähnt -> diesen verwenden
-            muteChannel = channelMentions.get(0);
+            durationParameters = CommandUtils.parseDurationParameters(channelOrMuteDuration.substring(firstSpaceIndex + 1));
         }
 
-        // Mute Dauer auslesen
-        final Pattern pattern = Pattern.compile("(\\d+)\\s*([smhd])\\s*(.*)");
-
-        final Matcher matcher;
-        if (channelMentions.size() < 1) {
-            matcher = pattern.matcher(channelOrMuteDurationInput);
-        }
-        else {
-            matcher = pattern.matcher(muteDurationInput);
-        }
-
-        if (!matcher.matches()) {
-            DiscordIO.sendMessage(message.getChannel(), "Ungültige Eingabe! Mögliche Zeitformate sind s, m, h und d.");
+        if (durationParameters == null) {
+            DiscordIO.sendMessage(message.getChannel(),
+                    "Ungültige Dauer angegeben. Mögliche Einheiten sind: s, m, h, d");
             return;
         }
 
-        final int muteDuration = Integer.parseInt(matcher.group(1));
-        final String muteDurationUnitString = matcher.group(2);
-        ChronoUnit muteDurationUnit = parseChronoUnit(muteDurationUnitString);
+        final int muteDuration = durationParameters.getDuration();
+        final ChronoUnit muteDurationUnit = durationParameters.getDurationUnit();
+        String customMessage = durationParameters.getMessage();
 
-        // Nutzer muten und unmuten schedulen
-        // Es wird nur ein String returned wenn der mute nicht erfolgt ist
+        if (customMessage == null || customMessage.isEmpty()) {
+            customMessage = "kein";
+        }
+
+        // Mute user and schedule unmute
         final String output = muteUserForChannel(muteUser, muteChannel, muteDuration, muteDurationUnit);
         if (output.isEmpty()) {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
@@ -488,19 +457,12 @@ public class ModStuff {
             return;
         }
 
-        // Hinweis auslesen
-        String customMessage = matcher.group(3);
-
-        if (customMessage == null || customMessage.isEmpty()) {
-            customMessage = "kein";
-        }
-
         final IGuild guild = message.getGuild();
 
         final String muteMessage = String.format("**Du wurdest für %s %s für den Kanal %s auf dem Server %s gemuted!** \nHinweis: _%s_",
-                muteDuration, muteDurationUnitString, muteChannel.getName(), guild.getName(), customMessage);
+                muteDuration, muteDurationUnit.name(), muteChannel.getName(), guild.getName(), customMessage);
 
-        // Einen Bot nicht benachrichtigen
+        // Do not notify a bot user
         if (!muteUser.isBot()) {
             DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
@@ -508,7 +470,7 @@ public class ModStuff {
         // Modlog
         LOG.info("Nutzer {} wurde für {} {} für den Kanal {} auf dem Server {} gemuted. \nHinweis: {}",
                 UserUtils.makeUserString(muteUser, guild), muteDuration,
-                muteDurationUnitString,
+                muteDurationUnit.name(),
                 muteChannel.getName(),
                 guild.getName(),
                 customMessage);
@@ -519,7 +481,7 @@ public class ModStuff {
             final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s für den Kanal %s **gemuted**. \nHinweis: _%s _",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
-                    muteDuration, muteDurationUnitString, muteChannel.mention(), customMessage);
+                    muteDuration, muteDurationUnit.name(), muteChannel.mention(), customMessage);
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
     }
@@ -634,7 +596,7 @@ public class ModStuff {
         };
 
         // Unmute schedulen
-        final ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, chronoUnitToTimeUnit(muteDurationUnit));
+        final ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, CommandUtils.toTimeUnit(muteDurationUnit));
 
         final Map<IChannel, Map<IUser, ScheduledFuture>> guildMap;
         if (channelMuteFutures.containsKey(guild)) {
@@ -750,20 +712,10 @@ public class ModStuff {
 
     @CommandSubscriber(command = "setModlogChannel", help = "Kanal in dem die Modlog Nachrichten gesendet werden einstellen",
             pmAllowed = false, passContext = false, permissionLevel = PermissionLevel.ADMIN)
-    public void command_setModlogChannel(final IMessage message, final String channel) {
-        final IChannel modlogChannel;
-        final List<IChannel> channelMentions = message.getChannelMentions();
-
-        if (GuildUtils.channelExists(message.getGuild(), channel)) {
-            // Kanal ID wurde als Parameter angegeben
-            modlogChannel = message.getGuild().getChannelByID(Long.parseLong(channel));
-        }
-        else if (channelMentions.size() == 1) {
-            // ein Kanal wurde erwähnt
-            modlogChannel = channelMentions.get(0);
-        }
-        else {
-            // Kein Kanal angegeben
+    public void command_setModlogChannel(final IMessage message, final String channelParameter) {
+        final IChannel modlogChannel = ChannelUtils.getChannelFromMessage(message, channelParameter);
+        if (modlogChannel == null) {
+            // No valid channel was specified
             DiscordIO.sendMessage(message.getChannel(), "Kein gültiger Kanal angegeben!");
             return;
         }
@@ -786,20 +738,10 @@ public class ModStuff {
 
     @CommandSubscriber(command = "setMuteRole", help = "Mute Rolle einstellen einstellen",
             pmAllowed = false, passContext = false, permissionLevel = PermissionLevel.ADMIN)
-    public void command_setMuteRole(final IMessage message, final String role) {
-        final IRole muteRole;
-        final List<IRole> roleMentions = message.getRoleMentions();
-
-        if (GuildUtils.roleExists(message.getGuild(), role)) {
-            // Rollen ID wurde als Parameter angegeben
-            muteRole = message.getGuild().getRoleByID(Long.parseLong(role));
-        }
-        else if (roleMentions.size() == 1) {
-            // eine Rolle wurde erwähnt
-            muteRole = roleMentions.get(0);
-        }
-        else {
-            // Keine Rolle angegeben
+    public void command_setMuteRole(final IMessage message, final String roleParameter) {
+        final IRole muteRole = GuildUtils.getRoleFromMessage(message, roleParameter);
+        if(muteRole == null) {
+            // No valid role specified
             DiscordIO.sendMessage(message.getChannel(), "Keine gültige Rolle angegeben!");
             return;
         }
@@ -836,7 +778,7 @@ public class ModStuff {
 
     @EventSubscriber
     public void onStartup(final ReadyEvent event) {
-        // Restire all mutes that can be found in the JSON file
+        // Restore all mutes that can be found in the JSON file
         LOG.info("Restoring muted users.");
 
         for (final String guildStringID : modstuffJSON.keySet()) {
@@ -864,8 +806,10 @@ public class ModStuff {
         LOG.debug("Found {} mutes for guild.", guildUserMutes.length());
 
         final Iterator<Object> muteIterator = guildUserMutes.iterator();
+
         while (muteIterator.hasNext()) {
             final JSONObject currentUserMute = (JSONObject)muteIterator.next();
+
             if (currentUserMute.has("user") && currentUserMute.has("mutedUntil")) {
                 final long userLongID = currentUserMute.getLong("user");
                 final IUser user = guild.getUserByID(userLongID);
@@ -1006,27 +950,6 @@ public class ModStuff {
         }
     }
 
-    private static ChronoUnit parseChronoUnit (String chronoUnitString) {
-        switch (chronoUnitString.toLowerCase()) {
-            case "s": return ChronoUnit.SECONDS;
-            case "m": return ChronoUnit.MINUTES;
-            case "h": return ChronoUnit.HOURS;
-            case "d": return ChronoUnit.DAYS;
-
-            default: return ChronoUnit.SECONDS;
-        }
-    }
-
-    private TimeUnit chronoUnitToTimeUnit (ChronoUnit chronoUnit) {
-        switch (chronoUnit) {
-            case SECONDS: return TimeUnit.SECONDS;
-            case MINUTES: return TimeUnit.MINUTES;
-            case HOURS: return TimeUnit.HOURS;
-            case DAYS: return TimeUnit.DAYS;
-
-            default: throw new UnsupportedOperationException("Unsupported ChronoUnit");
-        }
-    }
 
     private void saveMutedUsers() {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
