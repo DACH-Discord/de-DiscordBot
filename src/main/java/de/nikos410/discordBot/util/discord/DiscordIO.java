@@ -164,13 +164,7 @@ public class DiscordIO {
      * @param channel The channel in which to send the notification.
      */
     public static void errorNotify(final Exception e, final IChannel channel) {
-        final EmbedBuilder embedBuilder = new EmbedBuilder();
-
-        embedBuilder.withColor(new Color(255, 42, 50));
-        embedBuilder.appendField("Interner Fehler", e.toString(), false);
-        embedBuilder.withFooterText("Mehr Infos in der Konsole");
-
-        sendEmbed(channel, embedBuilder.build());
+        errorNotify(e.toString(), channel);
     }
 
     /**
