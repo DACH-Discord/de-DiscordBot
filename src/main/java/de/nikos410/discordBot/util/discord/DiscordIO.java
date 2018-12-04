@@ -97,7 +97,9 @@ public class DiscordIO {
                     TimeUnit.MILLISECONDS.sleep(500);
                 }
                 catch (InterruptedException ie) {
-                    LOG.error("Sleep was interrupted.", ie);
+                    LOG.warn("Sleep was interrupted.", ie);
+                    // Restore interrupted state
+                    Thread.currentThread().interrupt();
                 }
 
                 return sendSingleMessage(channel, message, tries - 1);
@@ -137,7 +139,9 @@ public class DiscordIO {
                     TimeUnit.MILLISECONDS.sleep(500);
                 }
                 catch (InterruptedException ie) {
-                    LOG.error("Sleep was interrupted.", ie);
+                    LOG.warn("Sleep was interrupted.", ie);
+                    // Restore interrupted state
+                    Thread.currentThread().interrupt();
                 }
 
                 return sendEmbed(channel, embedObject, tries - 1);
