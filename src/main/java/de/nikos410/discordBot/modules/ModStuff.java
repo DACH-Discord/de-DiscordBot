@@ -61,7 +61,6 @@ public class ModStuff {
 
     public ModStuff (final DiscordBot bot) {
         this.bot = bot;
-        final IDiscordClient client = bot.client;
 
         final String rolesFileContent = IOUtil.readFile(MODSTUFF_PATH);
         if (rolesFileContent == null) {

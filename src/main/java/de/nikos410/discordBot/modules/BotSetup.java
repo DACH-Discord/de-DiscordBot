@@ -33,7 +33,7 @@ public class BotSetup {
 
     public BotSetup (final DiscordBot bot) {
         this.bot = bot;
-        this.client = bot.client;
+        this.client = bot.getClient();
     }
 
     @CommandSubscriber(command = "help", help = "Zeigt diese Hilfe an")

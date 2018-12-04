@@ -40,7 +40,7 @@ public class GameStats {
 
     public GameStats (final DiscordBot bot) {
         this.bot = bot;
-        this.client = bot.client;
+        this.client = bot.getClient();
 
         // Read game list
         final String jsonContent = IOUtil.readFile(GAMESTATS_PATH);
@@ -51,7 +51,7 @@ public class GameStats {
         LOG.info("Loaded GameStats file for {} guilds.", gameStatsJSON.keySet().size());
 
         // If the client is not ready, the module was loaded on startup, in this case we use the Event Subscriber method.
-        if (bot.client.isReady()) {
+        if (client.isReady()) {
             updateAllUsers();
             LOG.info("Gamestats Module ready.");
         }
@@ -67,7 +67,7 @@ public class GameStats {
      * Update the status of every user known to the bot.
      */
     private void updateAllUsers() {
-        for(IUser user : bot.client.getUsers()) {
+        for(IUser user : client.getUsers()) {
             this.updateUserStatus(user);
         }
         saveJSON();

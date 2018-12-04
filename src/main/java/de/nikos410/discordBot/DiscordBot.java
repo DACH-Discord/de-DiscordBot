@@ -40,8 +40,6 @@ public class DiscordBot {
 
     private final Map<String, Command> commands = new HashMap<>();
 
-    public IDiscordClient client;
-
     private final static Path CONFIG_PATH = Paths.get("config/config.json");
     public final JSONObject rolesJSON;
     private final static Path ROLES_PATH = Paths.get("data/roles.json");
@@ -49,6 +47,7 @@ public class DiscordBot {
 
     private final String prefix;
     private final long ownerID;
+    private IDiscordClient client;
 
     private final static Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
 
@@ -118,6 +117,10 @@ public class DiscordBot {
 
         // Initialize Modules
         this.loadModules();
+    }
+
+    public IDiscordClient getClient() {
+        return this.client;
     }
 
     /**
