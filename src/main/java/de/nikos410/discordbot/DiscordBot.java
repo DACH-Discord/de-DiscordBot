@@ -450,38 +450,31 @@ public class DiscordBot {
 
         try {
             switch (parameters.size()) {
-                case 0: {
+                case 0:
                     command.method.invoke(command.object, message);
                     break;
-                }
-                case 1: {
+                case 1:
                     command.method.invoke(command.object, message, parameters.get(0));
                     break;
-                }
-                case 2: {
+                case 2:
                     command.method.invoke(command.object, message, parameters.get(0), parameters.get(1));
                     break;
-                }
-                case 3: {
+                case 3:
                     command.method.invoke(command.object, message, parameters.get(0), parameters.get(1), parameters.get(2));
                     break;
-                }
-                case 4: {
+                case 4:
                     command.method.invoke(command.object, message, parameters.get(0), parameters.get(1), parameters.get(2),
                             parameters.get(3));
                     break;
-                }
-                case 5: {
+                case 5:
                     command.method.invoke(command.object, message, parameters.get(0), parameters.get(1), parameters.get(2),
                             parameters.get(3), parameters.get(4));
                     break;
-                }
-                default: {
+                default:
                     LOG.error("Command \"{}\" has an invalid number of arguments. This should never happen.",
                             commandName);
                     DiscordIO.errorNotify("Befehl kann wegen einer ungültigen Anzahl an Argumenten nicht " +
                             "ausgeführt werden. Dies sollte niemals passieren!", message.getChannel());
-                }
             }
         }
         catch (IllegalAccessException | InvocationTargetException e) {
