@@ -127,33 +127,40 @@ public class GameStats {
             return;
         }
 
+        sendPlayingResponse(message, game ,playingNowUsers, playingAnyUsers, similarGames);
+    }
+
+    private void sendPlayingResponse(final IMessage message, final String game, final List<IUser> playingNowUsers,
+                                     final List<IUser> playingAnyUsers, final List<String> similarGames) {
+        final IGuild guild = message.getGuild();
+
         // The lines that will be sent
-        final List<String> outputLines = new ArrayList<>();
+        final List<String> responseLines = new ArrayList<>();
 
         // Add users that play the game right now
-        outputLines.add(String.format("**Nutzer, die __jetzt__ _%s_ spielen**", game));
+        responseLines.add(String.format("**Nutzer, die __jetzt__ _%s_ spielen**", game));
         if (playingNowUsers.isEmpty()) {
-            outputLines.add("_Niemand_");
+            responseLines.add("_Niemand_");
         }
         else {
-            playingNowUsers.forEach(e -> outputLines.add(UserUtils.makeUserString(e, guild)));
+            playingNowUsers.forEach(e -> responseLines.add(UserUtils.makeUserString(e, guild)));
         }
 
         // Add users that have played the game in the past
-        outputLines.add(String.format("**__Alle anderen__ Nutzer, die _%s_ spielen**", game));
+        responseLines.add(String.format("**__Alle anderen__ Nutzer, die _%s_ spielen**", game));
         if (playingAnyUsers.isEmpty()) {
-            outputLines.add("_Niemand_");
+            responseLines.add("_Niemand_");
         }
         else {
-            playingAnyUsers.forEach(e -> outputLines.add(UserUtils.makeUserString(e, guild)));
+            playingAnyUsers.forEach(e -> responseLines.add(UserUtils.makeUserString(e, guild)));
         }
 
         if (!similarGames.isEmpty()) {
-            outputLines.add("**Ähnliche Spiele:**");
-            outputLines.addAll(similarGames);
+            responseLines.add("**Ähnliche Spiele:**");
+            responseLines.addAll(similarGames);
         }
 
-        DiscordIO.sendMessage(message.getChannel(), outputLines);
+        DiscordIO.sendMessage(message.getChannel(), responseLines);
     }
 
     /**
