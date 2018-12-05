@@ -16,9 +16,9 @@ import sx.blah.discord.util.EmbedBuilder;
 
 @CommandModule(moduleName = "Würfel", commandOnly = true)
 public class Roll {
-    private final static int DEFAULT_DOT_COUNT = 6;
+    private static final int DEFAULT_DOT_COUNT = 6;
 
-    private final static SecureRandom rng;
+    private static final SecureRandom rng;
     static {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(System.currentTimeMillis());
