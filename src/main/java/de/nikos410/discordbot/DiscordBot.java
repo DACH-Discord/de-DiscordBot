@@ -35,21 +35,21 @@ import sx.blah.discord.util.DiscordException;
  * The bots main class, containing most of the modular framework
  */
 public class DiscordBot {
+    private static final Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
+
+    private static final Path CONFIG_PATH = Paths.get("config/config.json");
+    public final JSONObject rolesJSON;
+    private static final Path ROLES_PATH = Paths.get("data/roles.json");
+    public final JSONObject configJSON;
+
     private final List<String> unloadedModules = new ArrayList<>();
     private final Map<String, Object> loadedModules = new HashMap<>();
 
     private final Map<String, Command> commands = new HashMap<>();
 
-    private final static Path CONFIG_PATH = Paths.get("config/config.json");
-    public final JSONObject rolesJSON;
-    private final static Path ROLES_PATH = Paths.get("data/roles.json");
-    public final JSONObject configJSON;
-
     private final String prefix;
     private final long ownerID;
     private IDiscordClient client;
-
-    private final static Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
 
     /**
      * Sets up the bot, loads configuration.
