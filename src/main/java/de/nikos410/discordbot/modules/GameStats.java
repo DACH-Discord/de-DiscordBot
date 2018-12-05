@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import de.nikos410.discordbot.DiscordBot;
 import de.nikos410.discordbot.exception.InitializationException;
@@ -73,12 +74,6 @@ public class GameStats {
 
     @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
     public void command_playing(final IMessage message, final String game) {
-        if (game.isEmpty()) {
-            // No game specified
-            DiscordIO.sendMessage(message.getChannel(), "Kein Spiel angegeben!");
-            return;
-        }
-
         final IGuild guild = message.getGuild();
 
         // Similar games
