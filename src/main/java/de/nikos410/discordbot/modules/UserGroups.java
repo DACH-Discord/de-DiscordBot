@@ -94,7 +94,7 @@ public class UserGroups {
     }
 
     @CommandSubscriber(command = "group", help = "Sich selbst eine Rolle zuweisen / wieder entfernen", pmAllowed = false)
-    public void command_Group(final IMessage message, final String groupName) {
+    public void command_group(final IMessage message, final String groupName) {
         final IGuild guild = message.getGuild();
 
         // Validate group first

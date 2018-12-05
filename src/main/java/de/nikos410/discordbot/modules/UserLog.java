@@ -157,7 +157,7 @@ public class UserLog {
 
     @CommandSubscriber(command = "setUserlogChannel", help = "Kanal für Userlog ändern",
             permissionLevel = PermissionLevel.ADMIN)
-    public void command_SetUserlogChannel(final IMessage message, final String channel) {
+    public void command_setUserlogChannel(final IMessage message, final String channel) {
         final IChannel modlogChannel;
         final List<IChannel> channelMentions = message.getChannelMentions();
 
@@ -186,7 +186,7 @@ public class UserLog {
 
     @CommandSubscriber(command = "enableUserlog", help = "Userlog aktivieren",
             permissionLevel = PermissionLevel.ADMIN)
-    public void command_EnableUserlog(final IMessage message) {
+    public void command_enableUserlog(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -202,7 +202,7 @@ public class UserLog {
 
     @CommandSubscriber(command = "disableUserlog", help = "Userlog deaktivieren",
             permissionLevel = PermissionLevel.ADMIN)
-    public void command_DisableUserlog(final IMessage message) {
+    public void command_disableUserlog(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -214,7 +214,7 @@ public class UserLog {
 
     @CommandSubscriber(command = "userlogTest", help = "Userlog-Ausgabe testen",
             permissionLevel = PermissionLevel.ADMIN)
-    public void command_UserlogTest(final IMessage message) {
+    public void command_userlogTest(final IMessage message) {
         final IUser user = message.getAuthor();
 
         final IGuild guild = message.getGuild();

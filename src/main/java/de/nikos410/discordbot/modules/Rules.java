@@ -44,7 +44,7 @@ public class Rules {
     }
 
     @CommandSubscriber(command = "regeln", help = "Die Regeln dieses Servers", pmAllowed = false)
-    public void command_Regeln(final IMessage message) {
+    public void command_regeln(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -61,7 +61,7 @@ public class Rules {
     }
 
     @CommandSubscriber(command = "rules", help = "The rules of this server", pmAllowed = false)
-    public void command_Rules(final IMessage message) {
+    public void command_rules(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -79,7 +79,7 @@ public class Rules {
 
     @CommandSubscriber(command = "welcomeTest", help = "Begrüßungsnachricht testen", permissionLevel = PermissionLevel.ADMIN,
             pmAllowed = false)
-    public void command_WelcomeTest(final IMessage message) {
+    public void command_welcomeTest(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -91,7 +91,7 @@ public class Rules {
     }
 
     @CommandSubscriber(command = "enableWelcome", help = "Begrüßungsnachricht aktivieren", permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_EnableWelcome(final IMessage message) {
+    public void command_enableWelcome(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -104,7 +104,7 @@ public class Rules {
     }
 
     @CommandSubscriber(command = "disableWelcome", help = "Begrüßungsnachricht deaktivieren", permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_DisableWelcome(final IMessage message) {
+    public void command_disableWelcome(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -129,7 +129,7 @@ public class Rules {
     }
 
     @CommandSubscriber(command = "setRegeln", help = "Regeln (deutsch) ändern", permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_SetRegeln(final IMessage message, final String rulesDE) {
+    public void command_setRegeln(final IMessage message, final String rulesDE) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -142,7 +142,7 @@ public class Rules {
     }
 
     @CommandSubscriber(command = "setRules", help = "Regeln (englisch) ändern", permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_SetRules(final IMessage message, final String rulesEN) {
+    public void command_setRules(final IMessage message, final String rulesEN) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -156,7 +156,7 @@ public class Rules {
 
     @CommandSubscriber(command = "setFooter", help = "Footer der Begüßungsnachricht ändern.",
             permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_SetFooter(final IMessage message, final String footer) {
+    public void command_setFooter(final IMessage message, final String footer) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 

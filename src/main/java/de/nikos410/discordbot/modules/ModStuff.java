@@ -125,7 +125,7 @@ public class ModStuff {
 
     @CommandSubscriber(command = "ban", help = "Bannt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false, ignoreParameterCount = true)
-    public void command_Ban(final IMessage message, final String userString, String customMessage) {
+    public void command_ban(final IMessage message, final String userString, String customMessage) {
         // Only Moderators and upwards are allowed to use the command.
         // If a user is not a moderator they will be kicked instead.
         if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel() >=
@@ -189,7 +189,7 @@ public class ModStuff {
 
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
             permissionLevel = PermissionLevel.MODERATOR, ignoreParameterCount = true)
-    public void command_Mute(final IMessage message, final String userString, final String muteDurationInput) {
+    public void command_mute(final IMessage message, final String userString, final String muteDurationInput) {
         // Find the user to mute
         final IUser muteUser = UserUtils.getUserFromMessage(message, userString);
         if (muteUser == null) {
@@ -278,7 +278,7 @@ public class ModStuff {
 
     @CommandSubscriber(command = "unmute", help = "Nutzer entmuten", pmAllowed = false,
             permissionLevel = PermissionLevel.MODERATOR)
-    public void command_Unmute(final IMessage message, final String userString) {
+    public void command_unmute(final IMessage message, final String userString) {
         final IUser muteUser = UserUtils.getUserFromMessage(message, userString);
 
         unmuteUserForGuild(muteUser, message.getGuild(), message.getChannel());

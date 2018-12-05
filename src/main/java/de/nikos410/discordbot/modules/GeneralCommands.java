@@ -19,23 +19,23 @@ public class GeneralCommands {
     }
 
     @CommandSubscriber(command = "Ping", help = ":ping_pong:")
-    public void command_Ping(final IMessage message) {
+    public void command_ping(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "pong");
     }
 
     @CommandSubscriber(command = "uptime", help = "Zeigt seit wann der Bot online ist")
-    public void command_Uptime(final IMessage message) {
+    public void command_uptime(final IMessage message) {
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
         DiscordIO.sendMessage(message.getChannel(), String.format("Online seit: %s", startupTimestamp.format(timeStampFormatter)));
     }
 
     @CommandSubscriber(command = "git", help = "Quellcode des Bots")
-    public void command_Git(final IMessage message) {
+    public void command_git(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "https://github.com/DACH-Discord/de-DiscordBot/");
     }
 
     @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID.", pmAllowed = false, passContext = false)
-    public void command_Quote(final IMessage commandMessage, final String id) {
+    public void command_quote(final IMessage commandMessage, final String id) {
         if (id.isEmpty()) {
             DiscordIO.sendMessage(commandMessage.getChannel(), "Keine ID angegeben!");
             return;

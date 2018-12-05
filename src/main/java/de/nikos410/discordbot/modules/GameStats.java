@@ -72,7 +72,7 @@ public class GameStats {
     }
 
     @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
-    public void command_Playing(final IMessage message, final String game) {
+    public void command_playing(final IMessage message, final String game) {
         if (game.isEmpty()) {
             // No game specified
             DiscordIO.sendMessage(message.getChannel(), "Kein Spiel angegeben!");

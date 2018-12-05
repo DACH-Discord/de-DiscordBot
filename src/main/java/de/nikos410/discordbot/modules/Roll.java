@@ -26,7 +26,7 @@ public class Roll {
     }
 
     @CommandSubscriber(command = "roll",help = "Würfeln. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`")
-    public void command_Roll(final IMessage commandMessage, final String diceArgsInput) throws InterruptedException {
+    public void command_roll(final IMessage commandMessage, final String diceArgsInput) throws InterruptedException {
         final IChannel channel = commandMessage.getChannel();
 
         final EmbedBuilder outputBuilder = new EmbedBuilder();

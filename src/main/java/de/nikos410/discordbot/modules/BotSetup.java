@@ -193,14 +193,14 @@ public class BotSetup {
 
 
     @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = PermissionLevel.OWNER)
-    public void command_Shutdown(final IMessage message) {
+    public void command_shutdown(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
         LOG.info("Shutting down.");
         this.client.logout();
     }
 
     @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = PermissionLevel.OWNER)
-    public void command_SetUsername(final IMessage message, final String newUserName) {
+    public void command_setUsername(final IMessage message, final String newUserName) {
         try {
             LOG.info("Changing the username to {}.", newUserName);
             this.client.changeUsername(newUserName);
@@ -213,7 +213,7 @@ public class BotSetup {
     }
 
     @CommandSubscriber(command = "modules", help = "Alle Module anzeigen")
-    public void command_ListModules(final IMessage message) {
+    public void command_listModules(final IMessage message) {
         // List loaded modules
         final StringBuilder loadedBuilder = new StringBuilder();
         for (final String key : bot.getLoadedModules().keySet()) {
@@ -239,7 +239,7 @@ public class BotSetup {
     }
 
     @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = PermissionLevel.ADMIN)
-    public void command_LoadModule(final IMessage message, final String moduleName) {
+    public void command_loadModule(final IMessage message, final String moduleName) {
         final boolean result = bot.activateModule(moduleName);
 
         if (result) {
@@ -254,7 +254,7 @@ public class BotSetup {
     }
 
     @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = PermissionLevel.ADMIN)
-    public void command_UnloadModule(final IMessage message, final String moduleName) {
+    public void command_unloadModule(final IMessage message, final String moduleName) {
         if (moduleName.equalsIgnoreCase("Bot-Setup")) {
             DiscordIO.sendMessage(message.getChannel(), ":x: Das Bot-Setup Modul kann nicht deaktiviert werden.");
             return;
