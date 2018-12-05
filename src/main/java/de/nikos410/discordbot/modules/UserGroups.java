@@ -27,14 +27,14 @@ import sx.blah.discord.util.EmbedBuilder;
 
 @CommandModule(moduleName = "Nutzergruppen", commandOnly = false)
 public class UserGroups {
-    private final static Path USERGROUPS_PATH = Paths.get("data/usergroups.json");
+    private static final Logger LOG = LoggerFactory.getLogger(UserGroups.class);
+
     private static final String NON_GAME_GROUP_NAME_PREFIX = "~";
 
+    private static final Path USERGROUPS_PATH = Paths.get("data/usergroups.json");
     private final JSONObject usergroupsJSON;
 
     private final DiscordBot bot;
-
-    private final static Logger LOG = LoggerFactory.getLogger(UserGroups.class);
 
     public UserGroups(final DiscordBot bot) {
         this.bot = bot;
