@@ -209,29 +209,11 @@ public class DiscordBot {
      * @param moduleClass The class containing the module
      * @return The created Object
      */
-    private Object makeModuleObject (Class<?> moduleClass) {
+    private Object makeModuleObject (final Class<?> moduleClass) {
         LOG.debug("Creating object from class {}.", moduleClass);
 
         try {
-            // Using try-catch to differentiate between two possible constructors
-            Object moduleObject;
-            try {
-                // Constructor with one parameter of type 'DiscordBot'
-                LOG.debug("Trying to create an object from class {} with parameter.", moduleClass.getName());
-                moduleObject = moduleClass.getDeclaredConstructor(DiscordBot.class).newInstance(this);
-
-                LOG.debug("Successfully created object from class {}.", moduleClass);
-                return moduleObject;
-            }
-            catch (NoSuchMethodException e) {
-                // Constructor without parameters
-                LOG.debug("Failed to create an object from class {} with parameter. Trying without parameters.",
-                        moduleClass.getName());
-                moduleObject = moduleClass.newInstance();
-
-                LOG.debug("Successfully created object from class {}.", moduleClass);
-                return moduleObject;
-            }
+            return createObjectWithConstructors(moduleClass);
         }
         catch (InstantiationException | IllegalAccessException e) {
             LOG.warn("Something went wrong while creating object from class \"{}\". Skipping.", moduleClass.getName(), e);
@@ -240,6 +222,37 @@ public class DiscordBot {
         catch (InvocationTargetException e) {
             LOG.warn("Something went wrong while creating object from class \"{}\". Skipping.", moduleClass.getName(), e.getCause());
             return null;
+        }
+    }
+
+    /**
+     * Creates an instance of a class containing a module. First, tries to use a constructor with a parameter of
+     * type {@link de.nikos410.discordbot.DiscordBot}. If no such constructor is accessible, uses a constructor
+     * without any parameters.
+     *
+     * @param moduleClass The class containing the module
+     * @return The created Object
+     */
+    private Object createObjectWithConstructors(final Class<?> moduleClass)
+            throws InstantiationException, IllegalAccessException, InvocationTargetException {
+        // Use try-catch to differentiate between two possible constructors
+        Object moduleObject;
+        try {
+            // Constructor with one parameter of type 'DiscordBot'
+            LOG.debug("Trying to create an object from class {} with parameter.", moduleClass.getName());
+            moduleObject = moduleClass.getDeclaredConstructor(DiscordBot.class).newInstance(this);
+
+            LOG.debug("Successfully created object from class {}.", moduleClass);
+            return moduleObject;
+        }
+        catch (NoSuchMethodException e) {
+            // Constructor without parameters
+            LOG.debug("Failed to create an object from class {} with parameter. Trying without parameters.",
+                    moduleClass.getName());
+            moduleObject = moduleClass.newInstance();
+
+            LOG.debug("Successfully created object from class {}.", moduleClass);
+            return moduleObject;
         }
     }
 
