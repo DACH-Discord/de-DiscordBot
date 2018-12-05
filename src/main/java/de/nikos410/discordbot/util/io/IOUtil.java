@@ -15,6 +15,9 @@ public class IOUtil {
 
     private static final Logger LOG = LoggerFactory.getLogger(IOUtil.class);
 
+    private IOUtil() {
+    }
+
     /**
      * Read the contents of a plaintext file.
      *
