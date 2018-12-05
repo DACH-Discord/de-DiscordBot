@@ -1,6 +1,6 @@
-package de.nikos410.discordBot.modular.annotations;
+package de.nikos410.discordbot.framework.annotations;
 
-import de.nikos410.discordBot.modular.CommandPermissions;
+import de.nikos410.discordbot.framework.PermissionLevel;
 
 import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
@@ -13,6 +13,7 @@ public @interface CommandSubscriber {
     String command();
     String help();
     boolean pmAllowed() default true;
-    int permissionLevel() default CommandPermissions.EVERYONE;
+    PermissionLevel permissionLevel() default PermissionLevel.EVERYONE;
     boolean passContext() default true;
+    boolean ignoreParameterCount() default false;
 }

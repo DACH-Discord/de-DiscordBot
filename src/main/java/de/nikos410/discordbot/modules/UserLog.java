@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.modules;
+package de.nikos410.discordbot.modules;
 
 import java.awt.*;
 import java.nio.file.Path;
@@ -8,13 +8,12 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import de.nikos410.discordBot.DiscordBot;
-import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.util.discord.GuildOperations;
-import de.nikos410.discordBot.util.io.IOUtil;
-import de.nikos410.discordBot.modular.annotations.CommandModule;
-import de.nikos410.discordBot.modular.CommandPermissions;
-import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.util.discord.DiscordIO;
+import de.nikos410.discordbot.util.discord.GuildUtils;
+import de.nikos410.discordbot.util.io.IOUtil;
+import de.nikos410.discordbot.framework.annotations.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import org.json.JSONObject;
 
@@ -35,17 +34,12 @@ import sx.blah.discord.util.EmbedBuilder;
 
 @CommandModule(moduleName = "Userlog", commandOnly = false)
 public class UserLog {
-    private final static Path USERLOG_PATH = Paths.get("data/userLog.json");
+    private static final Logger LOG = LoggerFactory.getLogger(UserLog.class);
 
-    private final DiscordBot bot;
-
+    private static final Path USERLOG_PATH = Paths.get("data/userLog.json");
     private JSONObject userlogJSON;
 
-    private Logger log = LoggerFactory.getLogger(UserLog.class);
-
-    public UserLog (final DiscordBot bot) {
-        this.bot = bot;
-
+    public UserLog () {
         final String jsonContent = IOUtil.readFile(USERLOG_PATH);
         userlogJSON = new JSONObject(jsonContent);
     }
@@ -160,12 +154,13 @@ public class UserLog {
         DiscordIO.sendEmbed(channel, embedObject);
     }
 
-    @CommandSubscriber(command = "setUserlogChannel", help = "Kanal für Userlog ändern", permissionLevel = CommandPermissions.ADMIN)
-    public void command_SetUserlogChannel(final IMessage message, final String channel) {
+    @CommandSubscriber(command = "setUserlogChannel", help = "Kanal für Userlog ändern",
+            permissionLevel = PermissionLevel.ADMIN)
+    public void command_setUserlogChannel(final IMessage message, final String channel) {
         final IChannel modlogChannel;
         final List<IChannel> channelMentions = message.getChannelMentions();
 
-        if (GuildOperations.hasChannelByID(message.getGuild(), channel)) {
+        if (GuildUtils.channelExists(message.getGuild(), channel)) {
             // Kanal ID wurde als Parameter angegeben
             modlogChannel = message.getGuild().getChannelByID(Long.parseLong(channel));
         }
@@ -188,10 +183,15 @@ public class UserLog {
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "enableUserlog", help = "Userlog aktivieren", permissionLevel = CommandPermissions.ADMIN)
-    public void command_EnableUserlog(final IMessage message) {
+    @CommandSubscriber(command = "enableUserlog", help = "Userlog aktivieren",
+            permissionLevel = PermissionLevel.ADMIN)
+    public void command_enableUserlog(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
+
+        if (!guildJSON.has("channel")) {
+            DiscordIO.sendMessage(message.getChannel(), "Es ist noch kein Kanal hinterlegt!");
+        }
 
         guildJSON.put("on", true);
         saveUserLogJSON();
@@ -199,8 +199,9 @@ public class UserLog {
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "disableUserlog", help = "Userlog deaktivieren", permissionLevel = CommandPermissions.ADMIN)
-    public void command_DisableUserlog(final IMessage message) {
+    @CommandSubscriber(command = "disableUserlog", help = "Userlog deaktivieren",
+            permissionLevel = PermissionLevel.ADMIN)
+    public void command_disableUserlog(final IMessage message) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -210,12 +211,18 @@ public class UserLog {
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "userlogTest", help = "Userlog-Ausgabe testen", permissionLevel = CommandPermissions.ADMIN)
-    public void command_UserlogTest(final IMessage message) {
+    @CommandSubscriber(command = "userlogTest", help = "Userlog-Ausgabe testen",
+            permissionLevel = PermissionLevel.ADMIN)
+    public void command_userlogTest(final IMessage message) {
         final IUser user = message.getAuthor();
 
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
+
+        if (!guildJSON.has("channel")) {
+            DiscordIO.sendMessage(message.getChannel(), "Fehler! Kein Kanal hinterlegt!");
+            return;
+        }
 
         final long channelID = guildJSON.getLong("channel");
         final IChannel channel = guild.getChannelByID(channelID);
@@ -238,7 +245,7 @@ public class UserLog {
     }
 
     private void saveUserLogJSON() {
-        log.debug("Saving UserLog file.");
+        LOG.debug("Saving UserLog file.");
 
         final String jsonOutput = userlogJSON.toString(4);
         IOUtil.writeToFile(USERLOG_PATH, jsonOutput);

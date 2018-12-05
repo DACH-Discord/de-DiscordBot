@@ -1,8 +1,8 @@
-package de.nikos410.discordBot.modules;
+package de.nikos410.discordbot.modules;
 
-import de.nikos410.discordBot.util.discord.*;
-import de.nikos410.discordBot.modular.annotations.CommandModule;
-import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+import de.nikos410.discordbot.util.discord.*;
+import de.nikos410.discordbot.framework.annotations.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
@@ -19,23 +19,23 @@ public class GeneralCommands {
     }
 
     @CommandSubscriber(command = "Ping", help = ":ping_pong:")
-    public void command_Ping(final IMessage message) {
+    public void command_ping(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "pong");
     }
 
     @CommandSubscriber(command = "uptime", help = "Zeigt seit wann der Bot online ist")
-    public void command_Uptime(final IMessage message) {
+    public void command_uptime(final IMessage message) {
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
         DiscordIO.sendMessage(message.getChannel(), String.format("Online seit: %s", startupTimestamp.format(timeStampFormatter)));
     }
 
     @CommandSubscriber(command = "git", help = "Quellcode des Bots")
-    public void command_Git(final IMessage message) {
+    public void command_git(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "https://github.com/DACH-Discord/de-DiscordBot/");
     }
 
     @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID.", pmAllowed = false, passContext = false)
-    public void command_Quote(final IMessage commandMessage, final String id) {
+    public void command_quote(final IMessage commandMessage, final String id) {
         if (id.isEmpty()) {
             DiscordIO.sendMessage(commandMessage.getChannel(), "Keine ID angegeben!");
             return;
@@ -43,6 +43,11 @@ public class GeneralCommands {
 
         final IUser commandAuthor = commandMessage.getAuthor();
         final IGuild guild = commandMessage.getGuild();
+
+        if (!id.matches("^[0-9]{18}$")) {
+            DiscordIO.sendMessage(commandMessage.getChannel(), "Keine gültige ID eingegeben!");
+            return;
+        }
         final long quoteMessageID = Long.parseLong(id);
         final IMessage quoteMessage = guild.getMessageByID(quoteMessageID);
 
@@ -54,19 +59,19 @@ public class GeneralCommands {
         commandMessage.delete();
 
         final IUser quoteAuthor = quoteMessage.getAuthor();
-        final IRole quoteAuthorTopRole = UserOperations.getTopRole(quoteAuthor, quoteMessage.getGuild());
+        final IRole quoteAuthorTopRole = UserUtils.getTopRole(quoteAuthor, quoteMessage.getGuild());
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
 
         embedBuilder.withAuthorIcon(quoteAuthor.getAvatarURL());
-        embedBuilder.withAuthorName(UserOperations.makeUserString(quoteAuthor, guild));
+        embedBuilder.withAuthorName(UserUtils.makeUserString(quoteAuthor, guild));
         embedBuilder.withDesc(quoteMessage.getContent());
         embedBuilder.withColor(quoteAuthorTopRole.getColor());
 
         final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("dd.MM.YYYY, HH:mm");
         final String timestampString = quoteMessage.getTimestamp().format(timestampFormatter);
 
-        embedBuilder.withFooterText(String.format("%s | Zitiert von: %s", timestampString, UserOperations.makeUserString(commandAuthor, guild)));
+        embedBuilder.withFooterText(String.format("%s | Zitiert von: %s", timestampString, UserUtils.makeUserString(commandAuthor, guild)));
 
         DiscordIO.sendEmbed(commandMessage.getChannel(), embedBuilder.build());
     }

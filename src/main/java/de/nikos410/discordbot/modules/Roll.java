@@ -1,13 +1,13 @@
-package de.nikos410.discordBot.modules;
+package de.nikos410.discordbot.modules;
 
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.stream.IntStream;
 
-import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.modular.annotations.CommandModule;
-import de.nikos410.discordBot.modular.annotations.CommandSubscriber;
+import de.nikos410.discordbot.util.discord.DiscordIO;
+import de.nikos410.discordbot.framework.annotations.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;
@@ -16,9 +16,9 @@ import sx.blah.discord.util.EmbedBuilder;
 
 @CommandModule(moduleName = "Würfel", commandOnly = true)
 public class Roll {
-    private final static int DEFAULT_DOT_COUNT = 6;
+    private static final int DEFAULT_DOT_COUNT = 6;
 
-    private final static SecureRandom rng;
+    private static final SecureRandom rng;
     static {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(System.currentTimeMillis());
@@ -26,7 +26,7 @@ public class Roll {
     }
 
     @CommandSubscriber(command = "roll",help = "Würfeln. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`")
-    public void command_Roll(final IMessage commandMessage, final String diceArgsInput) throws InterruptedException {
+    public void command_roll(final IMessage commandMessage, final String diceArgsInput) throws InterruptedException {
         final IChannel channel = commandMessage.getChannel();
 
         final EmbedBuilder outputBuilder = new EmbedBuilder();

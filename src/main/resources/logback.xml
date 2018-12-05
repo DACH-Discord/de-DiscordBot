@@ -7,13 +7,17 @@
         </encoder>
     </appender>
 
-    <logger name="sx.blah.discord.Discord4J" level="INFO"/>
-    <logger name="org.reflections.Reflections" level = "WARN"/>
-    <logger name="de.nikos410.discordBot.DiscordBot" level="INFO"/>
-    <logger name="de.nikos410.discordBot.modules.GameStats" level = "INFO"/>
+    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
 
-    <root level="DEBUG">
+    <logger name="org.reflections.Reflections" level = "WARN"/>
+
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="Sentry" />
     </root>
 
 </configuration>
