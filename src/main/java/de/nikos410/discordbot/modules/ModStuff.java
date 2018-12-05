@@ -44,10 +44,12 @@ import java.util.concurrent.TimeUnit;
 
 @CommandModule(moduleName = "Modzeugs", commandOnly = false)
 public class ModStuff {
-    private final DiscordBot bot;
+    private static final Logger LOG = LoggerFactory.getLogger(ModStuff.class);
 
-    private final static Path MODSTUFF_PATH = Paths.get("data/modstuff.json");
+    private static final Path MODSTUFF_PATH = Paths.get("data/modstuff.json");
     private final JSONObject modstuffJSON;
+
+    private final DiscordBot bot;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -55,8 +57,6 @@ public class ModStuff {
     private final Map<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> channelMuteFutures = new HashMap<>();
 
     private final Map<IGuild, List<String>> voiceLog = new HashMap<>();
-
-    private final static Logger LOG = LoggerFactory.getLogger(ModStuff.class);
 
     public ModStuff (final DiscordBot bot) {
         this.bot = bot;
