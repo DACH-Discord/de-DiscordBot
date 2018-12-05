@@ -11,6 +11,8 @@ import java.util.List;
  * Contains some helper methods for doing stuff involving guilds.
  */
 public class GuildUtils {
+    private GuildUtils() {
+    }
 
     /**
      * Check whether a role with a given ID exists on a guild.
