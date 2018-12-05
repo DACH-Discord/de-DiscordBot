@@ -251,7 +251,7 @@ public class ModStuff {
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
 
-        saveMutedUsers();
+        saveUserMutes();
     }
 
     @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm",
@@ -355,7 +355,7 @@ public class ModStuff {
             userMuteFutures.put(guild, guildMap);
         }
 
-        saveMutedUsers();
+        saveUserMutes();
     }
 
     /**
@@ -386,7 +386,7 @@ public class ModStuff {
         userMuteFutures.get(guild).remove(user);
 
         LOG.info("User {} was unmuted.", UserUtils.makeUserString(user, guild));
-        saveMutedUsers();
+        saveUserMutes();
     }
 
     /**
@@ -592,7 +592,7 @@ public class ModStuff {
 
             LOG.info("Nutzer {} wurde entmuted.", UserUtils.makeUserString(user, guild));
 
-            saveMutedUsers();
+            saveChannelMutes();
         };
 
         // Unmute schedulen
@@ -617,6 +617,8 @@ public class ModStuff {
         }
 
         channelMap.put(user, newFuture);
+
+        saveChannelMutes();
 
         return "";
     }
@@ -789,6 +791,7 @@ public class ModStuff {
             LOG.debug("Found guild '{}'.", guild.getName());
 
             restoreGuildUserMutes(guild);
+            restoreGuildChannelMutes(guild);
         }
 
         LOG.info("Restored all mutes.");
@@ -837,7 +840,53 @@ public class ModStuff {
 
         // Update JSON
         getJSONForGuild(guild).remove("userMutes");
-        saveMutedUsers();
+        saveUserMutes();
+    }
+
+    private void restoreGuildChannelMutes(final IGuild guild) {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        final JSONObject guildChannels = getChannelMutesJSONForGuild(guild);
+        for (String channelID : guildChannels.keySet()) {
+            final IChannel channel = guild.getChannelByID(Long.parseLong(channelID));
+            final JSONArray channelMutes = guildChannels.getJSONArray(channelID);
+
+            final Iterator<Object> muteIterator = channelMutes.iterator();
+            while (muteIterator.hasNext()) {
+                final JSONObject currentMute = (JSONObject) muteIterator.next();
+
+                if (currentMute.has("user") && currentMute.has("mutedUntil")) {
+                    final long userLongID = currentMute.getLong("user");
+                    final IUser user = guild.getUserByID(userLongID);
+                    final String unmuteTimestampString = currentMute.getString("mutedUntil");
+                    final LocalDateTime unmuteTimestamp = LocalDateTime.parse(unmuteTimestampString, formatter);
+
+                    if (LocalDateTime.now().isBefore(unmuteTimestamp)) {
+                        final int delaySeconds = (int)LocalDateTime.now().until(unmuteTimestamp, ChronoUnit.SECONDS);
+                        muteUserForChannel(user, channel, delaySeconds, ChronoUnit.SECONDS);
+
+                        LOG.info("Restored mute for user '{}' (ID: {}) in channel '{}' (ID:{}) on guild '{}' (ID: {}). Muted until {}",
+                                UserUtils.makeUserString(user, guild), user.getStringID(),
+                                channel.getName(), channel.getStringID(),
+                                guild.getName(), guild.getStringID(),
+                                unmuteTimestampString);
+                    }
+                    else {
+                        LOG.info("Mute for user '{}' (ID: {}) in channel '{}' (ID:{}) on guild '{}' (ID: {}) was found, but mute duration has elapsed. Removing from JSON.",
+                                UserUtils.makeUserString(user, guild), user.getStringID(),
+                                channel.getName(), channel.getStringID(),
+                                guild.getName(), guild.getStringID());
+                    }
+                }
+                else {
+                    LOG.warn(String.format("channelMute doesn't contain necessary keys! Skipping. userMute: %s", currentMute.toString(4)));
+                }
+            }
+        }
+
+        // Update JSON
+        getJSONForGuild(guild).remove("channelMutes");
+        saveChannelMutes();
     }
 
     private IRole getMuteRoleForGuild(final IGuild guild) {
@@ -913,15 +962,15 @@ public class ModStuff {
         }
     }
 
-    private JSONArray getChannelMutesJSONForGuild(final IGuild guild) {
+    private JSONObject getChannelMutesJSONForGuild(final IGuild guild) {
         final JSONObject guildJSON = getJSONForGuild(guild);
         if (guildJSON.has("channelMutes")) {
-            return guildJSON.getJSONArray("userMutes");
+            return guildJSON.getJSONObject("channelMutes");
         }
         else {
-            final JSONArray jsonArray = new JSONArray();
-            guildJSON.put("channelMutes", jsonArray);
-            return jsonArray;
+            final JSONObject jsonObject = new JSONObject();
+            guildJSON.put("channelMutes", jsonObject);
+            return jsonObject;
         }
     }
 
@@ -951,12 +1000,13 @@ public class ModStuff {
     }
 
 
-    private void saveMutedUsers() {
+    private void saveUserMutes() {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         for (Entry<IGuild, Map<IUser, ScheduledFuture>> guildEntry : userMuteFutures.entrySet()) {
             final JSONArray guildUserMutesJSON = getUserMutesJSONForGuild(guildEntry.getKey());
-            // Clear Array
+
+            // Clear JSON
             for (int i = 0; i < guildUserMutesJSON.length(); i++) {
                 guildUserMutesJSON.remove(i);
             }
@@ -971,6 +1021,43 @@ public class ModStuff {
                 final LocalDateTime unmuteTimestamp = LocalDateTime.now().plusSeconds(delay);
                 entryObject.put("mutedUntil", unmuteTimestamp.format(formatter));
                 guildUserMutesJSON.put(entryObject);
+            }
+        }
+
+        saveJSON();
+    }
+
+    private void saveChannelMutes() {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // Iterate over all guilds
+        for (Entry<IGuild, Map<IChannel, Map<IUser, ScheduledFuture>>> guildEntry : channelMuteFutures.entrySet()) {
+            final IGuild guild = guildEntry.getKey();
+
+            final Map<IChannel, Map<IUser, ScheduledFuture>> guildChannels = guildEntry.getValue();
+
+            // Clear JSON
+            final JSONObject guildChannelsJSON = new JSONObject();
+            getJSONForGuild(guild).put("channelMutes", guildChannelsJSON);
+
+            // Iterate over all channels for that guild
+            for (Entry<IChannel, Map<IUser, ScheduledFuture>> channelEntry : guildChannels.entrySet()) {
+                final Map<IUser, ScheduledFuture> channelMutes = channelEntry.getValue();
+
+                final JSONArray channelMutesJSON = new JSONArray();
+                guildChannelsJSON.put(channelEntry.getKey().getStringID(), channelMutesJSON);
+
+                // Iterator over all mutes for that channel
+                for (Entry<IUser, ScheduledFuture> userEntry : channelMutes.entrySet()) {
+                    final JSONObject entryObject = new JSONObject();
+                    entryObject.put("user", userEntry.getKey().getLongID());
+
+                    final ScheduledFuture unmutefuture = userEntry.getValue();
+                    final long delay = unmutefuture.getDelay(TimeUnit.SECONDS);
+                    final LocalDateTime unmuteTimestamp = LocalDateTime.now().plusSeconds(delay);
+                    entryObject.put("mutedUntil", unmuteTimestamp.format(formatter));
+                    channelMutesJSON.put(entryObject);
+                }
             }
         }
 
