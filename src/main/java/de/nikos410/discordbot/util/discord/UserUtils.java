@@ -11,6 +11,8 @@ import java.util.List;
  * Contains some helper methods for doing stuff involving users.
  */
 public class UserUtils {
+    private UserUtils() {
+    }
 
     /**
      * Get the user that was specified in the given message. First, checks if the parameter contains a valid user ID
