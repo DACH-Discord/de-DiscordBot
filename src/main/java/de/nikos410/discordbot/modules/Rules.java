@@ -20,15 +20,13 @@ import java.nio.file.Paths;
 
 @CommandModule(moduleName = "Regeln", commandOnly = false)
 public class Rules {
-    private final static Path RULES_PATH = Paths.get("data/rules.json");
-
+    private static final Logger LOG = LoggerFactory.getLogger(Rules.class);
+    
+    private static final Path RULES_PATH = Paths.get("data/rules.json");
     private final JSONObject rulesJSON;
 
-    private final static Logger LOG = LoggerFactory.getLogger(Rules.class);
-
     public Rules () {
-
-        // Welcome Nachricht auslesen
+        // Read configuration
         final String welcomeFileContent = IOUtil.readFile(RULES_PATH);
         this.rulesJSON = new JSONObject(welcomeFileContent);
     }
