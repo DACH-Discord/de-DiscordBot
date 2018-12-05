@@ -30,16 +30,14 @@ import sx.blah.discord.handle.obj.*;
 
 @CommandModule(moduleName = "Spiel-Informationen", commandOnly = false)
 public class GameStats {
-    private final DiscordBot bot;
-    private final IDiscordClient client;
+    private static final Logger LOG = LoggerFactory.getLogger(GameStats.class);
 
-    private final static Path GAMESTATS_PATH = Paths.get("data/gameStats.json");
+    private static final Path GAMESTATS_PATH = Paths.get("data/gameStats.json");
     private final JSONObject gameStatsJSON;
 
-    private final static Logger LOG = LoggerFactory.getLogger(GameStats.class);
+    private final IDiscordClient client;
 
     public GameStats (final DiscordBot bot) {
-        this.bot = bot;
         this.client = bot.getClient();
 
         // Read game list
