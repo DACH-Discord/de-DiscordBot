@@ -265,10 +265,10 @@ public class DiscordBot {
         LOG.debug("Clearing old commands.");
         this.commands.clear();
 
-        for (final String key : this.loadedModules.keySet()) {
-            Object module = this.loadedModules.get(key);
+        for (final Map.Entry<String, Object> entry : this.loadedModules.entrySet()) {
+            final Object module = entry.getValue();
 
-            LOG.debug("Registering command(s) for module \"{}\".", key);
+            LOG.debug("Registering command(s) for module \"{}\".", entry.getKey());
 
             for (final Method method : module.getClass().getMethods()) {
 
