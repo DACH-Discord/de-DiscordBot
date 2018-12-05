@@ -1,6 +1,6 @@
-package de.nikos410.discordBot.framework.annotations;
+package de.nikos410.discordbot.framework.annotations;
 
-import de.nikos410.discordBot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.PermissionLevel;
 
 import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;

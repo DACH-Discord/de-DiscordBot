@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.modules;
+package de.nikos410.discordbot.modules;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -6,13 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import de.nikos410.discordBot.DiscordBot;
-import de.nikos410.discordBot.exception.InitializationException;
-import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.util.discord.UserUtils;
-import de.nikos410.discordBot.util.io.IOUtil;
-import de.nikos410.discordBot.framework.annotations.CommandModule;
-import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
+import de.nikos410.discordbot.DiscordBot;
+import de.nikos410.discordbot.exception.InitializationException;
+import de.nikos410.discordbot.util.discord.DiscordIO;
+import de.nikos410.discordbot.util.discord.UserUtils;
+import de.nikos410.discordbot.util.io.IOUtil;
+import de.nikos410.discordbot.framework.annotations.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import org.apache.commons.lang3.StringUtils;
 

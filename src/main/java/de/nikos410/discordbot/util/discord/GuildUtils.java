@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.util.discord;
+package de.nikos410.discordbot.util.discord;
 
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;

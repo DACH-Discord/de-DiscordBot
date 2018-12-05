@@ -1,4 +1,4 @@
-package de.nikos410.discordBot;
+package de.nikos410.discordbot;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -8,12 +8,12 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import de.nikos410.discordBot.exception.InitializationException;
-import de.nikos410.discordBot.framework.*;
-import de.nikos410.discordBot.framework.annotations.*;
-import de.nikos410.discordBot.modules.BotSetup;
-import de.nikos410.discordBot.util.discord.*;
-import de.nikos410.discordBot.util.io.IOUtil;
+import de.nikos410.discordbot.exception.InitializationException;
+import de.nikos410.discordbot.framework.*;
+import de.nikos410.discordbot.framework.annotations.*;
+import de.nikos410.discordbot.modules.BotSetup;
+import de.nikos410.discordbot.util.discord.*;
+import de.nikos410.discordbot.util.io.IOUtil;
 
 import org.reflections.Reflections;
 import org.slf4j.Logger;
@@ -124,7 +124,7 @@ public class DiscordBot {
     }
 
     /**
-     * Loads modules from classes that are located in the package 'de.nikos410.discordBot.modules' and are annotated
+     * Loads modules from classes that are located in the package 'de.nikos410.discordbot.modules' and are annotated
      * with @CommandModule.
      */
     private void loadModules() {
@@ -133,8 +133,8 @@ public class DiscordBot {
         LOG.debug("Clearing old modules.");
         this.loadedModules.clear();
 
-        // Search in package 'de.nikos410.discordBot.modules'
-        final Reflections reflections = new Reflections("de.nikos410.discordBot.modules");
+        // Search in package 'de.nikos410.discordbot.modules'
+        final Reflections reflections = new Reflections("de.nikos410.discordbot.modules");
         // Find classes that are annotated with @CommandModule
         final Set<Class<?>> moduleClasses = reflections.getTypesAnnotatedWith(CommandModule.class);
 

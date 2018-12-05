@@ -1,13 +1,13 @@
-package de.nikos410.discordBot.modules;
+package de.nikos410.discordbot.modules;
 
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.stream.IntStream;
 
-import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.framework.annotations.CommandModule;
-import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
+import de.nikos410.discordbot.util.discord.DiscordIO;
+import de.nikos410.discordbot.framework.annotations.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;

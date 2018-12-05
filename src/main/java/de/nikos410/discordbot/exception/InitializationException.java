@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.exception;
+package de.nikos410.discordbot.exception;
 
 public class InitializationException extends RuntimeException {
     private final Class<?> module;

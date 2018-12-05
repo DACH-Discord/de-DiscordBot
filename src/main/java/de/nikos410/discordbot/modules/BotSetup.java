@@ -1,17 +1,17 @@
-package de.nikos410.discordBot.modules;
+package de.nikos410.discordbot.modules;
 
 import java.lang.reflect.Method;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
-import de.nikos410.discordBot.DiscordBot;
-import de.nikos410.discordBot.framework.PermissionLevel;
-import de.nikos410.discordBot.util.discord.DiscordIO;
-import de.nikos410.discordBot.util.discord.GuildUtils;
-import de.nikos410.discordBot.util.discord.UserUtils;
-import de.nikos410.discordBot.framework.annotations.CommandModule;
-import de.nikos410.discordBot.framework.annotations.CommandSubscriber;
+import de.nikos410.discordbot.DiscordBot;
+import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.util.discord.DiscordIO;
+import de.nikos410.discordbot.util.discord.GuildUtils;
+import de.nikos410.discordbot.util.discord.UserUtils;
+import de.nikos410.discordbot.framework.annotations.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import org.json.JSONObject;
 import org.slf4j.Logger;

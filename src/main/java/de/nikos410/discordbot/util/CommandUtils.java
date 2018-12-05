@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.util;
+package de.nikos410.discordbot.util;
 
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;

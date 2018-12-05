@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.util.io;
+package de.nikos410.discordbot.util.io;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

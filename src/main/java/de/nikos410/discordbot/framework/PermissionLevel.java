@@ -1,4 +1,4 @@
-package de.nikos410.discordBot.framework;
+package de.nikos410.discordbot.framework;
 
 /**
  * Provides 4 permission levels
