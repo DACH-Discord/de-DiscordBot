@@ -18,8 +18,10 @@ import java.util.concurrent.TimeUnit;
  * Contains some helper methods to send content to Discord channels.
  */
 public class DiscordIO {
-
     private final static Logger LOG = LoggerFactory.getLogger(DiscordIO.class);
+
+    private DiscordIO() {
+    }
 
     /**
      * Send a list of lines to the specified channel. If the message gets too long (>2000 characters)
