@@ -6,6 +6,9 @@ import sx.blah.discord.handle.obj.IMessage;
 import java.util.List;
 
 public class ChannelUtils {
+    private ChannelUtils() {
+        
+    }
 
     /**
      * Get the channel that was specified in the given message. First, checks if the parameter contains a valid channel ID
