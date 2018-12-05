@@ -26,10 +26,10 @@ import sx.blah.discord.util.RateLimitException;
 
 @CommandModule(moduleName = "Bot-Setup", commandOnly = true)
 public class BotSetup {
+    private static final Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
+
     private final DiscordBot bot;
     private final IDiscordClient client;
-
-    private final static Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
 
     public BotSetup (final DiscordBot bot) {
         this.bot = bot;
