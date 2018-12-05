@@ -7,6 +7,9 @@ import java.util.regex.Pattern;
 
 public class CommandUtils {
 
+    private CommandUtils() {
+    }
+
     /**
      * Parse a time unit indicator to a {@link java.time.temporal.ChronoUnit}.
      * Supports the following indcators: s, m, h, d. Returns null if any other other inicator is given.
