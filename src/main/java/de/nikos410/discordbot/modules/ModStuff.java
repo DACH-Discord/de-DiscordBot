@@ -1064,7 +1064,7 @@ public class ModStuff {
         saveJSON();
     }
 
-    private void saveJSON() {
+    private synchronized void saveJSON() {
         LOG.debug("Saving modstuff file.");
 
         final String jsonOutput = this.modstuffJSON.toString(4);
