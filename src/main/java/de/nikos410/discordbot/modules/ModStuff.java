@@ -25,6 +25,7 @@ import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelLeaveEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelMoveEvent;
+import sx.blah.discord.handle.impl.obj.Channel;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
@@ -401,38 +402,25 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "channelMute", help = "Nutzer in einem Channel für eine bestimmte Zeit stummschalten",
-            pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR, ignoreParameterCount = true)
-    public void command_channelMute(final IMessage message, final String userInput, final String channelOrMuteDuration) {
+            pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR)
+    public void command_channelMute(final IMessage message, final String userInput, final String channelInput,
+                                    final String muteDurationInput) {
         // Parse user
         final IUser muteUser = UserUtils.getUserFromMessage(message, userInput);
         if (muteUser == null) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Nutzer nicht gefunden!");
+            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
             return;
         }
 
         // Parse channel
-        if (channelOrMuteDuration == null || !channelOrMuteDuration.contains(" ")) {
-            DiscordIO.sendMessage(message.getChannel(),
-                    "Befehl ungültig! Format: `channelmute <Nutzer> [Kanal] <Dauer> [Hinweis]`");
-                    return;
+        final IChannel muteChannel = ChannelUtils.getChannelFromMessage(message, channelInput);
+        if (muteChannel == null) {
+            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Kanal angegeben!");
+            return;
         }
-
-        final int firstSpaceIndex = channelOrMuteDuration.indexOf(' ');
-        IChannel muteChannel = ChannelUtils.getChannelFromMessage(message,
-                channelOrMuteDuration.substring(0, firstSpaceIndex));
 
         // Parse mute duration and message
-        final CommandUtils.DurationParameters durationParameters;
-        if (muteChannel == null) {
-            durationParameters = CommandUtils.parseDurationParameters(channelOrMuteDuration);
-
-            // If channel is null, no channel was specified as a parameter -> Use the channel the command was sent in
-            muteChannel = message.getChannel();
-        }
-        else {
-            durationParameters = CommandUtils.parseDurationParameters(channelOrMuteDuration.substring(firstSpaceIndex + 1));
-        }
-
+        final CommandUtils.DurationParameters durationParameters = CommandUtils.parseDurationParameters(muteDurationInput);
         if (durationParameters == null) {
             DiscordIO.sendMessage(message.getChannel(),
                     "Ungültige Dauer angegeben. Mögliche Einheiten sind: s, m, h, d");
