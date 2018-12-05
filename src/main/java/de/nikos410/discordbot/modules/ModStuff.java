@@ -72,7 +72,7 @@ public class ModStuff {
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false, ignoreParameterCount = true)
-    public void command_Kick(final IMessage message, final String userString, String customMessage) {
+    public void command_kick(final IMessage message, final String userString, String customMessage) {
         // Only Moderators and upwards are allowed to use the command.
         // If a user is not a moderator they will be kicked instead.
         if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel() >=
@@ -256,7 +256,7 @@ public class ModStuff {
 
     @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm",
             pmAllowed = false, ignoreParameterCount = true)
-    public void command_Selfmute(final IMessage message, final String muteDurationInput) {
+    public void command_selfmute(final IMessage message, final String muteDurationInput) {
         // The author of the message will be muted
         final IUser muteUser = message.getAuthor();
 
@@ -575,7 +575,7 @@ public class ModStuff {
                 }
 
                 // Wenn Override leer ist entfernen
-                if (currentUserAllowed.size() == 0 && currentUserDenied.size() == 0) {
+                if (currentUserAllowed.isEmpty() && currentUserDenied.isEmpty()) {
                     channel.removePermissionsOverride(user);
                 }
                 else {
