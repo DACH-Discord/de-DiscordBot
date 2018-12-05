@@ -10,7 +10,6 @@ import sx.blah.discord.util.DiscordException;
  * Contains helper method to authorize and log in a bot
  */
 public class Authorization {
-    private final static Logger log = LoggerFactory.getLogger(Authorization.class);
 
     /**
      * Create a client instance using a token as the login information.
