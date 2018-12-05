@@ -204,30 +204,30 @@ public class GameStats {
      * @param user The user whose status to update.
      */
     private synchronized void updateUserStatus(final IUser user) {
+        // Do not process a bot
         if (user.isBot()) {
             return;
         }
 
         final IPresence presence = user.getPresence();
-        final StatusType status = presence.getStatus();
-        if (status.equals(StatusType.ONLINE)) {
-            // User is online now
-            final Optional<String> gameStatus = presence.getPlayingText();
-            if (gameStatus.isPresent()) {
-                // User is now playing a game
-                final String gameName = gameStatus.get().toLowerCase();
-                final long userID = user.getLongID();
 
-                // Add game info for all guilds this user is on
-                for (IGuild guild : client.getGuilds()) {
-                    if (guild.getUsers().contains(user)) {
-                        if (!hasGame(gameName, guild)) {
-                            this.addGame(gameName, guild);
-                        }
-                        if (!doesUserPlay(userID, gameName, guild)) {
-                            this.addUser(gameName, userID, guild);
-                        }
-                    }
+        final Optional<String> gameStatus = presence.getPlayingText();
+        if (!gameStatus.isPresent()) {
+            return;
+        }
+
+        // User is now playing a game
+        final String gameName = gameStatus.get().toLowerCase();
+        final long userID = user.getLongID();
+
+        // Add game info for all guilds this user is on
+        for (IGuild guild : client.getGuilds()) {
+            if (guild.getUsers().contains(user)) {
+                if (!hasGame(gameName, guild)) {
+                    this.addGame(gameName, guild);
+                }
+                if (!doesUserPlay(userID, gameName, guild)) {
+                    this.addUser(gameName, userID, guild);
                 }
             }
         }
