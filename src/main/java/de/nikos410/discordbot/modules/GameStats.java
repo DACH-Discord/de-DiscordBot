@@ -104,12 +104,10 @@ public class GameStats {
 
                 for (int i = 0; i < gameArray.length(); i++) {
                     final IUser user = guild.getUserByID(gameArray.getLong(i));
-                    if (user != null) {
 
-                        // Only add if user isn't playing right now
-                        if (!playingNowUsers.contains(user)) {
-                            playingAnyUsers.add(user);
-                        }
+                    // Only add if user isn't playing right now
+                    if (user != null && !playingNowUsers.contains(user)) {
+                        playingAnyUsers.add(user);
                     }
                 }
 
