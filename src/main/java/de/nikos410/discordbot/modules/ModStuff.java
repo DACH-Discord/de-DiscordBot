@@ -654,15 +654,15 @@ public class ModStuff {
             }
         }
 
-        final List<String> voiceLog = getVoiceLogForGuild(message.getGuild());
+        final List<String> guildVoiceLog = getVoiceLogForGuild(message.getGuild());
 
         final StringBuilder stringBuilder = new StringBuilder();
         boolean entriesSkipped = false;
 
-        for (int i = voiceLog.size()-1; i > (voiceLog.size() - listCount - 1) && i >= 0; i--) {
-            final String lineToAdd = voiceLog.get(i);
+        for (int i = guildVoiceLog.size()-1; i > (guildVoiceLog.size() - listCount - 1) && i >= 0; i--) {
+            final String lineToAdd = guildVoiceLog.get(i);
             if (stringBuilder.length() + lineToAdd.length() <= 1024) {
-                stringBuilder.append(voiceLog.get(i));
+                stringBuilder.append(guildVoiceLog.get(i));
                 stringBuilder.append('\n');
             }
             else {
