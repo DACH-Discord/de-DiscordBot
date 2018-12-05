@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  */
 public class IOUtil {
 
-    private final static Logger LOG = LoggerFactory.getLogger(IOUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IOUtil.class);
 
     /**
      * Read the contents of a plaintext file.
