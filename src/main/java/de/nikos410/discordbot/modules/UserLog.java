@@ -34,11 +34,10 @@ import sx.blah.discord.util.EmbedBuilder;
 
 @CommandModule(moduleName = "Userlog", commandOnly = false)
 public class UserLog {
-    private final static Path USERLOG_PATH = Paths.get("data/userLog.json");
+    private static final Logger LOG = LoggerFactory.getLogger(UserLog.class);
 
+    private static final Path USERLOG_PATH = Paths.get("data/userLog.json");
     private JSONObject userlogJSON;
-
-    private final static Logger LOG = LoggerFactory.getLogger(UserLog.class);
 
     public UserLog () {
         final String jsonContent = IOUtil.readFile(USERLOG_PATH);
