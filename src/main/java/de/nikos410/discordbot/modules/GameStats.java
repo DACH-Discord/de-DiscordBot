@@ -114,25 +114,25 @@ public class GameStats {
             }
         }
 
-        if (playingNowUsers.isEmpty() && playingAnyUsers.isEmpty()) {
-            // Nobody has ever played the specified game
-            final List<String> outputLines = new ArrayList<>();
-            outputLines.add(String.format("Niemand auf diesem Server spielt **_%s_**.", game));
-            if (!similarGames.isEmpty()) {
-                outputLines.add("**Meintest du...**");
-                outputLines.addAll(similarGames);
-            }
-
-            DiscordIO.sendMessage(message.getChannel(), outputLines);
-            return;
-        }
-
         sendPlayingResponse(message, game ,playingNowUsers, playingAnyUsers, similarGames);
     }
 
     private void sendPlayingResponse(final IMessage message, final String game, final List<IUser> playingNowUsers,
                                      final List<IUser> playingAnyUsers, final List<String> similarGames) {
         final IGuild guild = message.getGuild();
+
+        if (playingNowUsers.isEmpty() && playingAnyUsers.isEmpty()) {
+            // Nobody has ever played the specified game
+            final List<String> responseLines = new ArrayList<>();
+            responseLines.add(String.format("Niemand auf diesem Server spielt **_%s_**.", game));
+            if (!similarGames.isEmpty()) {
+                responseLines.add("**Meintest du...**");
+                responseLines.addAll(similarGames);
+            }
+
+            DiscordIO.sendMessage(message.getChannel(), responseLines);
+            return;
+        }
 
         // The lines that will be sent
         final List<String> responseLines = new ArrayList<>();
