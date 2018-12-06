@@ -3,6 +3,7 @@ package de.nikos410.discordbot.modules;
 import java.awt.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -87,8 +88,8 @@ public class UserLog {
     }
 
     private void userJoinNotify(final IUser user, final IChannel channel) {
-        final LocalDateTime joinTimeStamp = user.getCreationDate();
-        int joinedDays = (int)joinTimeStamp.until(LocalDateTime.now(), ChronoUnit.DAYS);
+        final Instant joinTimeStamp = user.getCreationDate();
+        final long joinedDays = joinTimeStamp.until(LocalDateTime.now(), ChronoUnit.DAYS);
 
         // String für Embed
         String embedString = String.format("**Name:** %s#%s \n" +

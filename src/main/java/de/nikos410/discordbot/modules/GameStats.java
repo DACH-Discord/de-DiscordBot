@@ -81,9 +81,9 @@ public class GameStats {
         // Users who play the game right now
         List<IUser> playingNowUsers = new ArrayList<>();
         for (IUser user : guild.getUsers()) {
-            final Optional<String> playing = user.getPresence().getPlayingText();
+            final String currentUserGame = getCurrentGame(user);
 
-            if (playing.isPresent() && playing.get().equalsIgnoreCase(game)) {
+            if (game.equalsIgnoreCase(currentUserGame)) {
                 playingNowUsers.add(user);
             }
         }
@@ -203,15 +203,14 @@ public class GameStats {
             return;
         }
 
-        final IPresence presence = user.getPresence();
-
-        final Optional<String> gameStatus = presence.getPlayingText();
-        if (!gameStatus.isPresent()) {
+        String gameName = getCurrentGame(user);
+        if (gameName == null || gameName.isEmpty()) {
             return;
         }
 
+        gameName = gameName.toLowerCase();
+
         // User is now playing a game
-        final String gameName = gameStatus.get().toLowerCase();
         final long userID = user.getLongID();
 
         // Add game info for all guilds this user is on
@@ -245,6 +244,17 @@ public class GameStats {
             gameArray = new JSONArray();
         }
         gameArray.put(userID);
+    }
+
+    private String getCurrentGame(final IUser user) {
+        final IPresence presence = user.getPresence();
+        final Optional<ActivityType> activity = presence.getActivity();
+
+        if (!activity.isPresent() || !ActivityType.PLAYING.equals(activity.get())) {
+            return null;
+        }
+
+        return presence.getText().orElse(null);
     }
 
     /**

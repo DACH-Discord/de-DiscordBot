@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -335,8 +336,8 @@ public class DiscordBot {
         final IMessage message = event.getNewMessage();
 
         if (message.getEditedTimestamp().isPresent()) {
-            final LocalDateTime messageTimestamp = message.getTimestamp();
-            final LocalDateTime editTimestamp = message.getEditedTimestamp().get();
+            final Instant messageTimestamp = message.getTimestamp();
+            final Instant editTimestamp = message.getEditedTimestamp().get();
 
             final long messageAge = messageTimestamp.until(editTimestamp, ChronoUnit.SECONDS);
 
@@ -590,7 +591,7 @@ public class DiscordBot {
     public void onStartup(final ReadyEvent event) {
         LOG.info("[INFO] Bot ready. Prefix: {}", this.prefix);
         LOG.info("Add this bot to a server: https://discordapp.com/oauth2/authorize?client_id={}&scope=bot", client.getApplicationClientID());
-        client.changePlayingText(String.format("%shelp | WIP", this.prefix));
+        client.changePresence(StatusType.ONLINE, ActivityType.PLAYING, String.format("%shelp | WIP", this.prefix));
     }
 
     /**

@@ -7,7 +7,9 @@ import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 @CommandModule(moduleName = "Allgemeine Befehle", commandOnly = true)
@@ -69,7 +71,8 @@ public class GeneralCommands {
         embedBuilder.withColor(quoteAuthorTopRole.getColor());
 
         final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("dd.MM.YYYY, HH:mm");
-        final String timestampString = quoteMessage.getTimestamp().format(timestampFormatter);
+        final LocalDateTime timestamp = LocalDateTime.ofInstant(quoteMessage.getTimestamp(), ZoneOffset.UTC);
+        final String timestampString = timestamp.format(timestampFormatter);
 
         embedBuilder.withFooterText(String.format("%s | Zitiert von: %s", timestampString, UserUtils.makeUserString(commandAuthor, guild)));
 

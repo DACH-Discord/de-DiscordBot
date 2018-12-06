@@ -3,7 +3,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.4'
     }
 }
 
@@ -28,11 +28,11 @@ jar {
 }
 
 dependencies {
-    compile "com.github.austinv11:Discord4J:2.9.3"
-    compile "org.json:json:20160810"
-    compile group: 'org.reflections', name: 'reflections', version: '0.9.10'
-    compile group: 'ch.qos.logback', name: 'logback-classic', version: '0.9.26'
-    compile 'io.sentry:sentry-logback:1.7.10'
+    compile "com.github.austinv11:Discord4J:2.10.1"
+    compile "org.json:json:20180813"
+    compile group: 'org.reflections', name: 'reflections', version: '0.9.11'
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    compile 'io.sentry:sentry-logback:1.7.15'
 }
 
 repositories {
