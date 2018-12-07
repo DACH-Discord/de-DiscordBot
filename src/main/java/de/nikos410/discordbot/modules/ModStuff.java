@@ -268,6 +268,13 @@ public class ModStuff {
             return;
         }
 
+        // Users can only mute themself for a maximum of one day
+        final LocalDateTime muteEnd = LocalDateTime.now().plus(durationParameters.getDuration(), durationParameters.getDurationUnit());
+        if (muteEnd.isAfter(LocalDateTime.now().plusDays(1))) {
+            DiscordIO.sendMessage(message.getChannel(), "Du kannst dich für maximal einen Tag selbst muten!");
+            return;
+        }
+
         final IGuild guild = message.getGuild();
 
         // Mute the user and schedule unmute
