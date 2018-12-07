@@ -28,7 +28,7 @@ jar {
 }
 
 dependencies {
-    compile group: 'com.github.austinv11', name: 'Discord4J', version: '2.10.1'
+    compile group: 'com.discord4j', name: 'Discord4J', version: '2.10.1'
     compile group: 'org.json', name: 'json', version: '20180813'
     compile group: 'org.reflections', name: 'reflections', version: '0.9.11'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
