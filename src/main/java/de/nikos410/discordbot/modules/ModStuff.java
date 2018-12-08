@@ -382,8 +382,6 @@ public class ModStuff {
             guildMap.put(user, newFuture);
             userMuteFutures.put(guild, guildMap);
         }
-
-        saveUserMutes();
     }
 
     /**
@@ -830,10 +828,19 @@ public class ModStuff {
         final JSONArray guildUserMutes = getUserMutesJSONForGuild(guild);
         LOG.debug("Found {} mutes for guild.", guildUserMutes.length());
 
+        // First, obtain a list of all user mutes
+        final List<Object> userMutes = new ArrayList<>();
         final Iterator<Object> muteIterator = guildUserMutes.iterator();
+        muteIterator.forEachRemaining(userMutes::add);
 
-        while (muteIterator.hasNext()) {
-            final JSONObject currentUserMute = (JSONObject)muteIterator.next();
+        // Second, clear the array
+        for (int i = 0; i < userMutes.size(); i++) {
+            guildUserMutes.remove(0);
+        }
+
+        // Third, restore all mutes
+        for (Object currentObject : userMutes) {
+            final JSONObject currentUserMute = (JSONObject)currentObject;
 
             if (currentUserMute.has("user") && currentUserMute.has("mutedUntil")) {
                 final long userLongID = currentUserMute.getLong("user");
@@ -861,7 +868,6 @@ public class ModStuff {
         }
 
         // Update JSON
-        getJSONForGuild(guild).remove("userMutes");
         saveUserMutes();
     }
 
@@ -1029,9 +1035,11 @@ public class ModStuff {
             final JSONArray guildUserMutesJSON = getUserMutesJSONForGuild(guildEntry.getKey());
 
             // Clear JSON
-            for (int i = 0; i < guildUserMutesJSON.length(); i++) {
-                guildUserMutesJSON.remove(i);
+            final int arraySize = guildUserMutesJSON.length();
+            for (int i = 0; i < arraySize; i++) {
+                guildUserMutesJSON.remove(0);
             }
+
             final Map<IUser, ScheduledFuture> guildUserMutesMap = guildEntry.getValue();
 
             for (Entry<IUser, ScheduledFuture> userEntry : guildUserMutesMap.entrySet()) {
