@@ -2,7 +2,6 @@ package de.nikos410.discordbot.modules;
 
 import java.lang.reflect.Method;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 
 import de.nikos410.discordbot.DiscordBot;
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
-import sx.blah.discord.handle.impl.obj.Guild;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;

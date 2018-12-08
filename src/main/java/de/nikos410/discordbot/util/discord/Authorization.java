@@ -2,7 +2,6 @@ package de.nikos410.discordbot.util.discord;
 
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.util.DiscordException;
 
 /**
  * Contains helper method to authorize and log in a bot
