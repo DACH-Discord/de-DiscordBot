@@ -90,12 +90,16 @@ public class ModStuff {
                 customMessage = "kein";
             }
 
-            final List<String> kickMessage = Arrays.asList("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.)",
-                    String.format("Hinweis: _%s_", customMessage));
+            final IGuild guild = message.getGuild();
 
+            // Do not notify a bot user
+            if (!kickUser.isBot()) {
+                final List<String> kickMessage = Arrays.asList("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.)",
+                        String.format("Hinweis: _%s_", customMessage));
+                DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
+            }
 
-            DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
-            message.getGuild().kickUser(kickUser, customMessage);
+            guild.kickUser(kickUser, customMessage);
 
             message.addReaction(ReactionEmoji.of("\uD83D\uDEAA")); // :door:
 
@@ -105,7 +109,6 @@ public class ModStuff {
                     UserUtils.makeUserString(kickUser, message.getGuild()),
                     customMessage);
 
-            final IGuild guild = message.getGuild();
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
             if (modLogChannel != null) {
@@ -145,10 +148,14 @@ public class ModStuff {
                 customMessage = "kein";
             }
 
-            final List<String> banMessage = Arrays.asList("**Du wurdest gebannt!**",
-                    String.format("Hinweis: _%s_", customMessage));
+            // Do not notify a bot user
+            if (!banUser.isBot()) {
+                final List<String> banMessage = Arrays.asList("**Du wurdest gebannt!**",
+                        String.format("Hinweis: _%s_", customMessage));
 
-            DiscordIO.sendMessage(banUser.getOrCreatePMChannel(), banMessage);
+                DiscordIO.sendMessage(banUser.getOrCreatePMChannel(), banMessage);
+            }
+
             message.getGuild().banUser(banUser, customMessage, 0);
 
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
@@ -228,14 +235,13 @@ public class ModStuff {
         muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit, message.getChannel());
         message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
 
-        // Notify the user about the mute
-        final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest für %s %s gemuted!",
+        // Do not notify a bot user
+        if (!muteUser.isBot()) {
+            final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest für %s %s gemuted!",
                     muteDuration,
                     muteDurationUnit.name()),
-                String.format("Hinweis: _%s_", customMessage));
+                    String.format("Hinweis: _%s_", customMessage));
 
-        // Do not send a message to a bot user
-        if (!muteUser.isBot()) {
             DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
 
@@ -461,15 +467,15 @@ public class ModStuff {
 
         final IGuild guild = message.getGuild();
 
-        final List<String> muteMessage = new ArrayList<>();
-        muteMessage.add(String.format("**Du wurdest für %s %s für den Kanal %s auf dem Server %s gemuted!**",
-                muteDuration, muteDurationUnit.name(),
-                muteChannel.getName(),
-                guild.getName()));
-        muteMessage.add(String.format("Hinweis: _%s_", customMessage));
-
         // Do not notify a bot user
         if (!muteUser.isBot()) {
+            final List<String> muteMessage = new ArrayList<>();
+            muteMessage.add(String.format("**Du wurdest für %s %s für den Kanal %s auf dem Server %s gemuted!**",
+                    muteDuration, muteDurationUnit.name(),
+                    muteChannel.getName(),
+                    guild.getName()));
+            muteMessage.add(String.format("Hinweis: _%s_", customMessage));
+
             DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
 
