@@ -687,7 +687,7 @@ public class ModStuff {
             final String lineToAdd = guildVoiceLog.get(i);
             if (stringBuilder.length() + lineToAdd.length() <= 1024) {
                 stringBuilder.append(guildVoiceLog.get(i));
-                stringBuilder.append('\n');
+                stringBuilder.append(String.format("%n"));
             }
             else {
                 entriesSkipped = true;
@@ -696,7 +696,7 @@ public class ModStuff {
 
         final EmbedBuilder responseBuilder = new EmbedBuilder();
         final String content = stringBuilder.length() > 0 ? stringBuilder.toString() : "_keine_";
-        responseBuilder.appendField(String.format("Die letzten %s Voice-Interaktionen (von neu nach alt)", listCount), content, false);
+        responseBuilder.appendField(String.format("__Die letzten %s Voice-Interaktionen (von neu nach alt)__", listCount), content, false);
         if (entriesSkipped) {
             responseBuilder.withFooterText("Einer oder mehrere Einträge wurden ignoriert, weil die maximale Textlänge erreicht wurde.");
         }
