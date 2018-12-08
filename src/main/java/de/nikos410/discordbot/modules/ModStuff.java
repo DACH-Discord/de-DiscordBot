@@ -94,7 +94,8 @@ public class ModStuff {
 
             // Do not notify a bot user
             if (!kickUser.isBot()) {
-                final List<String> kickMessage = Arrays.asList("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.)",
+                final List<String> kickMessage = Arrays.asList(
+                        String.format("**Du wurdest vom Server %s gekickt!** (Du kannst dem Server jedoch erneut beitreten.)", guild.getName()),
                         String.format("Hinweis: _%s_", customMessage));
                 DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
             }
@@ -148,25 +149,26 @@ public class ModStuff {
                 customMessage = "kein";
             }
 
+            final IGuild guild = message.getGuild();
+
             // Do not notify a bot user
             if (!banUser.isBot()) {
-                final List<String> banMessage = Arrays.asList("**Du wurdest gebannt!**",
+                final List<String> banMessage = Arrays.asList(String.format("**Du wurdest vom Server %s gebannt!**", guild.getName()),
                         String.format("Hinweis: _%s_", customMessage));
 
                 DiscordIO.sendMessage(banUser.getOrCreatePMChannel(), banMessage);
             }
 
-            message.getGuild().banUser(banUser, customMessage, 0);
+            guild.banUser(banUser, customMessage, 0);
 
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
             LOG.info("{} banned user {}. Message: {}",
-                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserUtils.makeUserString(banUser, message.getGuild()),
+                    UserUtils.makeUserString(message.getAuthor(), guild),
+                    UserUtils.makeUserString(banUser, guild),
                     customMessage);
 
-            final IGuild guild = message.getGuild();
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
             if (modLogChannel != null) {
@@ -237,7 +239,8 @@ public class ModStuff {
 
         // Do not notify a bot user
         if (!muteUser.isBot()) {
-            final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest für %s %s gemuted!",
+            final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest auf dem Server %s für %s %s gemuted!",
+                    guild.getName(),
                     muteDuration,
                     muteDurationUnit.name()),
                     String.format("Hinweis: _%s_", customMessage));
