@@ -105,7 +105,8 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDEAA")); // :door:
 
             // Modlog
-            LOG.info("{} kicked user {}. Message: {}",
+            LOG.info("Guild '{}': {} kicked user {}. Message: {}",
+                    guild.getName(),
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(kickUser, message.getGuild()),
                     customMessage);
@@ -164,7 +165,8 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
-            LOG.info("{} banned user {}. Message: {}",
+            LOG.info("Guild '{}': {} banned user {}. Message: {}",
+                    guild.getName(),
                     UserUtils.makeUserString(message.getAuthor(), guild),
                     UserUtils.makeUserString(banUser, guild),
                     customMessage);
@@ -249,10 +251,12 @@ public class ModStuff {
         }
 
         // Modlog
-        LOG.info("User {} was muted for {} {}.",
+        LOG.info("Guild '{}': User {} was muted for {} {}. Message: {}",
+                guild,
                 UserUtils.makeUserString(muteUser, message.getGuild()),
                 muteDuration,
-                muteDurationUnit.name());
+                muteDurationUnit.name(),
+                customMessage);
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
@@ -483,7 +487,7 @@ public class ModStuff {
         }
 
         // Modlog
-        LOG.info("Nutzer {} wurde für {} {} für den Kanal {} auf dem Server {} gemuted. \nHinweis: {}",
+        LOG.info("Guild '{}': User {} was muted for {} {} for the channel {}. Message: {}",
                 UserUtils.makeUserString(muteUser, guild), muteDuration,
                 muteDurationUnit.name(),
                 muteChannel.getName(),
