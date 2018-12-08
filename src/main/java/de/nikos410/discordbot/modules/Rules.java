@@ -36,7 +36,7 @@ public class Rules {
         final IGuild guild = event.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
-        if (guildJSON.has("welcome") && guildJSON.has("rulesDE") && guildJSON.has("footer")) {
+        if (guildJSON.has("welcome") && guildJSON.has("rulesDE") && guildJSON.has("footer") && !event.getUser().isBot()) {
 
             DiscordIO.sendMessage(event.getUser().getOrCreatePMChannel(), guildJSON.getString("welcome") +
                     "\n\n" + guildJSON.getString("rulesDE") + "\n\n\n" + guildJSON.getString("footer"));
