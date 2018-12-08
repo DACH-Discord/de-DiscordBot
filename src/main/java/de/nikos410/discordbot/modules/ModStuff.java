@@ -109,11 +109,13 @@ public class ModStuff {
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
             if (modLogChannel != null) {
-                final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**.\nHinweis: _%s _",
+                final List<String> modLogMessage = new ArrayList<>();
+                modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**.",
                         UserUtils.makeUserString(message.getAuthor(), guild),
                         UserUtils.makeUserString(kickUser, guild),
-                        message.getChannel().mention(),
-                        customMessage);
+                        message.getChannel().mention()));
+                modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
+
                 DiscordIO.sendMessage(modLogChannel, modLogMessage);
             }
         }
@@ -161,11 +163,13 @@ public class ModStuff {
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
             if (modLogChannel != null) {
-                final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
+                final List<String> modLogMessage = new ArrayList<>();
+                modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**.",
                         UserUtils.makeUserString(message.getAuthor(), guild),
                         UserUtils.makeUserString(banUser, guild),
-                        message.getChannel().mention(),
-                        customMessage);
+                        message.getChannel().mention()));
+                modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
+
                 DiscordIO.sendMessage(modLogChannel, modLogMessage);
             }
         }
@@ -244,10 +248,14 @@ public class ModStuff {
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
         if (modLogChannel != null) {
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
-                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
-                    muteDuration, muteDurationUnit.name(), customMessage);
+            final List<String> modLogMessage = new ArrayList<>();
+            modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**.",
+                    UserUtils.makeUserString(message.getAuthor(), guild),
+                    UserUtils.makeUserString(muteUser, guild),
+                    message.getChannel().mention(),
+                    muteDuration, muteDurationUnit.name()));
+            modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
+
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
 
@@ -453,8 +461,12 @@ public class ModStuff {
 
         final IGuild guild = message.getGuild();
 
-        final String muteMessage = String.format("**Du wurdest für %s %s für den Kanal %s auf dem Server %s gemuted!** \nHinweis: _%s_",
-                muteDuration, muteDurationUnit.name(), muteChannel.getName(), guild.getName(), customMessage);
+        final List<String> muteMessage = new ArrayList<>();
+        muteMessage.add(String.format("**Du wurdest für %s %s für den Kanal %s auf dem Server %s gemuted!**",
+                muteDuration, muteDurationUnit.name(),
+                muteChannel.getName(),
+                guild.getName()));
+        muteMessage.add(String.format("Hinweis: _%s_", customMessage));
 
         // Do not notify a bot user
         if (!muteUser.isBot()) {
@@ -472,10 +484,13 @@ public class ModStuff {
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
         if (modLogChannel != null) {
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s für den Kanal %s **gemuted**. \nHinweis: _%s _",
+            final List<String> modLogMessage = new ArrayList<>();
+            modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s für den Kanal %s **gemuted**.",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
-                    muteDuration, muteDurationUnit.name(), muteChannel.mention(), customMessage);
+                    muteDuration, muteDurationUnit.name(), muteChannel.mention()));
+            modLogMessage.add(String.format("Hinweis: _%s _", customMessage));
+
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
     }
