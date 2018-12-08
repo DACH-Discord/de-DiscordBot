@@ -18,7 +18,7 @@ public class Authorization {
      * @param login Choose whether to log in the client after authorizing.
      * @return The created client instance.
      */
-    public static IDiscordClient createClient(final String token, final boolean login) throws DiscordException {
+    public static IDiscordClient createClient(final String token, final boolean login) {
         final ClientBuilder clientBuilder = new ClientBuilder();
         clientBuilder.withToken(token);
 

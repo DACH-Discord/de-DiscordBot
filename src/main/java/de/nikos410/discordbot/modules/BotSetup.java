@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
+import sx.blah.discord.handle.impl.obj.Guild;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
@@ -112,39 +113,13 @@ public class BotSetup {
             return;
         }
 
-        final String roleID;
-        // Check if parameters are valid
-        if (roleIDParameter.matches("^[0-9]{18}$")) {
-            // A role ID was specified as the parameter
-            if (GuildUtils.roleExists(guild, Long.parseLong(roleIDParameter))) {
-                roleID = roleIDParameter;
-            }
-            else {
-                DiscordIO.sendMessage(channel, String.format("Fehler! Es existiert keine Rolle mit " +
-                        "der ID %s auf dem Server.", roleIDParameter));
-                LOG.info("No role with ID {} found for guild {} (ID: {}). Aborting.",
-                        roleIDParameter, guild.getName(), guild.getStringID());
-                return;
-            }
-        }
-        else if (message.getRoleMentions().size() > 0) {
-            // No valid Role ID was specified as the parameter but we have mentioned roles
-            List<IRole> roleMentions = message.getRoleMentions();
-            if (roleMentions.size() == 1) {
-                roleID = roleMentions.get(0).getStringID();
-            }
-            else {
-                DiscordIO.sendMessage(channel, "Fehler! Bitte nur eine Rolle angeben.");
-                LOG.info("More than one role mentioned. Aborting.");
-                return;
-            }
-        }
-        else {
-            DiscordIO.sendMessage(channel, "Keine Rolle angegeben.");
-            LOG.info("No role specified. Aborting.");
+        // Get role
+        final IRole role = GuildUtils.getRoleFromMessage(message, roleIDParameter);
+        if (role == null) {
+            LOG.info("No valid role specified. Aborting.");
+            DiscordIO.sendMessage(channel, ":x: Keine gültige Rolle angegeben!");
             return;
         }
-
 
         final JSONObject rolesJSON = bot.rolesJSON;
         final String guildID = guild.getStringID();
@@ -159,14 +134,14 @@ public class BotSetup {
             rolesJSON.put(guildID, guildRoles);
             LOG.debug("Successfully created JSON object for this guild.");
         }
-        guildRoles.put(fieldName, Long.parseLong(roleID));
+        guildRoles.put(fieldName, role.getLongID());
 
         bot.saveRoles();
 
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
 
         LOG.info("Updated role {} for guild {} (ID: {}). New role: {}", fieldName, guild.getName(),
-                guildID, roleID);
+                guildID, role.getStringID());
     }
 
     /**

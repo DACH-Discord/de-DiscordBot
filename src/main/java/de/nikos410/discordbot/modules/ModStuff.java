@@ -90,30 +90,37 @@ public class ModStuff {
                 customMessage = "kein";
             }
 
-            final List<String> kickMessage = Arrays.asList("**Du wurdest gekickt!** (Du kannst dem Server jedoch erneut beitreten.)",
-                    String.format("Hinweis: _%s_", customMessage));
+            final IGuild guild = message.getGuild();
 
+            // Do not notify a bot user
+            if (!kickUser.isBot()) {
+                final List<String> kickMessage = Arrays.asList(
+                        String.format("**Du wurdest vom Server %s gekickt!** (Du kannst dem Server jedoch erneut beitreten.)", guild.getName()),
+                        String.format("Hinweis: _%s_", customMessage));
+                DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
+            }
 
-            DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
-            message.getGuild().kickUser(kickUser, customMessage);
+            guild.kickUser(kickUser, customMessage);
 
             message.addReaction(ReactionEmoji.of("\uD83D\uDEAA")); // :door:
 
             // Modlog
-            LOG.info("{} kicked user {}. Message: {}",
+            LOG.info("Guild '{}': {} kicked user {}. Message: {}",
+                    guild.getName(),
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(kickUser, message.getGuild()),
                     customMessage);
 
-            final IGuild guild = message.getGuild();
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
             if (modLogChannel != null) {
-                final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**.\nHinweis: _%s _",
+                final List<String> modLogMessage = new ArrayList<>();
+                modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**.",
                         UserUtils.makeUserString(message.getAuthor(), guild),
                         UserUtils.makeUserString(kickUser, guild),
-                        message.getChannel().mention(),
-                        customMessage);
+                        message.getChannel().mention()));
+                modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
+
                 DiscordIO.sendMessage(modLogChannel, modLogMessage);
             }
         }
@@ -143,29 +150,37 @@ public class ModStuff {
                 customMessage = "kein";
             }
 
-            final List<String> banMessage = Arrays.asList("**Du wurdest gebannt!**",
-                    String.format("Hinweis: _%s_", customMessage));
+            final IGuild guild = message.getGuild();
 
-            DiscordIO.sendMessage(banUser.getOrCreatePMChannel(), banMessage);
-            message.getGuild().banUser(banUser, customMessage, 0);
+            // Do not notify a bot user
+            if (!banUser.isBot()) {
+                final List<String> banMessage = Arrays.asList(String.format("**Du wurdest vom Server %s gebannt!**", guild.getName()),
+                        String.format("Hinweis: _%s_", customMessage));
+
+                DiscordIO.sendMessage(banUser.getOrCreatePMChannel(), banMessage);
+            }
+
+            guild.banUser(banUser, customMessage, 0);
 
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
-            LOG.info("{} banned user {}. Message: {}",
-                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserUtils.makeUserString(banUser, message.getGuild()),
+            LOG.info("Guild '{}': {} banned user {}. Message: {}",
+                    guild.getName(),
+                    UserUtils.makeUserString(message.getAuthor(), guild),
+                    UserUtils.makeUserString(banUser, guild),
                     customMessage);
 
-            final IGuild guild = message.getGuild();
             final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
             if (modLogChannel != null) {
-                final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
+                final List<String> modLogMessage = new ArrayList<>();
+                modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**.",
                         UserUtils.makeUserString(message.getAuthor(), guild),
                         UserUtils.makeUserString(banUser, guild),
-                        message.getChannel().mention(),
-                        customMessage);
+                        message.getChannel().mention()));
+                modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
+
                 DiscordIO.sendMessage(modLogChannel, modLogMessage);
             }
         }
@@ -224,30 +239,36 @@ public class ModStuff {
         muteUserForGuild(muteUser, guild, muteDuration, muteDurationUnit, message.getChannel());
         message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
 
-        // Notify the user about the mute
-        final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest für %s %s gemuted!",
+        // Do not notify a bot user
+        if (!muteUser.isBot()) {
+            final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest auf dem Server %s für %s %s gemuted!",
+                    guild.getName(),
                     muteDuration,
                     muteDurationUnit.name()),
-                String.format("Hinweis: _%s_", customMessage));
+                    String.format("Hinweis: _%s_", customMessage));
 
-        // Do not send a message to a bot user
-        if (!muteUser.isBot()) {
             DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
 
         // Modlog
-        LOG.info("User {} was muted for {} {}.",
+        LOG.info("Guild '{}': User {} was muted for {} {}. Message: {}",
+                guild,
                 UserUtils.makeUserString(muteUser, message.getGuild()),
                 muteDuration,
-                muteDurationUnit.name());
+                muteDurationUnit.name(),
+                customMessage);
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
         if (modLogChannel != null) {
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
-                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
-                    UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
-                    muteDuration, muteDurationUnit.name(), customMessage);
+            final List<String> modLogMessage = new ArrayList<>();
+            modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**.",
+                    UserUtils.makeUserString(message.getAuthor(), guild),
+                    UserUtils.makeUserString(muteUser, guild),
+                    message.getChannel().mention(),
+                    muteDuration, muteDurationUnit.name()));
+            modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
+
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
 
@@ -453,16 +474,20 @@ public class ModStuff {
 
         final IGuild guild = message.getGuild();
 
-        final String muteMessage = String.format("**Du wurdest für %s %s für den Kanal %s auf dem Server %s gemuted!** \nHinweis: _%s_",
-                muteDuration, muteDurationUnit.name(), muteChannel.getName(), guild.getName(), customMessage);
-
         // Do not notify a bot user
         if (!muteUser.isBot()) {
+            final List<String> muteMessage = new ArrayList<>();
+            muteMessage.add(String.format("**Du wurdest für %s %s für den Kanal %s auf dem Server %s gemuted!**",
+                    muteDuration, muteDurationUnit.name(),
+                    muteChannel.getName(),
+                    guild.getName()));
+            muteMessage.add(String.format("Hinweis: _%s_", customMessage));
+
             DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
 
         // Modlog
-        LOG.info("Nutzer {} wurde für {} {} für den Kanal {} auf dem Server {} gemuted. \nHinweis: {}",
+        LOG.info("Guild '{}': User {} was muted for {} {} for the channel {}. Message: {}",
                 UserUtils.makeUserString(muteUser, guild), muteDuration,
                 muteDurationUnit.name(),
                 muteChannel.getName(),
@@ -472,10 +497,13 @@ public class ModStuff {
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
 
         if (modLogChannel != null) {
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s für den Kanal %s **gemuted**. \nHinweis: _%s _",
+            final List<String> modLogMessage = new ArrayList<>();
+            modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s für den Kanal %s **gemuted**.",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
-                    muteDuration, muteDurationUnit.name(), muteChannel.mention(), customMessage);
+                    muteDuration, muteDurationUnit.name(), muteChannel.mention()));
+            modLogMessage.add(String.format("Hinweis: _%s _", customMessage));
+
             DiscordIO.sendMessage(modLogChannel, modLogMessage);
         }
     }
@@ -659,7 +687,7 @@ public class ModStuff {
             final String lineToAdd = guildVoiceLog.get(i);
             if (stringBuilder.length() + lineToAdd.length() <= 1024) {
                 stringBuilder.append(guildVoiceLog.get(i));
-                stringBuilder.append('\n');
+                stringBuilder.append(String.format("%n"));
             }
             else {
                 entriesSkipped = true;
@@ -668,7 +696,7 @@ public class ModStuff {
 
         final EmbedBuilder responseBuilder = new EmbedBuilder();
         final String content = stringBuilder.length() > 0 ? stringBuilder.toString() : "_keine_";
-        responseBuilder.appendField(String.format("Die letzten %s Voice-Interaktionen (von neu nach alt)", listCount), content, false);
+        responseBuilder.appendField(String.format("__Die letzten %s Voice-Interaktionen (von neu nach alt)__", listCount), content, false);
         if (entriesSkipped) {
             responseBuilder.withFooterText("Einer oder mehrere Einträge wurden ignoriert, weil die maximale Textlänge erreicht wurde.");
         }

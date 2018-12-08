@@ -554,7 +554,7 @@ public class DiscordBot {
 
         // If no roles are configured for this guild return the lowest level
         if (!rolesJSON.has(guild.getStringID())) {
-            LOG.warn("Roles for server {} (ID: {}) are not configured!", guild.getName(), guild.getStringID());
+            LOG.warn("Roles for guild {} (ID: {}) are not configured!", guild.getName(), guild.getStringID());
             return PermissionLevel.EVERYONE;
         }
 
@@ -567,7 +567,7 @@ public class DiscordBot {
             }
         }
         else {
-            LOG.warn("Admin role for server {} (ID: {}) is not configured!");
+            LOG.warn("Admin role for guild {} (ID: {}) is not configured!", guild.getName(), guild.getStringID());
         }
 
         if (guildRoles.has("modRole")) {
@@ -577,7 +577,7 @@ public class DiscordBot {
             }
         }
         else {
-            LOG.warn("Moderator role for server {} (ID: {}) is not configured!");
+            LOG.warn("Moderator role for guild {} (ID: {}) is not configured!", guild.getName(), guild.getStringID());
         }
 
         return PermissionLevel.EVERYONE;
