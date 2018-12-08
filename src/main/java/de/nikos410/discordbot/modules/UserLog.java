@@ -89,7 +89,7 @@ public class UserLog {
 
     private void userJoinNotify(final IUser user, final IChannel channel) {
         final Instant joinTimeStamp = user.getCreationDate();
-        final long joinedDays = joinTimeStamp.until(LocalDateTime.now(), ChronoUnit.DAYS);
+        final long joinedDays = joinTimeStamp.until(Instant.now(), ChronoUnit.DAYS);
 
         // String für Embed
         String embedString = String.format("**Name:** %s#%s \n" +
