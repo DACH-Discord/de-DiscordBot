@@ -276,7 +276,7 @@ public class ModStuff {
     }
 
     @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm",
-            pmAllowed = false, ignoreParameterCount = true)
+            pmAllowed = false)
     public void command_selfmute(final IMessage message, final String muteDurationInput) {
         // The author of the message will be muted
         final IUser muteUser = message.getAuthor();
