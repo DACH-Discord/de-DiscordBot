@@ -46,6 +46,10 @@ public class CommandUtils {
     }
 
     public static DurationParameters parseDurationParameters(final String input) {
+        if (input == null) {
+            return null;
+        }
+
         final Pattern pattern = Pattern.compile("(\\d+)\\s*([smhd])\\s*(.*)");
         final Matcher matcher = pattern.matcher(input);
 
