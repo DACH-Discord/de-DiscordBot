@@ -554,8 +554,13 @@ public class DiscordBot {
             return PermissionLevel.OWNER;
         }
 
+        // No guild (maybe PM)
+        if (guild == null) {
+            return PermissionLevel.EVERYONE;
+        }
+
         // If no roles are configured for this guild return the lowest level
-        if (guild == null || !rolesJSON.has(guild.getStringID())) {
+        if (!rolesJSON.has(guild.getStringID())) {
             LOG.warn("Roles for guild {} (ID: {}) are not configured!", guild.getName(), guild.getStringID());
             return PermissionLevel.EVERYONE;
         }
