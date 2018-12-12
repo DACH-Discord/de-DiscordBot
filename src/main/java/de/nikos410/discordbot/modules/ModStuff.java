@@ -28,6 +28,7 @@ import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelMoveE
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
+import sx.blah.discord.util.PermissionUtils;
 import sx.blah.discord.util.cache.LongMap;
 
 import java.nio.file.Path;
@@ -85,12 +86,18 @@ public class ModStuff {
                 return;
             }
 
+            // Check if the bot has the permissions to kick the user
+            final IGuild guild = message.getGuild();
+
+            if (!PermissionUtils.hasHierarchicalPermissions(guild, message.getClient().getOurUser(), kickUser, Permissions.KICK)) {
+                DiscordIO.sendMessage(message.getChannel(), ":x: Nutzer kann nicht gekickt werden! (Unzureichende Berechtigungen)");
+                return;
+            }
+
             // Set a default message if no message was specified.
             if (customMessage == null || customMessage.isEmpty()) {
                 customMessage = "kein";
             }
-
-            final IGuild guild = message.getGuild();
 
             // Do not notify a bot user
             if (!kickUser.isBot()) {
@@ -145,12 +152,18 @@ public class ModStuff {
                 return;
             }
 
+            // Check if the bot has the permissions to ban the user
+            final IGuild guild = message.getGuild();
+
+            if (!PermissionUtils.hasHierarchicalPermissions(guild, message.getClient().getOurUser(), banUser, Permissions.BAN)) {
+                DiscordIO.sendMessage(message.getChannel(), ":x: Nutzer kann nicht gebannt werden! (Unzureichende Berechtigungen)");
+                return;
+            }
+
             // Set a default message if no message was specified.
             if (customMessage == null || customMessage.isEmpty()) {
                 customMessage = "kein";
             }
-
-            final IGuild guild = message.getGuild();
 
             // Do not notify a bot user
             if (!banUser.isBot()) {
@@ -405,11 +418,14 @@ public class ModStuff {
             return;
         }
 
-        // Only remove the mute role if th user is still a member of the guild
+        // Only remove the mute role if the user is still a member of the guild
         if (guild.getUsers().contains(user) && user.hasRole(muteRole)) {
             user.removeRole(muteRole);
         }
-        userMuteFutures.get(guild).remove(user);
+
+        if (isUserMutedForGuild(user, guild)) {
+            userMuteFutures.get(guild).remove(user);
+        }
 
         LOG.info("User {} was unmuted.", UserUtils.makeUserString(user, guild));
         saveUserMutes();
@@ -509,116 +525,57 @@ public class ModStuff {
     private String muteUserForChannel (final IUser user, final IChannel channel, final int muteDuration, final ChronoUnit muteDurationUnit) {
         final LongMap<PermissionOverride> oldOverrides = channel.getUserOverrides();
 
-        // Prüfen ob bereits Overrides für den Nutzer existieren
         if (oldOverrides.containsKey(user.getLongID())) {
-            // Bisherige Overrides für den Nutzer auslesen
+            // Permissions fo this user are already overridden
             final PermissionOverride oldUserOverrides = oldOverrides.get(user.getLongID());
 
-            // Bisherige Overrides für den Nutzer kopieren
+            // Copy previous permissions
             final EnumSet<Permissions> userAllow = oldUserOverrides.allow().clone();
             final EnumSet<Permissions> userDeny = oldUserOverrides.deny().clone();
 
-            // Rechte zum Senden entfernen
+            // Remove permission to send messages
             userAllow.remove(Permissions.SEND_MESSAGES);
             userDeny.add(Permissions.SEND_MESSAGES);
 
-            // Rechte aktualisieren
+            // Update permissions
             channel.overrideUserPermissions(user, userAllow, userDeny);
         }
         else {
-            // Rechte zum Senden entfernen
+            // Permissions are not overridden for this user -> Just remove permission to send messages
             channel.overrideUserPermissions(user, EnumSet.noneOf(Permissions.class), EnumSet.of(Permissions.SEND_MESSAGES));
         }
 
         final IGuild guild = channel.getGuild();
 
-        // Prüfen ob Nutzer bereits gemuted ist
         if (isUserMutedForChannel(user, channel)) {
-            // Nutzer ist bereits gemuted
-            // Überprüfen, ob angegebener Zeitpunkt nach dem bisherigen Zeitpunkt liegt
+            // User is already muted for this channel
             final ScheduledFuture oldFuture = channelMuteFutures.get(guild).get(channel).get(user);
 
-            // Unmute Zeitpunkte in LocalDateTime
+            // Check whether the existing or the new mute lasts longer
             final LocalDateTime oldDateTime = LocalDateTime.now().plusSeconds(oldFuture.getDelay(TimeUnit.SECONDS));
             final LocalDateTime newDateTime = LocalDateTime.now().plus(muteDuration, muteDurationUnit);
 
-            // Prüfen welcher Unmute Zeitpunkt zuerst eintritt
             if (newDateTime.isBefore(oldDateTime)) {
-                // neuer Zeitpunkt ist vor altem -> nichts tun (längerer Mute bleibt bestehen)
+                // Existing mute lasts longer -> Keep existing mute
                 return "Nutzer ist bereits für einen längeren Zeitraum gemuted!";
             }
             else {
-                // neuer Zeitpunkt ist nach altem -> neu schedulen
+                // New mute lasts longer -> Cancel existing mute (New mute will be scheduled)
                 channelMuteFutures.get(guild).get(channel).remove(user, oldFuture);
                 oldFuture.cancel(false);
             }
         }
         else {
-            // Nutzer ist noch nicht gemuted
+            // User is not muted for this channel yet
             LOG.info("Muted user {}.", UserUtils.makeUserString(user, guild));
         }
 
-        // Wird ausgeführt, um Nutzer wieder zu entmuten
-        final Runnable unmuteTask = () -> {
-            final LongMap<PermissionOverride> currentOverrides = channel.getUserOverrides();
-
-            if (currentOverrides.containsKey(user.getLongID())) {
-                // Aktuelle Permissions für den Nutzer auslesen
-                final PermissionOverride currentUserOverride = currentOverrides.get(user.getLongID());
-
-                final EnumSet<Permissions> currentUserAllowed = currentUserOverride.allow();
-                final EnumSet<Permissions> currentUserDenied = currentUserOverride.deny();
-
-                if (oldOverrides.containsKey(user.getLongID())) {
-                    final PermissionOverride oldUserOverride = oldOverrides.get(user.getLongID());
-
-                    // alte Berechtigungen
-                    final EnumSet<Permissions> oldUserAllowed = oldUserOverride.allow();
-                    final EnumSet<Permissions> oldUserDenied = oldUserOverride.deny();
-
-                    // Die SEND_MESSAGES Permission auf den Zustand vor de Mute setzen
-                    currentUserAllowed.remove(Permissions.SEND_MESSAGES);
-                    currentUserDenied.remove(Permissions.SEND_MESSAGES);
-
-                    if (oldUserAllowed.contains(Permissions.SEND_MESSAGES)) {
-                        currentUserAllowed.add(Permissions.SEND_MESSAGES);
-                    }
-
-                    if (oldUserDenied.contains(Permissions.SEND_MESSAGES)) {
-                        currentUserDenied.add(Permissions.SEND_MESSAGES);
-                    }
-                }
-                else {
-                    // Keine alten Overrides für den Nutzer bekannt
-                    currentUserAllowed.remove(Permissions.SEND_MESSAGES);
-                    currentUserDenied.remove(Permissions.SEND_MESSAGES);
-                }
-
-                // Wenn Override leer ist entfernen
-                if (currentUserAllowed.isEmpty() && currentUserDenied.isEmpty()) {
-                    channel.removePermissionsOverride(user);
-                }
-                else {
-                    channel.overrideUserPermissions(user, currentUserAllowed, currentUserDenied);
-                }
-            }
-            else {
-                // Override existiert nicht mehr, wurde vmtl. von Hand entfernt
-                LOG.info("Can't unmute user {} for channel {}. Override does not exist.",
-                        UserUtils.makeUserString(user, guild), channel.getName());
-            }
-
-            channelMuteFutures.get(guild).get(channel).remove(user);
-
-            LOG.info("Nutzer {} wurde entmuted.", UserUtils.makeUserString(user, guild));
-
-            saveChannelMutes();
-        };
-
-        // Unmute schedulen
+        // Schedule unmuting the user
+        final Runnable unmuteTask = () -> unmuteUserForChannel(user, channel);
         final ScheduledFuture newFuture = scheduler.schedule(unmuteTask, muteDuration, CommandUtils.toTimeUnit(muteDurationUnit));
 
         final Map<IChannel, Map<IUser, ScheduledFuture>> guildMap;
+        // Make sure an entry for this guild exists
         if (channelMuteFutures.containsKey(guild)) {
             guildMap = channelMuteFutures.get(guild);
         }
@@ -628,6 +585,7 @@ public class ModStuff {
         }
 
         final Map<IUser, ScheduledFuture> channelMap;
+        // Make sure an entry for this channel exists
         if (guildMap.containsKey(channel)) {
             channelMap = guildMap.get(channel);
         }
@@ -636,11 +594,46 @@ public class ModStuff {
             guildMap.put(channel, channelMap);
         }
 
+        // Save the mute
         channelMap.put(user, newFuture);
-
         saveChannelMutes();
 
         return "";
+    }
+
+    private void unmuteUserForChannel(final IUser user, final IChannel channel) {
+        final IGuild guild = channel.getGuild();
+
+        final LongMap<PermissionOverride> currentOverrides = channel.getUserOverrides();
+
+        if (currentOverrides.containsKey(user.getLongID())) {
+            // Reset permission to send messages to neutral
+            final PermissionOverride currentUserOverride = currentOverrides.get(user.getLongID());
+
+            final EnumSet<Permissions> userAllowed = currentUserOverride.allow();
+            final EnumSet<Permissions> userDenied = currentUserOverride.deny();
+
+            userAllowed.remove(Permissions.SEND_MESSAGES);
+            userDenied.remove(Permissions.SEND_MESSAGES);
+
+            // Remove override if it is empty
+            if (userAllowed.isEmpty() && userDenied.isEmpty()) {
+                channel.removePermissionsOverride(user);
+            }
+            else {
+                channel.overrideUserPermissions(user, userAllowed, userDenied);
+            }
+        }
+        else {
+            // Override does not exist anymore, don't do anything
+            LOG.info("Can't unmute user {} for channel {}. Override does not exist.",
+                    UserUtils.makeUserString(user, guild), channel.getName());
+        }
+
+        LOG.info("Nutzer {} wurde entmuted.", UserUtils.makeUserString(user, guild));
+
+        channelMuteFutures.get(guild).get(channel).remove(user);
+        saveChannelMutes();
     }
 
     private boolean isUserMutedForChannel (final IUser user, final IChannel channel) {
