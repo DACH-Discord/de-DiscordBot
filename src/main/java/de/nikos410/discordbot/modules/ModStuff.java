@@ -28,6 +28,7 @@ import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelMoveE
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
+import sx.blah.discord.util.PermissionUtils;
 import sx.blah.discord.util.cache.LongMap;
 
 import java.nio.file.Path;
@@ -85,12 +86,18 @@ public class ModStuff {
                 return;
             }
 
+            // Check if the bot has the permissions to kick the user
+            final IGuild guild = message.getGuild();
+
+            if (!PermissionUtils.hasHierarchicalPermissions(guild, message.getClient().getOurUser(), kickUser, Permissions.KICK)) {
+                DiscordIO.sendMessage(message.getChannel(), ":x: Nutzer kann nicht gekickt werden! (Unzureichende Berechtigungen)");
+                return;
+            }
+
             // Set a default message if no message was specified.
             if (customMessage == null || customMessage.isEmpty()) {
                 customMessage = "kein";
             }
-
-            final IGuild guild = message.getGuild();
 
             // Do not notify a bot user
             if (!kickUser.isBot()) {
@@ -145,12 +152,18 @@ public class ModStuff {
                 return;
             }
 
+            // Check if the bot has the permissions to ban the user
+            final IGuild guild = message.getGuild();
+
+            if (!PermissionUtils.hasHierarchicalPermissions(guild, message.getClient().getOurUser(), banUser, Permissions.BAN)) {
+                DiscordIO.sendMessage(message.getChannel(), ":x: Nutzer kann nicht gebannt werden! (Unzureichende Berechtigungen)");
+                return;
+            }
+
             // Set a default message if no message was specified.
             if (customMessage == null || customMessage.isEmpty()) {
                 customMessage = "kein";
             }
-
-            final IGuild guild = message.getGuild();
 
             // Do not notify a bot user
             if (!banUser.isBot()) {
