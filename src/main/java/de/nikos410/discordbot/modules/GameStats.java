@@ -2,9 +2,8 @@ package de.nikos410.discordbot.modules;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import de.nikos410.discordbot.DiscordBot;
 import de.nikos410.discordbot.exception.InitializationException;
@@ -14,7 +13,7 @@ import de.nikos410.discordbot.util.io.IOUtil;
 import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.similarity.FuzzyScore;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -158,32 +157,64 @@ public class GameStats {
     }
 
     /**
-     * Find games that have names similar to the given one.
+     * Find games that have names similar to the given one, sorted from the highest similarity to the lowest.
      *
      * @param inputKey The given game name.
      * @param guild The guild on which to look for similar games.
-     * @return A list containing similar keys.
+     * @return A list containing a maximum of 5 similar keys.
      */
-    @SuppressWarnings("deprecation")
     private List<String> findSimilarKeys (final String inputKey, final IGuild guild) {
-        // Calculate how big the difference between the strings may be
-        final int levDistTreshold = 2 + StringUtils.countMatches(inputKey, " ");
+        final String inputKeyLowerCase = inputKey.toLowerCase();
 
-        final List<String> similarKeys = new ArrayList<>();
+        // Calculate the fuzzy score for all games
+        final FuzzyScore scoreCalculator = new FuzzyScore(Locale.GERMANY);
+        final List<GameFuzzyScore> scores = new ArrayList<>();
 
-        if (gameStatsJSON.has(guild.getStringID())) {
-            JSONObject guildJSON = gameStatsJSON.getJSONObject(guild.getStringID());
-            // Iterate over all games and check if they are similar
-            for (Object obj : guildJSON.keySet()) {
-                final String gameKey = obj.toString();
-                if (StringUtils.getLevenshteinDistance(gameKey.toLowerCase(), inputKey.toLowerCase()) <= levDistTreshold &&
-                        !gameKey.equalsIgnoreCase(inputKey)) {
-                    similarKeys.add(gameKey.toLowerCase());
-                }
+        final JSONObject guildJSON = gameStatsJSON.getJSONObject(guild.getStringID());
+        if (guildJSON == null) {
+            return new ArrayList<>();
+        }
+
+        for (Object obj : guildJSON.keySet()) {
+            final String gameName = obj.toString();
+            final int result = scoreCalculator.fuzzyScore(inputKeyLowerCase, gameName);
+
+            if (result > 15) {
+                final GameFuzzyScore score = new GameFuzzyScore(gameName, result);
+                scores.add(score);
             }
         }
 
-        return similarKeys;
+        // Return the names of the 5 games with the highest score
+        return scores.stream()
+                .sorted()
+                .limit(5)
+                .map(GameFuzzyScore::getName)
+                .collect(Collectors.toList());
+    }
+
+    private class GameFuzzyScore implements Comparable {
+        private final String name;
+        private final int score;
+
+        GameFuzzyScore(final String name, final int score) {
+            this.name = name;
+            this.score = score;
+        }
+
+        public int getScore() {
+            return score;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public int compareTo(Object other) {
+            final GameFuzzyScore otherScore = (GameFuzzyScore)other;
+            return Integer.compare(otherScore.getScore(), score);
+        }
     }
 
     @EventSubscriber
