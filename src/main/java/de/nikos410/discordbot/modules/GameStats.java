@@ -177,11 +177,14 @@ public class GameStats {
 
         for (Object obj : guildJSON.keySet()) {
             final String gameName = obj.toString();
-            final int result = scoreCalculator.fuzzyScore(inputKeyLowerCase, gameName);
 
-            if (result > 15) {
-                final GameFuzzyScore score = new GameFuzzyScore(gameName, result);
-                scores.add(score);
+            if (!gameName.equals(inputKeyLowerCase)) {
+                final int result = scoreCalculator.fuzzyScore(inputKeyLowerCase, gameName);
+
+                if (result > 15) {
+                    final GameFuzzyScore score = new GameFuzzyScore(gameName, result);
+                    scores.add(score);
+                }
             }
         }
 
