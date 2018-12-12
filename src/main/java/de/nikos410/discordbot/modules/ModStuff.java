@@ -405,11 +405,14 @@ public class ModStuff {
             return;
         }
 
-        // Only remove the mute role if th user is still a member of the guild
+        // Only remove the mute role if the user is still a member of the guild
         if (guild.getUsers().contains(user) && user.hasRole(muteRole)) {
             user.removeRole(muteRole);
         }
-        userMuteFutures.get(guild).remove(user);
+
+        if (isUserMutedForGuild(user, guild)) {
+            userMuteFutures.get(guild).remove(user);
+        }
 
         LOG.info("User {} was unmuted.", UserUtils.makeUserString(user, guild));
         saveUserMutes();
