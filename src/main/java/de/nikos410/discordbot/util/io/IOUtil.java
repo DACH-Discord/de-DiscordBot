@@ -24,7 +24,7 @@ public class IOUtil {
      * @param path The path to the file containing the text.
      * @return The contents of the file.
      */
-    public static String readFile(Path path) {
+    public static String readFile(final Path path) {
         try {
             return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
         }
@@ -41,8 +41,13 @@ public class IOUtil {
      * @param text The string that will be written to the file.
      * @return The path.
      */
-    public static Path writeToFile(Path path, String text) {
+    public static Path writeToFile(final Path path, final String text) {
         try {
+            final Path parent = path.getParent();
+            if (parent != null) {
+                Files.createDirectories(path.getParent());
+            }
+
             return Files.write(path, text.getBytes(StandardCharsets.UTF_8));
         }
         catch (IOException e) {
