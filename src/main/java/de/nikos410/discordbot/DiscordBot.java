@@ -2,6 +2,7 @@ package de.nikos410.discordbot;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -705,6 +706,21 @@ public class DiscordBot {
     }
 
     public static void main(String[] args) {
+        // Create an empty config file if it does not exist.
+        if (!Files.exists(CONFIG_PATH)) {
+            LOG.info("Creating sample config file at {}. Please fill in the appropriate values.", CONFIG_PATH);
+
+            final JSONObject sampleConfig = new JSONObject();
+            sampleConfig.put("owner", 165857945471418368L);
+            sampleConfig.put("prefix", "%");
+            sampleConfig.put("unloadedModules", new JSONArray());
+            sampleConfig.put("token", "<your token>");
+
+            IOUtil.writeToFile(CONFIG_PATH, sampleConfig.toString(4));
+
+            return;
+        }
+
         new DiscordBot().start();
     }
 }
