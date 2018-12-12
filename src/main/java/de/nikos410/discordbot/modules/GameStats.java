@@ -218,6 +218,16 @@ public class GameStats {
             final GameFuzzyScore otherScore = (GameFuzzyScore)other;
             return Integer.compare(otherScore.getScore(), score);
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof GameFuzzyScore)) {
+                return false;
+            }
+
+            final GameFuzzyScore otherScore = (GameFuzzyScore)other;
+            return otherScore.getScore() == score;
+        }
     }
 
     @EventSubscriber
