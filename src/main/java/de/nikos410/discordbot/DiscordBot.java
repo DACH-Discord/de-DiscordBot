@@ -396,22 +396,23 @@ public class DiscordBot {
 
         LOG.info("User {} used command {}", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), commandName);
 
+        // The command was received in a PM but is only available on guilds
+        if (message.getChannel().isPrivate() && !command.pmAllowed) {
+            DiscordIO.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
+            LOG.info("Command {} is not available in PMs.", commandName);
+            return;
+        }
+
         // Check if the user is allowed to use that command
         final PermissionLevel userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
         LOG.debug("Checking permissions. User: {} | Required: {}", userPermissionLevel, command.permissionLevel);
+
         if (userPermissionLevel.getLevel() < command.permissionLevel.getLevel()) {
             DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
                     userPermissionLevel.getName()));
             LOG.info("User {} doesn't have the required permissions for using the command {}.",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     commandName);
-            return;
-        }
-
-        // The command was received in a PM but is only available on guilds
-        if (message.getChannel().isPrivate() && !command.pmAllowed) {
-            DiscordIO.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
-            LOG.info("Command {} is not available in PMs.", commandName);
             return;
         }
 
@@ -554,7 +555,7 @@ public class DiscordBot {
         }
 
         // If no roles are configured for this guild return the lowest level
-        if (!rolesJSON.has(guild.getStringID())) {
+        if (guild == null || !rolesJSON.has(guild.getStringID())) {
             LOG.warn("Roles for guild {} (ID: {}) are not configured!", guild.getName(), guild.getStringID());
             return PermissionLevel.EVERYONE;
         }
