@@ -6,8 +6,7 @@ import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.io.IOUtil;
-import de.umass.lastfm.Caller;
-import de.umass.lastfm.User;
+import de.umass.lastfm.*;
 import de.umass.lastfm.cache.FileSystemCache;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,10 +14,13 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.util.EmbedBuilder;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
 
 @CommandModule(moduleName = "Last.fm", commandOnly = true)
 public class LastFm {
@@ -39,7 +41,14 @@ public class LastFm {
         this.lastFmJSON = new JSONObject(jsonContent);
         LOG.info("Loaded Last.fm config file.");
 
-        this.apiKey = lastFmJSON.getString("apiKey");
+        try {
+            this.apiKey = lastFmJSON.getString("apiKey");
+        } catch (JSONException ex) {
+            lastFmJSON.put("apiKey", "");
+            saveJSON();
+            LOG.info("Bitte Last.fm API Key in data/lastFm.json eintragen.");
+            throw ex;
+        }
 
         Caller.getInstance().setUserAgent("de-DiscordBot/1.0");
         Caller.getInstance().setCache(new FileSystemCache(CACHE_PATH.toFile()));
@@ -47,30 +56,22 @@ public class LastFm {
 
     @CommandSubscriber(command = "lastfm", help = "Last.fm Modul", pmAllowed = false)
     public void command_lastfm(final IMessage message, final String argString) {
-        final String[] args = argString.split(" ");
+        final String[] args = argString.trim().split(" ");
 
         switch (args[0]) {
             case "set":
                 if (args[1] != null) {
-                    User response = User.getInfo(args[1], apiKey);
-
-                    if (response != null) {
-                        try {
-                            lastFmJSON.getJSONObject("users").put(message.getAuthor().getStringID(), args[1]);
-                        } catch (JSONException ex) {
-                            lastFmJSON.put("users", new JSONObject().put(message.getAuthor().getStringID(), args[1]));
-                        }
-                        saveJSON();
-                    } else {
-                        DiscordIO.sendMessage(message.getChannel(), ":x: Ungültigen Last.fm-Usernamen angegeben.");
-                        return;
-                    }
+                    setUsername(message, args[1]);
                 } else {
                     DiscordIO.sendMessage(message.getChannel(), ":x: Keinen Last.fm-Usernamen angegeben.");
                     return;
                 }
                 break;
+            case "now":
+                getNowPlaying(message);
+                break;
             case "recent":
+                getRecentTracks(message);
                 break;
             case "topartists":
                 break;
@@ -89,9 +90,76 @@ public class LastFm {
             case "help":
                 break;
             default:
-                DiscordIO.sendMessage(message.getChannel(), ":x: Keine Parameter angegeben.");
-                return;
+                DiscordIO.sendMessage(message.getChannel(), ":x: Keine gültigen Parameter angegeben.");
         }
+    }
+
+    private void setUsername(final IMessage message, final String username) {
+        User response = User.getInfo(username, apiKey);
+
+        if (response != null) {
+            try {
+                lastFmJSON.getJSONObject("users").put(message.getAuthor().getStringID(), username);
+            } catch (JSONException ex) {
+                lastFmJSON.put("users", new JSONObject().put(message.getAuthor().getStringID(), username));
+            }
+            saveJSON();
+
+            DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Last.fm-Username gesetzt.");
+        } else {
+            DiscordIO.sendMessage(message.getChannel(), ":x: Ungültigen Last.fm-Usernamen angegeben oder fehlerhafter API-Key.");
+        }
+    }
+
+    private void getNowPlaying(final IMessage message) {
+        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+
+        Collection<Track> response = User.getRecentTracks(username, apiKey).getPageResults();
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+
+        embedBuilder.withColor(185, 0, 0);
+        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+        embedBuilder.withAuthorName(String.format("Aktuell gespielter Track von %s", message.getAuthor().getNicknameForGuild(message.getGuild())));
+
+        int i = 1;
+
+        for (Track track : response) {
+            if (i == 2)
+                break;
+
+            embedBuilder.appendField("Künstler", track.getArtist(), true);
+            embedBuilder.appendField("Titel", track.getName(), true);
+            embedBuilder.appendField("Album", track.getAlbum(), false);
+            embedBuilder.withThumbnail(track.getImageURL(ImageSize.LARGE));
+            i++;
+        }
+
+        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+    }
+
+    private void getRecentTracks(final IMessage message) {
+        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+
+        Collection<Track> response = User.getRecentTracks(username, apiKey).getPageResults();
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+
+        embedBuilder.withColor(185, 0, 0);
+        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+        embedBuilder.withAuthorName(String.format("Kürzlich gespielte Tracks von %s", message.getAuthor().getNicknameForGuild(message.getGuild())));
+
+        int i = 1;
+
+        for (Track track : response) {
+            if (i == 11)
+                break;
+
+            embedBuilder.appendField("", String.format("`%d` **%s** - %s", i, track.getArtist(), track.getName()), false);
+            i++;
+        }
+
+        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void saveJSON() {
