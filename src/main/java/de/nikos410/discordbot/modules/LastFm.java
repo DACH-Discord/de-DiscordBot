@@ -8,19 +8,15 @@ import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.io.IOUtil;
 import de.umass.lastfm.*;
 import de.umass.lastfm.cache.FileSystemCache;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.util.EmbedBuilder;
-
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.List;
 
 @CommandModule(moduleName = "Last.fm", commandOnly = true)
 public class LastFm {
@@ -29,11 +25,12 @@ public class LastFm {
     private static final Path FONT_PATH = Paths.get("data/Poly-Regular.otf");
     private static final Path LASTFM_PATH = Paths.get("data/lastFm.json");
     private static final Path CACHE_PATH = Paths.get("data/.last-fm-cache");
+    private static final Path TEMPIMG_PATH = Paths.get("data/chart.png");
     private final JSONObject lastFmJSON;
 
-    private final String apiKey;
+    private String apiKey;
 
-    public LastFm () {
+    public LastFm() {
         final String jsonContent = IOUtil.readFile(LASTFM_PATH);
         if (jsonContent == null) {
             throw new InitializationException("Could not read module data.", LastFm.class);
@@ -44,53 +41,65 @@ public class LastFm {
         try {
             this.apiKey = lastFmJSON.getString("apiKey");
         } catch (JSONException ex) {
-            lastFmJSON.put("apiKey", "");
-            saveJSON();
-            LOG.info("Bitte Last.fm API Key in data/lastFm.json eintragen.");
-            throw ex;
+            this.apiKey = "";
+            LOG.info("Kein Last.fm API-Key gefunden.");
         }
 
         Caller.getInstance().setUserAgent("de-DiscordBot/1.0");
         Caller.getInstance().setCache(new FileSystemCache(CACHE_PATH.toFile()));
     }
 
+    @CommandSubscriber(command = "lastFmSetApiKey", help = "Last.fm API-Key setzen - nur für Admins", pmAllowed = false, permissionLevel = PermissionLevel.ADMIN)
+    public void command_lastFmSetApiKey(final IMessage message, final String key) {
+        lastFmJSON.put("apiKey", key);
+        saveJSON();
+
+        this.apiKey = key;
+
+        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Last.fm API-Key gesetzt.");
+    }
+
     @CommandSubscriber(command = "lastfm", help = "Last.fm Modul", pmAllowed = false)
     public void command_lastfm(final IMessage message, final String argString) {
-        final String[] args = argString.trim().split(" ");
+        if (!apiKey.equals("")) {
+            final String[] args = argString.trim().split(" ");
 
-        switch (args[0]) {
-            case "set":
-                if (args[1] != null) {
-                    setUsername(message, args[1]);
-                } else {
-                    DiscordIO.sendMessage(message.getChannel(), ":x: Keinen Last.fm-Usernamen angegeben.");
-                    return;
-                }
-                break;
-            case "now":
-                getNowPlaying(message);
-                break;
-            case "recent":
-                getRecentTracks(message);
-                break;
-            case "topartists":
-                break;
-            case "topalbums":
-                break;
-            case "toptracks":
-                break;
-            case "weeklyartists":
-                break;
-            case "weeklyalbums":
-                break;
-            case "weeklytracks":
-                break;
-            case "collage":
-                break;
-            case "help":
-                break;
-            default:
-                DiscordIO.sendMessage(message.getChannel(), ":x: Keine gültigen Parameter angegeben.");
+            switch (args[0]) {
+                case "set":
+                    if (args[1] != null) {
+                        setUsername(message, args[1]);
+                    } else {
+                        DiscordIO.sendMessage(message.getChannel(), ":x: Keinen Last.fm-Usernamen angegeben.");
+                        return;
+                    }
+                    break;
+                case "now":
+                    getNowPlaying(message);
+                    break;
+                case "recent":
+                    getRecentTracks(message);
+                    break;
+                case "topartists":
+                    break;
+                case "topalbums":
+                    break;
+                case "toptracks":
+                    break;
+                case "weeklyartists":
+                    break;
+                case "weeklyalbums":
+                    break;
+                case "weeklytracks":
+                    break;
+                case "collage":
+                    break;
+                case "help":
+                    break;
+                default:
+                    DiscordIO.sendMessage(message.getChannel(), ":x: Keine gültigen Parameter angegeben.");
+            }
+        } else {
+            DiscordIO.sendMessage(message.getChannel(), ":x: Kein Last.fm API-Key vorhanden.");
         }
     }
 
