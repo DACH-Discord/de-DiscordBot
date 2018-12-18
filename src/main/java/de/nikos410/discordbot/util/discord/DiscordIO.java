@@ -10,6 +10,8 @@ import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
 
 import java.awt.*;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -154,6 +156,52 @@ public class DiscordIO {
         }
         catch (DiscordException de) {
             LOG.error("Embed could not be sent.", de);
+        }
+
+        return null;
+    }
+
+    /**
+     * Send a file to a channel.
+     *
+     * Will try 20 times, once every 0.5 seconds, if the bot gets rate limited.
+     *
+     * @param channel The channel in which the message(s) will be sent
+     * @param content The content of the message
+     * @param file The file to send
+     * @return A list containing the sent message(s).
+     */
+    public static synchronized IMessage sendFile(final IChannel channel, final String content, final File file) {
+        return sendFile(channel, content, file, 20);
+    }
+
+    private static IMessage sendFile(final IChannel channel, final String content, final File file, final int tries) {
+        try {
+            return channel.sendFile(content, file);
+        }
+        catch (RateLimitException rle) {
+            if (tries > 0) {
+                // Try again after 500ms
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                }
+                catch (InterruptedException ie) {
+                    LOG.warn("Sleep was interrupted.", ie);
+                    // Restore interrupted state
+                    Thread.currentThread().interrupt();
+                }
+
+                return sendFile(channel, content, file, tries - 1);
+            }
+            else {
+                LOG.warn("Bot was ratelimited while trying to send file.", rle);
+            }
+        }
+        catch (FileNotFoundException fnfe) {
+            LOG.error("File to send not found.", fnfe);
+        }
+        catch (DiscordException de) {
+            LOG.error("File could not be sent.", de);
         }
 
         return null;
