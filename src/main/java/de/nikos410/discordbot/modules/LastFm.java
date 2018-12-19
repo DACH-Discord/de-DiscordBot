@@ -502,8 +502,6 @@ public class LastFm {
     }
 
     private void generateAndSendAlbumCollage(final IMessage message, final String dimensions, final Collection<Album> apiResponse) {
-        message.getChannel().setTypingStatus(true);
-
         LocalDate toDate = LocalDate.now();
         LocalDate fromDate = toDate.minusDays(7);
 
@@ -525,6 +523,8 @@ public class LastFm {
 
         switch (dimensions) {
             case "3x3":
+                message.getChannel().setTypingStatus(true);
+
                 if (imgFile.exists())
                     imgFile.delete();
 
@@ -573,6 +573,8 @@ public class LastFm {
                 DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
                 break;
             case "4x4":
+                message.getChannel().setTypingStatus(true);
+
                 if (imgFile.exists())
                     imgFile.delete();
 
@@ -621,6 +623,8 @@ public class LastFm {
                 DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
                 break;
             case "5x5":
+                message.getChannel().setTypingStatus(true);
+
                 if (imgFile.exists())
                     imgFile.delete();
 
@@ -669,14 +673,12 @@ public class LastFm {
                 DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
                 break;
             default:
-                DiscordIO.sendMessage(message.getChannel(), ":x: Falsche Parameter angegeben.\n\nSyntax:\n[p]lastfm collage <albums|artists> <3x3|4x4|5x5>");
+                DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
                 break;
         }
     }
 
     private void generateAndSendArtistCollage(final IMessage message, final String dimensions, final Collection<Artist> apiResponse) {
-        message.getChannel().setTypingStatus(true);
-
         LocalDate toDate = LocalDate.now();
         LocalDate fromDate = toDate.minusDays(7);
 
@@ -698,6 +700,8 @@ public class LastFm {
 
         switch (dimensions) {
             case "3x3":
+                message.getChannel().setTypingStatus(true);
+
                 if (imgFile.exists())
                     imgFile.delete();
 
@@ -746,6 +750,8 @@ public class LastFm {
                 DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
                 break;
             case "4x4":
+                message.getChannel().setTypingStatus(true);
+
                 if (imgFile.exists())
                     imgFile.delete();
 
@@ -794,6 +800,8 @@ public class LastFm {
                 DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
                 break;
             case "5x5":
+                message.getChannel().setTypingStatus(true);
+
                 if (imgFile.exists())
                     imgFile.delete();
 
@@ -842,7 +850,7 @@ public class LastFm {
                 DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
                 break;
             default:
-                DiscordIO.sendMessage(message.getChannel(), ":x: Falsche Parameter angegeben.\n\nSyntax:\n[p]lastfm collage <albums|artists> <3x3|4x4|5x5>");
+                DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
                 break;
         }
     }
