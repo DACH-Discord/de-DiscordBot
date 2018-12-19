@@ -35,7 +35,7 @@ public class LastFm {
     private static final Path LASTFM_PATH = Paths.get("data/lastFm/lastFm.json");
     private static final Path TEMP_IMG_PATH = Paths.get("data/lastFm/chart.png");
 
-    private final DiscordBot bot;
+    private final String botPrefix;
 
     private final JSONObject lastFmJSON;
 
@@ -48,7 +48,7 @@ public class LastFm {
     private String apiKey;
 
     public LastFm(final DiscordBot bot) {
-        this.bot = bot;
+        this.botPrefix = bot.configJSON.getString("prefix");
 
         final String jsonContent = IOUtil.readFile(LASTFM_PATH);
         if (jsonContent == null) {
@@ -141,7 +141,7 @@ public class LastFm {
                     try {
                         setUsername(message, args[1]);
                     } catch (ArrayIndexOutOfBoundsException ex) {
-                        DiscordIO.sendMessage(message.getChannel(), ":x: Keinen Last.fm-Usernamen angegeben.");
+                        DiscordIO.sendMessage(message.getChannel(), String.format(":x: Keinen Last.fm-Usernamen angegeben. '%slastfm help' für Hilfe.", botPrefix));
                     }
                     break;
                 case "now":
@@ -172,12 +172,12 @@ public class LastFm {
                     try {
                         sendCollage(message, args[1], args[2]);
                     } catch (ArrayIndexOutOfBoundsException ex) {
-                        DiscordIO.sendMessage(message.getChannel(), ":x: Falsche Parameter angegeben.\n\nSyntax:\n[p]lastfm collage <albums|artists> <3x3|4x4|5x5>");
+                        DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
                     }
                     break;
                 case "help":
                     String msg = "```Last.fm Modul - Hilfe\n\n"
-                    + String.format("'%slastfm set <last.fm username>' um deinen Last.fm-Nutzernamen zu setzen.\n\n", bot.configJSON.getString("prefix"))
+                    + String.format("'%slastfm set <last.fm username>' um deinen Last.fm-Nutzernamen zu setzen.\n\n", botPrefix)
                     + "Verfügbare Parameter:\n\n"
                     + "now\n"
                     + "recenttracks\n"
@@ -193,7 +193,7 @@ public class LastFm {
                     DiscordIO.sendMessage(message.getChannel(), msg);
                     break;
                 default:
-                    DiscordIO.sendMessage(message.getChannel(), ":x: Keine gültigen Parameter angegeben.");
+                    DiscordIO.sendMessage(message.getChannel(), String.format(":x: Keine gültigen Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
             }
         } else {
             DiscordIO.sendMessage(message.getChannel(), ":x: Kein Last.fm API-Key vorhanden.");
@@ -218,252 +218,288 @@ public class LastFm {
     }
 
     private void getNowPlaying(final IMessage message) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        Collection<Track> response = User.getRecentTracks(username, apiKey).getPageResults();
+            Collection<Track> response = User.getRecentTracks(username, apiKey).getPageResults();
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.withColor(185, 0, 0);
-        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-        embedBuilder.withAuthorName(String.format("Aktuell gespielter Track von %s", message.getAuthor().getDisplayName(message.getGuild())));
+            embedBuilder.withColor(185, 0, 0);
+            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+            embedBuilder.withAuthorName(String.format("Aktuell gespielter Track von %s", message.getAuthor().getDisplayName(message.getGuild())));
 
-        int i = 1;
+            int i = 1;
 
-        for (Track track : response) {
-            if (i == 2)
-                break;
+            for (Track track : response) {
+                if (i == 2)
+                    break;
 
-            embedBuilder.appendField("Künstler", track.getArtist(), true);
-            embedBuilder.appendField("Titel", track.getName(), true);
-            embedBuilder.appendField("Album", track.getAlbum(), false);
-            embedBuilder.withThumbnail(track.getImageURL(ImageSize.LARGE));
-            i++;
+                embedBuilder.appendField("Künstler", track.getArtist(), true);
+                embedBuilder.appendField("Titel", track.getName(), true);
+                embedBuilder.appendField("Album", track.getAlbum(), false);
+                embedBuilder.withThumbnail(track.getImageURL(ImageSize.LARGE));
+                i++;
+            }
+
+            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
-
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void getRecentTracks(final IMessage message, final int limit) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        Collection<Track> response = User.getRecentTracks(username, apiKey).getPageResults();
+            Collection<Track> response = User.getRecentTracks(username, apiKey).getPageResults();
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.withColor(185, 0, 0);
-        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-        embedBuilder.withAuthorName(String.format("Kürzlich gespielte Tracks von %s", message.getAuthor().getDisplayName(message.getGuild())));
+            embedBuilder.withColor(185, 0, 0);
+            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+            embedBuilder.withAuthorName(String.format("Kürzlich gespielte Tracks von %s", message.getAuthor().getDisplayName(message.getGuild())));
 
-        int i = 1;
+            int i = 1;
 
-        StringBuilder chart = new StringBuilder();
+            StringBuilder chart = new StringBuilder();
 
-        for (Track track : response) {
-            if (i == limit + 1)
-                break;
+            for (Track track : response) {
+                if (i == limit + 1)
+                    break;
 
-            chart.append(String.format("`%s` **%s** - *%s*\n", i, track.getArtist(), track.getName()));
-            i++;
+                chart.append(String.format("`%s` **%s** - *%s*\n", i, track.getArtist(), track.getName()));
+                i++;
+            }
+
+            embedBuilder.withDesc(chart.toString());
+
+            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
-
-        embedBuilder.withDesc(chart.toString());
-
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void getTopArtists(final IMessage message, final int limit) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        Collection<Artist> response = User.getTopArtists(username, apiKey);
+            Collection<Artist> response = User.getTopArtists(username, apiKey);
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.withColor(185, 0, 0);
-        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-        embedBuilder.withAuthorName(String.format("Top-Künstler von %s", message.getAuthor().getDisplayName(message.getGuild())));
+            embedBuilder.withColor(185, 0, 0);
+            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+            embedBuilder.withAuthorName(String.format("Top-Künstler von %s", message.getAuthor().getDisplayName(message.getGuild())));
 
-        int i = 1;
+            int i = 1;
 
-        StringBuilder chart = new StringBuilder();
+            StringBuilder chart = new StringBuilder();
 
-        for (Artist artist : response) {
-            if (i == limit + 1)
-                break;
+            for (Artist artist : response) {
+                if (i == limit + 1)
+                    break;
 
-            chart.append(String.format("`%s` **%s** (%s mal gespielt)\n", i, artist.getName(), artist.getPlaycount()));
-            i++;
+                chart.append(String.format("`%s` **%s** (%s mal gespielt)\n", i, artist.getName(), artist.getPlaycount()));
+                i++;
+            }
+
+            embedBuilder.withDesc(chart.toString());
+
+            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
-
-        embedBuilder.withDesc(chart.toString());
-
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void getTopAlbums(final IMessage message, final int limit) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        Collection<Album> response = User.getTopAlbums(username, apiKey);
+            Collection<Album> response = User.getTopAlbums(username, apiKey);
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.withColor(185, 0, 0);
-        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-        embedBuilder.withAuthorName(String.format("Top-Alben von %s", message.getAuthor().getDisplayName(message.getGuild())));
+            embedBuilder.withColor(185, 0, 0);
+            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+            embedBuilder.withAuthorName(String.format("Top-Alben von %s", message.getAuthor().getDisplayName(message.getGuild())));
 
-        int i = 1;
+            int i = 1;
 
-        StringBuilder chart = new StringBuilder();
+            StringBuilder chart = new StringBuilder();
 
-        for (Album album : response) {
-            if (i == limit + 1)
-                break;
+            for (Album album : response) {
+                if (i == limit + 1)
+                    break;
 
-            chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)\n", i, album.getArtist(), album.getName(), album.getPlaycount()));
-            i++;
+                chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)\n", i, album.getArtist(), album.getName(), album.getPlaycount()));
+                i++;
+            }
+
+            embedBuilder.withDesc(chart.toString());
+
+            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
-
-        embedBuilder.withDesc(chart.toString());
-
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void getTopTracks(final IMessage message, final int limit) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        Collection<Track> response = User.getTopTracks(username, apiKey);
+            Collection<Track> response = User.getTopTracks(username, apiKey);
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.withColor(185, 0, 0);
-        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-        embedBuilder.withAuthorName(String.format("Top-Titel von %s", message.getAuthor().getDisplayName(message.getGuild())));
+            embedBuilder.withColor(185, 0, 0);
+            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+            embedBuilder.withAuthorName(String.format("Top-Titel von %s", message.getAuthor().getDisplayName(message.getGuild())));
 
-        int i = 1;
+            int i = 1;
 
-        StringBuilder chart = new StringBuilder();
+            StringBuilder chart = new StringBuilder();
 
-        for (Track track : response) {
-            if (i == limit + 1)
-                break;
+            for (Track track : response) {
+                if (i == limit + 1)
+                    break;
 
-            chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)\n", i, track.getArtist(), track.getName(), track.getPlaycount()));
-            i++;
+                chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)\n", i, track.getArtist(), track.getName(), track.getPlaycount()));
+                i++;
+            }
+
+            embedBuilder.withDesc(chart.toString());
+
+            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
-
-        embedBuilder.withDesc(chart.toString());
-
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void getWeeklyArtists(final IMessage message, final int limit) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        Collection<Artist> response = User.getTopArtists(username, Period.WEEK, apiKey);
+            Collection<Artist> response = User.getTopArtists(username, Period.WEEK, apiKey);
 
-        LocalDate toDate = LocalDate.now();
-        LocalDate fromDate = toDate.minusDays(7);
+            LocalDate toDate = LocalDate.now();
+            LocalDate fromDate = toDate.minusDays(7);
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.withColor(185, 0, 0);
-        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-        embedBuilder.withAuthorName(String.format("Top-Künstler von %s\n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
+            embedBuilder.withColor(185, 0, 0);
+            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+            embedBuilder.withAuthorName(String.format("Top-Künstler von %s\n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
 
-        int i = 1;
+            int i = 1;
 
-        StringBuilder chart = new StringBuilder();
+            StringBuilder chart = new StringBuilder();
 
-        for (Artist artist : response) {
-            if (i == limit + 1)
-                break;
+            for (Artist artist : response) {
+                if (i == limit + 1)
+                    break;
 
-            chart.append(String.format("`%s` **%s** (%s mal gespielt)\n", i, artist.getName(), artist.getPlaycount()));
-            i++;
+                chart.append(String.format("`%s` **%s** (%s mal gespielt)\n", i, artist.getName(), artist.getPlaycount()));
+                i++;
+            }
+
+            embedBuilder.withDesc(chart.toString());
+
+            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
-
-        embedBuilder.withDesc(chart.toString());
-
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void getWeeklyAlbums(final IMessage message, final int limit) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        Collection<Album> response = User.getTopAlbums(username, Period.WEEK, apiKey);
+            Collection<Album> response = User.getTopAlbums(username, Period.WEEK, apiKey);
 
-        LocalDate toDate = LocalDate.now();
-        LocalDate fromDate = toDate.minusDays(7);
+            LocalDate toDate = LocalDate.now();
+            LocalDate fromDate = toDate.minusDays(7);
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.withColor(185, 0, 0);
-        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-        embedBuilder.withAuthorName(String.format("Top-Alben von %s\n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
+            embedBuilder.withColor(185, 0, 0);
+            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+            embedBuilder.withAuthorName(String.format("Top-Alben von %s\n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
 
-        int i = 1;
+            int i = 1;
 
-        StringBuilder chart = new StringBuilder();
+            StringBuilder chart = new StringBuilder();
 
-        for (Album album : response) {
-            if (i == limit + 1)
-                break;
+            for (Album album : response) {
+                if (i == limit + 1)
+                    break;
 
-            chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)\n", i, album.getArtist(), album.getName(), album.getPlaycount()));
-            i++;
+                chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)\n", i, album.getArtist(), album.getName(), album.getPlaycount()));
+                i++;
+            }
+
+            embedBuilder.withDesc(chart.toString());
+
+            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
-
-        embedBuilder.withDesc(chart.toString());
-
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void getWeeklyTracks(final IMessage message, final int limit) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        Collection<Track> response = User.getTopTracks(username, Period.WEEK, apiKey);
+            Collection<Track> response = User.getTopTracks(username, Period.WEEK, apiKey);
 
-        LocalDate toDate = LocalDate.now();
-        LocalDate fromDate = toDate.minusDays(7);
+            LocalDate toDate = LocalDate.now();
+            LocalDate fromDate = toDate.minusDays(7);
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-        embedBuilder.withColor(185, 0, 0);
-        embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-        embedBuilder.withAuthorName(String.format("Top-Titel von %s\n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
+            embedBuilder.withColor(185, 0, 0);
+            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
+            embedBuilder.withAuthorName(String.format("Top-Titel von %s\n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
 
-        int i = 1;
+            int i = 1;
 
-        StringBuilder chart = new StringBuilder();
+            StringBuilder chart = new StringBuilder();
 
-        for (Track track : response) {
-            if (i == limit + 1)
-                break;
+            for (Track track : response) {
+                if (i == limit + 1)
+                    break;
 
-            chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)\n", i, track.getArtist(), track.getName(), track.getPlaycount()));
-            i++;
+                chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)\n", i, track.getArtist(), track.getName(), track.getPlaycount()));
+                i++;
+            }
+
+            embedBuilder.withDesc(chart.toString());
+
+            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
-
-        embedBuilder.withDesc(chart.toString());
-
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private void sendCollage(final IMessage message, final String target, final String dimensions) {
-        String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+        try {
+            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-        switch (target) {
-            case "albums":
-                Collection<Album> responseAlbum = User.getTopAlbums(username, Period.WEEK, apiKey);
-                generateAndSendAlbumCollage(message, dimensions, responseAlbum);
-                break;
-            case "artists":
-                Collection<Artist> responseArtist = User.getTopArtists(username, Period.WEEK, apiKey);
-                generateAndSendArtistCollage(message, dimensions, responseArtist);
-                break;
-            default:
-                DiscordIO.sendMessage(message.getChannel(), ":x: Falsche Parameter angegeben.\n\nSyntax:\n[p]lastfm collage <albums|artists> <3x3|4x4|5x5>");
-                break;
+            switch (target) {
+                case "albums":
+                    Collection<Album> responseAlbum = User.getTopAlbums(username, Period.WEEK, apiKey);
+                    generateAndSendAlbumCollage(message, dimensions, responseAlbum);
+                    break;
+                case "artists":
+                    Collection<Artist> responseArtist = User.getTopArtists(username, Period.WEEK, apiKey);
+                    generateAndSendArtistCollage(message, dimensions, responseArtist);
+                    break;
+                default:
+                    DiscordIO.sendMessage(message.getChannel(), ":x: Falsche Parameter angegeben.\n\nSyntax:\n[p]lastfm collage <albums|artists> <3x3|4x4|5x5>");
+                    break;
+            }
+        } catch (JSONException ex) {
+            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
     }
 
