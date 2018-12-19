@@ -648,7 +648,7 @@ public class LastFm {
                     try {
                         albumImg = ImageIO.read(new URL(album.getImageURL(ImageSize.LARGE)));
                     } catch (Exception ex) {
-                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead", ex);
+                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
                         albumImg = errorImg;
                     }
 
@@ -725,7 +725,7 @@ public class LastFm {
                     try {
                         albumImg = ImageIO.read(new URL(artist.getImageURL(ImageSize.LARGE)));
                     } catch (Exception ex) {
-                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead", ex);
+                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
                         albumImg = errorImg;
                     }
 
@@ -773,7 +773,7 @@ public class LastFm {
                     try {
                         albumImg = ImageIO.read(new URL(artist.getImageURL(ImageSize.LARGE)));
                     } catch (Exception ex) {
-                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead", ex);
+                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
                         albumImg = errorImg;
                     }
 
@@ -821,7 +821,7 @@ public class LastFm {
                     try {
                         albumImg = ImageIO.read(new URL(artist.getImageURL(ImageSize.LARGE)));
                     } catch (Exception ex) {
-                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead", ex);
+                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
                         albumImg = errorImg;
                     }
 
