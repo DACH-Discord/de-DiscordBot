@@ -16,6 +16,10 @@ apply plugin: 'application'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: "com.github.spotbugs"
 
+spotbugs {
+    ignoreFailures = true
+}
+
 // Hack to correctly apply system file encoding
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
