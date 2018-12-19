@@ -45,7 +45,7 @@ public class IOUtil {
         try {
             final Path parent = path.getParent();
             if (parent != null) {
-                Files.createDirectories(path.getParent());
+                Files.createDirectories(parent);
             }
 
             return Files.write(path, text.getBytes(StandardCharsets.UTF_8));

@@ -92,15 +92,15 @@ public class UserLog {
         final long joinedDays = joinTimeStamp.until(Instant.now(), ChronoUnit.DAYS);
 
         // String für Embed
-        String embedString = String.format("**Name:** %s#%s \n" +
-                "**ID:** %s \n" +
+        String embedString = String.format("**Name:** %s#%s %n" +
+                "**ID:** %s %n" +
                 "**Discord beigetreten:** vor %s Tagen",
                 user.getName(), user.getDiscriminator(),
                 user.getStringID(),
                 joinedDays);
 
         if (joinedDays <= 1) {
-            embedString = embedString + "\n:exclamation: Neuer Nutzer!";
+            embedString = embedString + String.format("%n:exclamation: Neuer Nutzer!");
         }
 
         // Embed
@@ -118,7 +118,7 @@ public class UserLog {
 
     private void userLeaveNotify(final IUser user, final IChannel channel) {
         // String für Embed
-        String embedString = String.format("**Name:** %s#%s \n" +
+        String embedString = String.format("**Name:** %s#%s %n" +
                         "**ID:** %s",
                 user.getName(), user.getDiscriminator(),
                 user.getStringID());
@@ -138,7 +138,7 @@ public class UserLog {
 
     private void userBanNotify(final IUser user, final IChannel channel) {
         // String für Embed
-        String embedString = String.format("**Name:** %s#%s \n" +
+        String embedString = String.format("**Name:** %s#%s %n" +
                         "**ID:** %s",
                 user.getName(), user.getDiscriminator(),
                 user.getStringID());
