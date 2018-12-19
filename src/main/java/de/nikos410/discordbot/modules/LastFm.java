@@ -230,20 +230,17 @@ public class LastFm {
             embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
             embedBuilder.withAuthorName(String.format("Aktuell gespielter Track von %s", message.getAuthor().getDisplayName(message.getGuild())));
 
-            int i = 1;
+            Track track = response.iterator().next();
 
-            for (Track track : response) {
-                if (i == 2)
-                    break;
-
+            if (track.isNowPlaying()) {
                 embedBuilder.appendField("Künstler", track.getArtist(), true);
                 embedBuilder.appendField("Titel", track.getName(), true);
                 embedBuilder.appendField("Album", track.getAlbum(), false);
                 embedBuilder.withThumbnail(track.getImageURL(ImageSize.LARGE));
-                i++;
+                DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+            } else {
+                DiscordIO.sendMessage(message.getChannel(), ":x: Du hörst gerade nichts.");
             }
-
-            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
         } catch (JSONException ex) {
             DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
@@ -555,7 +552,7 @@ public class LastFm {
                     try {
                         albumImg = ImageIO.read(new URL(album.getImageURL(ImageSize.LARGE)));
                     } catch (Exception ex) {
-                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead", ex);
+                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
                         albumImg = errorImg;
                     }
 
@@ -603,7 +600,7 @@ public class LastFm {
                     try {
                         albumImg = ImageIO.read(new URL(album.getImageURL(ImageSize.LARGE)));
                     } catch (Exception ex) {
-                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead", ex);
+                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
                         albumImg = errorImg;
                     }
 
