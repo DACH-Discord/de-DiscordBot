@@ -1,5 +1,6 @@
 package de.nikos410.discordbot.modules;
 
+import de.nikos410.discordbot.DiscordBot;
 import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandModule;
@@ -34,6 +35,8 @@ public class LastFm {
     private static final Path LASTFM_PATH = Paths.get("data/lastFm/lastFm.json");
     private static final Path TEMP_IMG_PATH = Paths.get("data/lastFm/chart.png");
 
+    private final DiscordBot bot;
+
     private final JSONObject lastFmJSON;
 
     private final ArrayList<Integer[]> coords3x3 = new ArrayList<>();
@@ -44,7 +47,9 @@ public class LastFm {
 
     private String apiKey;
 
-    public LastFm() {
+    public LastFm(final DiscordBot bot) {
+        this.bot = bot;
+
         final String jsonContent = IOUtil.readFile(LASTFM_PATH);
         if (jsonContent == null) {
             throw new InitializationException("Could not read module data.", LastFm.class);
@@ -126,7 +131,7 @@ public class LastFm {
         DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Last.fm API-Key gesetzt.");
     }
 
-    @CommandSubscriber(command = "lastfm", help = "Last.fm Modul", pmAllowed = false)
+    @CommandSubscriber(command = "lastfm", help = "Last.fm Modul - Parameter 'help' für Hilfe", pmAllowed = false)
     public void command_lastfm(final IMessage message, final String argString) {
         if (!apiKey.equals("")) {
             final String[] args = argString.trim().split(" ");
@@ -142,7 +147,7 @@ public class LastFm {
                 case "now":
                     getNowPlaying(message);
                     break;
-                case "recent":
+                case "recenttracks":
                     getRecentTracks(message, 10);
                     break;
                 case "topartists":
@@ -171,6 +176,21 @@ public class LastFm {
                     }
                     break;
                 case "help":
+                    String msg = "```Last.fm Modul - Hilfe\n\n"
+                    + String.format("'%slastfm set <last.fm username>' um deinen Last.fm-Nutzernamen zu setzen.\n\n", bot.configJSON.getString("prefix"))
+                    + "Verfügbare Parameter:\n\n"
+                    + "now\n"
+                    + "recenttracks\n"
+                    + "topartists\n"
+                    + "topalbums\n"
+                    + "toptracks\n"
+                    + "weeklyartists\n"
+                    + "weeklyalbums\n"
+                    + "weeklytracks\n"
+                    + "collage <artists|albums> <3x3|4x4|5x5>"
+                    + "```";
+
+                    DiscordIO.sendMessage(message.getChannel(), msg);
                     break;
                 default:
                     DiscordIO.sendMessage(message.getChannel(), ":x: Keine gültigen Parameter angegeben.");
