@@ -31,6 +31,7 @@ import java.util.Collection;
 public class LastFm {
     private static final Logger LOG = LoggerFactory.getLogger(LastFm.class);
 
+    // Download here: https://www.freeiconspng.com/uploads/error-icon-4.png and leave in specified path.
     private static final Path ERROR_IMG_PATH = Paths.get("data/lastFm/error-icon.png");
     private static final Path LASTFM_PATH = Paths.get("data/lastFm/lastFm.json");
     private static final Path TEMP_IMG_PATH = Paths.get("data/lastFm/chart.png");
