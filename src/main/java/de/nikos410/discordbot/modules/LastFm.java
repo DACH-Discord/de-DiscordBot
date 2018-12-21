@@ -67,7 +67,7 @@ public class LastFm {
         }
 
         Caller.getInstance().setUserAgent("de-DiscordBot/1.0");
-        Caller.getInstance().setCache(null); // disable caching to always get
+        Caller.getInstance().setCache(null); // disable caching to always get recent charts
 
         // Coordinate initialization for collage generation
         coords3x3.add(new Integer[]{100, 400, 1801, 445});
@@ -246,6 +246,10 @@ public class LastFm {
 
             Collection<?> response = null;
 
+            Track track;
+            Artist artist;
+            Album album;
+
             switch (type) {
                 case OVERALL:
                     // use default value
@@ -295,7 +299,7 @@ public class LastFm {
                     Object responseObj = itor.next();
 
                     if (responseObj instanceof Track) {
-                        Track track = (Track)responseObj;
+                        track = (Track)responseObj;
                         if (target == Target.NOWPLAYING) {
                             if (track.isNowPlaying()) {
                                 embedBuilder.appendField("Künstler", track.getArtist(), true);
@@ -315,10 +319,10 @@ public class LastFm {
                             chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)%n", i + 1, track.getArtist(), track.getName(), track.getPlaycount()));
                         }
                     } else if (responseObj instanceof Artist) {
-                        Artist artist = (Artist)responseObj;
+                        artist = (Artist)responseObj;
                         chart.append(String.format("`%s` **%s** (%s mal gespielt)%n", i + 1, artist.getName(), artist.getPlaycount()));
                     } else if (responseObj instanceof Album) {
-                        Album album = (Album)responseObj;
+                        album = (Album)responseObj;
                         chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)%n", i + 1, album.getArtist(), album.getName(), album.getPlaycount()));
                     }
 
@@ -336,377 +340,136 @@ public class LastFm {
 
     private void sendCollage(final IMessage message, final String target, final String dimensions) {
         try {
+            message.getChannel().setTypingStatus(true);
+
             String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
+
+            ArrayList<Integer[]> coordsToUse;
+            int imgSize;
+
+            Collection<?> response;
+
+            String title;
+
+            LocalDate toDate = LocalDate.now();
+            LocalDate fromDate = toDate.minusDays(7);
+
+            File imgFile = TEMP_IMG_PATH.toFile();
+
+            java.awt.Image errorImg, albumImg;
+
+            Artist artist;
+            Album album;
+
+            try {
+                errorImg = ImageIO.read(ERROR_IMG_PATH.toFile());
+            } catch (IOException ex) {
+                LOG.error("Couldn't find error image.", ex);
+                return;
+            }
+
+            BufferedImage img;
+            Graphics2D g;
+
+            int i;
+            int limit;
 
             switch (target) {
                 case "albums":
-                    Collection<Album> responseAlbum = User.getTopAlbums(username, Period.WEEK, apiKey);
-                    generateAndSendAlbumCollage(message, dimensions, responseAlbum);
+                    response = User.getTopAlbums(username, Period.WEEK, apiKey);
+                    title = String.format("Album-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat));
                     break;
                 case "artists":
-                    Collection<Artist> responseArtist = User.getTopArtists(username, Period.WEEK, apiKey);
-                    generateAndSendArtistCollage(message, dimensions, responseArtist);
+                    response = User.getTopArtists(username, Period.WEEK, apiKey);
+                    title = String.format("Künstler-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat));
                     break;
                 default:
-                    DiscordIO.sendMessage(message.getChannel(), ":x: Falsche Parameter angegeben.\n\nSyntax:\n[p]lastfm collage <albums|artists> <3x3|4x4|5x5>");
-                    break;
+                    DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
+                    return;
             }
+
+            switch (dimensions) {
+                case "3x3":
+                    coordsToUse = coords3x3;
+                    limit = 9;
+                    imgSize = 517;
+                    break;
+                case "4x4":
+                    coordsToUse = coords4x4;
+                    limit = 16;
+                    imgSize = 375;
+                    break;
+                case "5x5":
+                    coordsToUse = coords5x5;
+                    limit = 25;
+                    imgSize = 290;
+                    break;
+                default:
+                    DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
+                    return;
+            }
+
+            if (imgFile.exists())
+                if (imgFile.delete())
+                    LOG.info("Chart png file already found - deleting.");
+
+            img = new BufferedImage(3200, 2300, BufferedImage.TYPE_INT_ARGB);
+
+            g = img.createGraphics();
+
+            g.setPaint(new Color(0,0,0));
+            g.fillRect(0,0, img.getWidth(), img.getHeight());
+
+            g.setPaint(new Color(255,255,255));
+            g.setFont(new Font("Arial", Font.PLAIN, 96));
+            g.drawString(title, 100, 200);
+
+            i = 0;
+
+            g.setFont(new Font("Arial", Font.PLAIN, 48));
+
+            if (response != null) {
+                Iterator itor = response.iterator();
+
+                while (itor.hasNext() && i < limit) {
+                    Object responseObj = itor.next();
+
+                    if (responseObj instanceof Artist) {
+                        artist = (Artist)responseObj;
+                        try {
+                            albumImg = ImageIO.read(new URL(artist.getImageURL(ImageSize.LARGE)));
+                        } catch (Exception ex) {
+                            LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
+                            albumImg = errorImg;
+                        }
+                        g.drawImage(albumImg, coordsToUse.get(i)[0], coordsToUse.get(i)[1], imgSize, imgSize, null);
+                        g.drawString(String.format("%s (%s mal gespielt)", artist.getName(), artist.getPlaycount()), coordsToUse.get(i)[2], coordsToUse.get(i)[3]);
+                    } else if (responseObj instanceof Album) {
+                        album = (Album)responseObj;
+                        try {
+                            albumImg = ImageIO.read(new URL(album.getImageURL(ImageSize.LARGE)));
+                        } catch (Exception ex) {
+                            LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
+                            albumImg = errorImg;
+                        }
+                        g.drawImage(albumImg, coordsToUse.get(i)[0], coordsToUse.get(i)[1], imgSize, imgSize, null);
+                        g.drawString(String.format("%s - %s", album.getArtist(), album.getName()), coordsToUse.get(i)[2], coordsToUse.get(i)[3]);
+                    }
+                    i++;
+                }
+            }
+
+            try {
+                ImageIO.write(img, "png", imgFile);
+            } catch (IOException ex) {
+                LOG.error("ERROR while trying to write finished collage.", ex);
+                message.getChannel().setTypingStatus(false);
+                return;
+            }
+
+            DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
         } catch (JSONException ex) {
             DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
-        }
-    }
-
-    private void generateAndSendAlbumCollage(final IMessage message, final String dimensions, final Collection<Album> apiResponse) {
-        LocalDate toDate = LocalDate.now();
-        LocalDate fromDate = toDate.minusDays(7);
-
-        File imgFile = TEMP_IMG_PATH.toFile();
-
-        java.awt.Image errorImg;
-
-        try {
-            errorImg = ImageIO.read(ERROR_IMG_PATH.toFile());
-        } catch (IOException ex) {
-            LOG.error("Couldn't find error image.", ex);
-            return;
-        }
-
-        BufferedImage img;
-        Graphics2D g;
-
-        int i;
-
-        switch (dimensions) {
-            case "3x3":
-                message.getChannel().setTypingStatus(true);
-
-                if (imgFile.exists())
-                    imgFile.delete();
-
-                img = new BufferedImage(3200, 2300, BufferedImage.TYPE_INT_ARGB);
-
-                g = img.createGraphics();
-
-                g.setPaint(new Color(0,0,0));
-                g.fillRect(0,0, img.getWidth(), img.getHeight());
-
-                g.setPaint(new Color(255,255,255));
-                g.setFont(new Font("Arial", Font.PLAIN, 96));
-                g.drawString(String.format("Album-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)), 100, 200);
-
-                i = 0;
-
-                g.setFont(new Font("Arial", Font.PLAIN, 48));
-
-                for (Album album : apiResponse) {
-                    if (i == 9)
-                        break;
-
-                    java.awt.Image albumImg;
-
-                    try {
-                        albumImg = ImageIO.read(new URL(album.getImageURL(ImageSize.LARGE)));
-                    } catch (Exception ex) {
-                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
-                        albumImg = errorImg;
-                    }
-
-                    g.drawImage(albumImg, coords3x3.get(i)[0], coords3x3.get(i)[1], 517, 517, null);
-                    g.drawString(String.format("%s - %s", album.getArtist(), album.getName()), coords3x3.get(i)[2], coords3x3.get(i)[3]);
-
-                    i++;
-                }
-
-                try {
-                    ImageIO.write(img, "png", imgFile);
-                } catch (IOException ex) {
-                    LOG.error("ERROR while trying to write finished collage.", ex);
-                    message.getChannel().setTypingStatus(false);
-                    break;
-                }
-
-                DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
-                break;
-            case "4x4":
-                message.getChannel().setTypingStatus(true);
-
-                if (imgFile.exists())
-                    imgFile.delete();
-
-                img = new BufferedImage(3200, 2300, BufferedImage.TYPE_INT_ARGB);
-
-                g = img.createGraphics();
-
-                g.setPaint(new Color(0,0,0));
-                g.fillRect(0,0, img.getWidth(), img.getHeight());
-
-                g.setPaint(new Color(255,255,255));
-                g.setFont(new Font("Arial", Font.PLAIN, 96));
-                g.drawString(String.format("Album-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)), 100, 200);
-
-                i = 0;
-
-                g.setFont(new Font("Arial", Font.PLAIN, 48));
-
-                for (Album album : apiResponse) {
-                    if (i == 16)
-                        break;
-
-                    java.awt.Image albumImg;
-
-                    try {
-                        albumImg = ImageIO.read(new URL(album.getImageURL(ImageSize.LARGE)));
-                    } catch (Exception ex) {
-                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
-                        albumImg = errorImg;
-                    }
-
-                    g.drawImage(albumImg, coords4x4.get(i)[0], coords4x4.get(i)[1], 375, 375, null);
-                    g.drawString(String.format("%s - %s", album.getArtist(), album.getName()), coords4x4.get(i)[2], coords4x4.get(i)[3]);
-
-                    i++;
-                }
-
-                try {
-                    ImageIO.write(img, "png", imgFile);
-                } catch (IOException ex) {
-                    LOG.error("ERROR while trying to write finished collage.", ex);
-                    message.getChannel().setTypingStatus(false);
-                    break;
-                }
-
-                DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
-                break;
-            case "5x5":
-                message.getChannel().setTypingStatus(true);
-
-                if (imgFile.exists())
-                    imgFile.delete();
-
-                img = new BufferedImage(3200, 2300, BufferedImage.TYPE_INT_ARGB);
-
-                g = img.createGraphics();
-
-                g.setPaint(new Color(0,0,0));
-                g.fillRect(0,0, img.getWidth(), img.getHeight());
-
-                g.setPaint(new Color(255,255,255));
-                g.setFont(new Font("Arial", Font.PLAIN, 96));
-                g.drawString(String.format("Album-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)), 100, 200);
-
-                i = 0;
-
-                g.setFont(new Font("Arial", Font.PLAIN, 48));
-
-                for (Album album : apiResponse) {
-                    if (i == 25)
-                        break;
-
-                    java.awt.Image albumImg;
-
-                    try {
-                        albumImg = ImageIO.read(new URL(album.getImageURL(ImageSize.LARGE)));
-                    } catch (Exception ex) {
-                        LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
-                        albumImg = errorImg;
-                    }
-
-                    g.drawImage(albumImg, coords5x5.get(i)[0], coords5x5.get(i)[1], 290, 290, null);
-                    g.drawString(String.format("%s - %s", album.getArtist(), album.getName()), coords5x5.get(i)[2], coords5x5.get(i)[3]);
-
-                    i++;
-                }
-
-                try {
-                    ImageIO.write(img, "png", imgFile);
-                } catch (IOException ex) {
-                    LOG.error("ERROR while trying to write finished collage.", ex);
-                    message.getChannel().setTypingStatus(false);
-                    break;
-                }
-
-                DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
-                break;
-            default:
-                DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
-                break;
-        }
-    }
-
-    private void generateAndSendArtistCollage(final IMessage message, final String dimensions, final Collection<Artist> apiResponse) {
-        LocalDate toDate = LocalDate.now();
-        LocalDate fromDate = toDate.minusDays(7);
-
-        File imgFile = TEMP_IMG_PATH.toFile();
-
-        java.awt.Image errorImg;
-
-        try {
-            errorImg = ImageIO.read(ERROR_IMG_PATH.toFile());
-        } catch (IOException ex) {
-            LOG.error("Couldn't find error image.", ex);
-            return;
-        }
-
-        BufferedImage img;
-        Graphics2D g;
-
-        int i;
-
-        switch (dimensions) {
-            case "3x3":
-                message.getChannel().setTypingStatus(true);
-
-                if (imgFile.exists())
-                    imgFile.delete();
-
-                img = new BufferedImage(3200, 2300, BufferedImage.TYPE_INT_ARGB);
-
-                g = img.createGraphics();
-
-                g.setPaint(new Color(0,0,0));
-                g.fillRect(0,0, img.getWidth(), img.getHeight());
-
-                g.setPaint(new Color(255,255,255));
-                g.setFont(new Font("Arial", Font.PLAIN, 96));
-                g.drawString(String.format("Künstler-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)), 100, 200);
-
-                i = 0;
-
-                g.setFont(new Font("Arial", Font.PLAIN, 48));
-
-                for (Artist artist : apiResponse) {
-                    if (i == 9)
-                        break;
-
-                    java.awt.Image albumImg;
-
-                    try {
-                        albumImg = ImageIO.read(new URL(artist.getImageURL(ImageSize.LARGE)));
-                    } catch (Exception ex) {
-                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
-                        albumImg = errorImg;
-                    }
-
-                    g.drawImage(albumImg, coords3x3.get(i)[0], coords3x3.get(i)[1], 517, 517, null);
-                    g.drawString(String.format("%s (%s mal gespielt)", artist.getName(), artist.getPlaycount()), coords3x3.get(i)[2], coords3x3.get(i)[3]);
-
-                    i++;
-                }
-
-                try {
-                    ImageIO.write(img, "png", imgFile);
-                } catch (IOException ex) {
-                    LOG.error("ERROR while trying to write finished collage.", ex);
-                    message.getChannel().setTypingStatus(false);
-                    break;
-                }
-
-                DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
-                break;
-            case "4x4":
-                message.getChannel().setTypingStatus(true);
-
-                if (imgFile.exists())
-                    imgFile.delete();
-
-                img = new BufferedImage(3200, 2300, BufferedImage.TYPE_INT_ARGB);
-
-                g = img.createGraphics();
-
-                g.setPaint(new Color(0,0,0));
-                g.fillRect(0,0, img.getWidth(), img.getHeight());
-
-                g.setPaint(new Color(255,255,255));
-                g.setFont(new Font("Arial", Font.PLAIN, 96));
-                g.drawString(String.format("Künstler-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)), 100, 200);
-
-                i = 0;
-
-                g.setFont(new Font("Arial", Font.PLAIN, 48));
-
-                for (Artist artist : apiResponse) {
-                    if (i == 16)
-                        break;
-
-                    java.awt.Image albumImg;
-
-                    try {
-                        albumImg = ImageIO.read(new URL(artist.getImageURL(ImageSize.LARGE)));
-                    } catch (Exception ex) {
-                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
-                        albumImg = errorImg;
-                    }
-
-                    g.drawImage(albumImg, coords4x4.get(i)[0], coords4x4.get(i)[1], 375, 375, null);
-                    g.drawString(String.format("%s (%s mal gespielt)", artist.getName(), artist.getPlaycount()), coords4x4.get(i)[2], coords4x4.get(i)[3]);
-
-                    i++;
-                }
-
-                try {
-                    ImageIO.write(img, "png", imgFile);
-                } catch (IOException ex) {
-                    LOG.error("ERROR while trying to write finished collage.", ex);
-                    message.getChannel().setTypingStatus(false);
-                    break;
-                }
-
-                DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
-                break;
-            case "5x5":
-                message.getChannel().setTypingStatus(true);
-
-                if (imgFile.exists())
-                    imgFile.delete();
-
-                img = new BufferedImage(3200, 2300, BufferedImage.TYPE_INT_ARGB);
-
-                g = img.createGraphics();
-
-                g.setPaint(new Color(0,0,0));
-                g.fillRect(0,0, img.getWidth(), img.getHeight());
-
-                g.setPaint(new Color(255,255,255));
-                g.setFont(new Font("Arial", Font.PLAIN, 96));
-                g.drawString(String.format("Künstler-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)), 100, 200);
-
-                i = 0;
-
-                g.setFont(new Font("Arial", Font.PLAIN, 48));
-
-                for (Artist artist : apiResponse) {
-                    if (i == 25)
-                        break;
-
-                    java.awt.Image albumImg;
-
-                    try {
-                        albumImg = ImageIO.read(new URL(artist.getImageURL(ImageSize.LARGE)));
-                    } catch (Exception ex) {
-                        LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
-                        albumImg = errorImg;
-                    }
-
-                    g.drawImage(albumImg, coords5x5.get(i)[0], coords5x5.get(i)[1], 290, 290, null);
-                    g.drawString(String.format("%s (%s mal gespielt)", artist.getName(), artist.getPlaycount()), coords5x5.get(i)[2], coords5x5.get(i)[3]);
-
-                    i++;
-                }
-
-                try {
-                    ImageIO.write(img, "png", imgFile);
-                } catch (IOException ex) {
-                    LOG.error("ERROR while trying to write finished collage.", ex);
-                    message.getChannel().setTypingStatus(false);
-                    break;
-                }
-
-                DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
-                break;
-            default:
-                DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
-                break;
         }
     }
 
