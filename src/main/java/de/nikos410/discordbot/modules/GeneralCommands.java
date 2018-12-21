@@ -10,12 +10,14 @@ import sx.blah.discord.util.EmbedBuilder;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+import java.util.Optional;
 
 @CommandModule(moduleName = "Allgemeine Befehle", commandOnly = true)
 public class GeneralCommands {
     private final LocalDateTime startupTimestamp;
 
-    public GeneralCommands () {
+    public GeneralCommands() {
         startupTimestamp = LocalDateTime.now();
     }
 
@@ -50,12 +52,16 @@ public class GeneralCommands {
             return;
         }
         final long quoteMessageID = Long.parseLong(id);
-        final IMessage quoteMessage = guild.getMessageByID(quoteMessageID);
+        final Optional<IMessage> optQuoteMessage = guild.getChannels().parallelStream()
+                .map(c -> c.fetchMessage(quoteMessageID))
+                .filter(Objects::nonNull).findFirst();
 
-        if (quoteMessage == null) {
+        if (!optQuoteMessage.isPresent()) {
             DiscordIO.sendMessage(commandMessage.getChannel(), String.format("Nachricht mit der ID `%s` nicht gefunden!", quoteMessageID));
             return;
         }
+
+        final IMessage quoteMessage = optQuoteMessage.get();
 
         commandMessage.delete();
 
