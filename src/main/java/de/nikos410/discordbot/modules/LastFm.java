@@ -310,9 +310,9 @@ public class LastFm {
                                 DiscordIO.sendMessage(message.getChannel(), ":x: Du hörst gerade nichts.");
                                 return; // leave method if no track is playing
                             }
-                        } else if (target == Target.RECENT && track.isNowPlaying()) {
-                            continue; // skip first track in api response, since it is the one currently playing
                         } else if (target == Target.RECENT) {
+                            if (track.isNowPlaying())
+                                continue; // skip currently playing track, only do scrobbled tracks
                             chart.append(String.format("`%s` **%s** - *%s*%n", i + 1, track.getArtist(), track.getName()));
                         } else {
                             chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)%n", i + 1, track.getArtist(), track.getName(), track.getPlaycount()));
