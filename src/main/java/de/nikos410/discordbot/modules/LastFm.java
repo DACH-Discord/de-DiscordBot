@@ -67,6 +67,7 @@ public class LastFm {
         }
 
         Caller.getInstance().setUserAgent("de-DiscordBot/1.0");
+        Caller.getInstance().setCache(null); // disable caching to always get
 
         // Coordinate initialization for collage generation
         coords3x3.add(new Integer[]{100, 400, 1801, 445});
@@ -147,28 +148,29 @@ public class LastFm {
                     }
                     break;
                 case "now":
-                    getNowPlaying(message);
+                    //getNowPlaying(message);
+                    getChart(message, Target.NOWPLAYING, Type.NONE);
                     break;
                 case "recenttracks":
-                    getChart(message, Target.RECENT, Type.NONE, 10);
+                    getChart(message, Target.RECENT, Type.NONE);
                     break;
                 case "topartists":
-                    getChart(message, Target.ARTISTS, Type.OVERALL, 10);
+                    getChart(message, Target.ARTISTS, Type.OVERALL);
                     break;
                 case "topalbums":
-                    getChart(message, Target.ALBUMS, Type.OVERALL, 10);
+                    getChart(message, Target.ALBUMS, Type.OVERALL);
                     break;
                 case "toptracks":
-                    getChart(message, Target.TRACKS, Type.OVERALL, 10);
+                    getChart(message, Target.TRACKS, Type.OVERALL);
                     break;
                 case "weeklyartists":
-                    getChart(message, Target.ARTISTS, Type.WEEKLY, 10);
+                    getChart(message, Target.ARTISTS, Type.WEEKLY);
                     break;
                 case "weeklyalbums":
-                    getChart(message, Target.ALBUMS, Type.WEEKLY, 10);
+                    getChart(message, Target.ALBUMS, Type.WEEKLY);
                     break;
                 case "weeklytracks":
-                    getChart(message, Target.TRACKS, Type.WEEKLY, 10);
+                    getChart(message, Target.TRACKS, Type.WEEKLY);
                     break;
                 case "collage":
                     try {
@@ -219,36 +221,14 @@ public class LastFm {
         }
     }
 
-    private void getNowPlaying(final IMessage message) {
-        try {
-            String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
-
-            Collection<Track> response = User.getRecentTracks(username, apiKey).getPageResults();
-
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-
-            embedBuilder.withColor(185, 0, 0);
-            embedBuilder.withAuthorIcon(message.getAuthor().getAvatarURL());
-            embedBuilder.withAuthorName(String.format("Aktuell gespielter Track von %s", message.getAuthor().getDisplayName(message.getGuild())));
-
-            Track track = response.iterator().next();
-
-            if (track.isNowPlaying()) {
-                embedBuilder.appendField("Künstler", track.getArtist(), true);
-                embedBuilder.appendField("Titel", track.getName(), true);
-                embedBuilder.appendField("Album", track.getAlbum(), false);
-                embedBuilder.withThumbnail(track.getImageURL(ImageSize.LARGE));
-                DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
-            } else {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Du hörst gerade nichts.");
-            }
-        } catch (JSONException ex) {
-            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
-        }
+    private void getChart(final IMessage message, final Target target, final Type type) {
+        getChart(message, target, type, 10);
     }
 
     private void getChart(final IMessage message, final Target target, final Type type, final int limit) {
         try {
+            message.getChannel().setTypingStatus(true);
+
             String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
             String title = "";
@@ -296,6 +276,10 @@ public class LastFm {
                     title = String.format("Kürzlich gespielte Tracks von %s", message.getAuthor().getDisplayName(message.getGuild()));
                     response = User.getRecentTracks(username, apiKey).getPageResults();
                     break;
+                case NOWPLAYING:
+                    title = String.format("Aktuell gespielter Track von %s", message.getAuthor().getDisplayName(message.getGuild()));
+                    response = User.getRecentTracks(username, apiKey).getPageResults();
+                    break;
             }
 
             embedBuilder.withAuthorName(title + titleAppendix);
@@ -312,7 +296,20 @@ public class LastFm {
 
                     if (responseObj instanceof Track) {
                         Track track = (Track)responseObj;
-                        if (target == Target.RECENT) {
+                        if (target == Target.NOWPLAYING) {
+                            if (track.isNowPlaying()) {
+                                embedBuilder.appendField("Künstler", track.getArtist(), true);
+                                embedBuilder.appendField("Titel", track.getName(), true);
+                                embedBuilder.appendField("Album", track.getAlbum(), false);
+                                embedBuilder.withThumbnail(track.getImageURL(ImageSize.LARGE));
+                                break; // only process first track, if target is NOWPLAYING.
+                            } else {
+                                DiscordIO.sendMessage(message.getChannel(), ":x: Du hörst gerade nichts.");
+                                return; // leave method if no track is playing
+                            }
+                        } else if (target == Target.RECENT && track.isNowPlaying()) {
+                            continue; // skip first track in api response, since it is the one currently playing
+                        } else if (target == Target.RECENT) {
                             chart.append(String.format("`%s` **%s** - *%s*%n", i + 1, track.getArtist(), track.getName()));
                         } else {
                             chart.append(String.format("`%s` **%s** - *%s* (%s mal gespielt)%n", i + 1, track.getArtist(), track.getName(), track.getPlaycount()));
@@ -721,6 +718,7 @@ public class LastFm {
     }
 
     private enum Target {
+        NOWPLAYING,
         RECENT,
         TRACKS,
         ALBUMS,
