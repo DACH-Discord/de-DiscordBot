@@ -251,6 +251,11 @@ public class LastFm {
         try {
             String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
+            String title = "";
+            String titleAppendix = "";
+
+            Period period = Period.OVERALL;
+
             LocalDate toDate = LocalDate.now();
             LocalDate fromDate = toDate.minusDays(7);
 
@@ -261,48 +266,39 @@ public class LastFm {
 
             Collection<?> response = null;
 
+            switch (type) {
+                case OVERALL:
+                    // use default value
+                    break;
+                case WEEKLY:
+                    period = Period.WEEK;
+                    titleAppendix = String.format("%n(Woche vom %s zum %s)", fromDate.format(dateFormat), toDate.format(dateFormat));
+                    break;
+                default:
+                    // use default value; NONE defaults here
+                    break;
+            }
+
             switch (target) {
                 case ALBUMS:
-                    switch (type) {
-                        case OVERALL:
-                            embedBuilder.withAuthorName(String.format("Top-Alben von %s", message.getAuthor().getDisplayName(message.getGuild())));
-                            response = User.getTopAlbums(username, apiKey);
-                            break;
-                        case WEEKLY:
-                            embedBuilder.withAuthorName(String.format("Top-Alben von %s%n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
-                            response = User.getTopAlbums(username, Period.WEEK, apiKey);
-                            break;
-                    }
+                    title = String.format("Top-Alben von %s", message.getAuthor().getDisplayName(message.getGuild()));
+                    response = User.getTopAlbums(username, period, apiKey);
                     break;
                 case ARTISTS:
-                    switch (type) {
-                        case OVERALL:
-                            embedBuilder.withAuthorName(String.format("Top-Künstler von %s", message.getAuthor().getDisplayName(message.getGuild())));
-                            response = User.getTopArtists(username, apiKey);
-                            break;
-                        case WEEKLY:
-                            embedBuilder.withAuthorName(String.format("Top-Künstler von %s%n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
-                            response = User.getTopArtists(username, Period.WEEK, apiKey);
-                            break;
-                    }
+                    title = String.format("Top-Künstler von %s", message.getAuthor().getDisplayName(message.getGuild()));
+                    response = User.getTopArtists(username, period, apiKey);
                     break;
                 case TRACKS:
-                    switch (type) {
-                        case OVERALL:
-                            embedBuilder.withAuthorName(String.format("Top-Titel von %s", message.getAuthor().getDisplayName(message.getGuild())));
-                            response = User.getTopTracks(username, apiKey);
-                            break;
-                        case WEEKLY:
-                            embedBuilder.withAuthorName(String.format("Top-Titel von %s%n(Woche vom %s zum %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat)));
-                            response = User.getTopTracks(username, Period.WEEK, apiKey);
-                            break;
-                    }
+                    title = String.format("Top-Titel von %s", message.getAuthor().getDisplayName(message.getGuild()));
+                    response = User.getTopTracks(username, period, apiKey);
                     break;
                 case RECENT:
-                    embedBuilder.withAuthorName(String.format("Kürzlich gespielte Tracks von %s", message.getAuthor().getDisplayName(message.getGuild())));
+                    title = String.format("Kürzlich gespielte Tracks von %s", message.getAuthor().getDisplayName(message.getGuild()));
                     response = User.getRecentTracks(username, apiKey).getPageResults();
                     break;
             }
+
+            embedBuilder.withAuthorName(title + titleAppendix);
 
             StringBuilder chart = new StringBuilder();
 
