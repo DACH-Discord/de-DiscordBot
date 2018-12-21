@@ -148,7 +148,6 @@ public class LastFm {
                     }
                     break;
                 case "now":
-                    //getNowPlaying(message);
                     getChart(message, Target.NOWPLAYING, Type.NONE);
                     break;
                 case "recenttracks":
