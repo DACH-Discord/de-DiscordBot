@@ -41,9 +41,9 @@ public class LastFm {
 
     private final JSONObject lastFmJSON;
 
-    private final ArrayList<Integer[]> coords3x3 = new ArrayList<>();
-    private final ArrayList<Integer[]> coords4x4 = new ArrayList<>();
-    private final ArrayList<Integer[]> coords5x5 = new ArrayList<>();
+    private final int[] offsets3x3;
+    private final int[] offsets4x4;
+    private final int[] offsets5x5;
 
     private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -69,59 +69,9 @@ public class LastFm {
         Caller.getInstance().setUserAgent("de-DiscordBot/1.0");
         Caller.getInstance().setCache(null); // disable caching to always get recent charts
 
-        // Coordinate initialization for collage generation
-        coords3x3.add(new Integer[]{100, 400, 1801, 445});
-        coords3x3.add(new Integer[]{667, 400, 1801, 553});
-        coords3x3.add(new Integer[]{1234, 400, 1801, 661});
-        coords3x3.add(new Integer[]{100, 967, 1801, 1012});
-        coords3x3.add(new Integer[]{667, 967, 1801, 1120});
-        coords3x3.add(new Integer[]{1234, 967, 1801, 1228});
-        coords3x3.add(new Integer[]{100, 1534, 1801, 1579});
-        coords3x3.add(new Integer[]{667, 1534, 1801, 1687});
-        coords3x3.add(new Integer[]{1234, 1534, 1801, 1795});
-
-        coords4x4.add(new Integer[]{100, 400, 1801, 445});
-        coords4x4.add(new Integer[]{525, 400, 1801, 523});
-        coords4x4.add(new Integer[]{950, 400, 1801, 601});
-        coords4x4.add(new Integer[]{1375, 400, 1801, 679});
-        coords4x4.add(new Integer[]{100, 825, 1801, 870});
-        coords4x4.add(new Integer[]{525, 825, 1801, 948});
-        coords4x4.add(new Integer[]{950, 825, 1801, 1026});
-        coords4x4.add(new Integer[]{1375, 825, 1801, 1104});
-        coords4x4.add(new Integer[]{100, 1250, 1801, 1295});
-        coords4x4.add(new Integer[]{525, 1250, 1801, 1373});
-        coords4x4.add(new Integer[]{950, 1250, 1801, 1451});
-        coords4x4.add(new Integer[]{1375, 1250, 1801, 1529});
-        coords4x4.add(new Integer[]{100, 1675, 1801, 1720});
-        coords4x4.add(new Integer[]{525, 1675, 1801, 1798});
-        coords4x4.add(new Integer[]{950, 1675, 1801, 1874});
-        coords4x4.add(new Integer[]{1375, 1675, 1801, 1954});
-
-        coords5x5.add(new Integer[]{100, 400, 1801, 445});
-        coords5x5.add(new Integer[]{440, 400, 1801, 503});
-        coords5x5.add(new Integer[]{780, 400, 1801, 561});
-        coords5x5.add(new Integer[]{1120, 400, 1801, 619});
-        coords5x5.add(new Integer[]{1460, 400, 1801, 678});
-        coords5x5.add(new Integer[]{100, 740, 1801, 785});
-        coords5x5.add(new Integer[]{440, 740, 1801, 843});
-        coords5x5.add(new Integer[]{780, 740, 1801, 901});
-        coords5x5.add(new Integer[]{1120, 740, 1801, 959});
-        coords5x5.add(new Integer[]{1460, 740, 1801, 1017});
-        coords5x5.add(new Integer[]{100, 1080, 1801, 1125});
-        coords5x5.add(new Integer[]{440, 1080, 1801, 1183});
-        coords5x5.add(new Integer[]{780, 1080, 1801, 1241});
-        coords5x5.add(new Integer[]{1120, 1080, 1801, 1299});
-        coords5x5.add(new Integer[]{1460, 1080, 1801, 1357});
-        coords5x5.add(new Integer[]{100, 1420, 1801, 1465});
-        coords5x5.add(new Integer[]{440, 1420, 1801, 1523});
-        coords5x5.add(new Integer[]{780, 1420, 1801, 1581});
-        coords5x5.add(new Integer[]{1120, 1420, 1801, 1639});
-        coords5x5.add(new Integer[]{1460, 1420, 1801, 1697});
-        coords5x5.add(new Integer[]{100, 1760, 1801, 1805});
-        coords5x5.add(new Integer[]{440, 1760, 1801, 1863});
-        coords5x5.add(new Integer[]{780, 1760, 1801, 1921});
-        coords5x5.add(new Integer[]{1120, 1760, 1801, 1979});
-        coords5x5.add(new Integer[]{1460, 1760, 1801, 2037});
+        offsets3x3 = new int[]{3, 567, 108, 243};
+        offsets4x4 = new int[]{4, 425, 78, 113};
+        offsets5x5 = new int[]{5, 340, 58, 49};
     }
 
     @CommandSubscriber(command = "lastFmSetApiKey", help = "Last.fm API-Key setzen - nur für Admins", pmAllowed = false, permissionLevel = PermissionLevel.ADMIN)
@@ -341,9 +291,11 @@ public class LastFm {
         try {
             message.getChannel().setTypingStatus(true);
 
+            int[] coords = new int[]{100, 400, 1801, 445};
+
             String username = lastFmJSON.getJSONObject("users").getString(message.getAuthor().getStringID());
 
-            ArrayList<Integer[]> coordsToUse;
+            int[] offsetsToUse;
             int imgSize;
 
             Collection<?> response;
@@ -371,6 +323,7 @@ public class LastFm {
             Graphics2D g;
 
             int i;
+            int iOffset;
             int limit;
 
             switch (target) {
@@ -389,17 +342,17 @@ public class LastFm {
 
             switch (dimensions) {
                 case "3x3":
-                    coordsToUse = coords3x3;
+                    offsetsToUse = offsets3x3;
                     limit = 9;
                     imgSize = 517;
                     break;
                 case "4x4":
-                    coordsToUse = coords4x4;
+                    offsetsToUse = offsets4x4;
                     limit = 16;
                     imgSize = 375;
                     break;
                 case "5x5":
-                    coordsToUse = coords5x5;
+                    offsetsToUse = offsets5x5;
                     limit = 25;
                     imgSize = 290;
                     break;
@@ -424,6 +377,7 @@ public class LastFm {
             g.drawString(title, 100, 200);
 
             i = 0;
+            iOffset = 1;
 
             g.setFont(new Font("Arial", Font.PLAIN, 48));
 
@@ -431,6 +385,13 @@ public class LastFm {
                 Iterator itor = response.iterator();
 
                 while (itor.hasNext() && i < limit) {
+                    if (iOffset > offsetsToUse[0]) { // determine if new row
+                        iOffset = 1;
+                        coords[0] = 100; // new row - reset coordinate
+                        coords[1] += offsetsToUse[1]; // new row - add y offset for picture
+                        coords[3] += offsetsToUse[3]; // new row - add y offset gap adjust for text
+                    }
+
                     Object responseObj = itor.next();
 
                     if (responseObj instanceof Artist) {
@@ -441,8 +402,8 @@ public class LastFm {
                             LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
                             albumImg = errorImg;
                         }
-                        g.drawImage(albumImg, coordsToUse.get(i)[0], coordsToUse.get(i)[1], imgSize, imgSize, null);
-                        g.drawString(String.format("%s (%s mal gespielt)", artist.getName(), artist.getPlaycount()), coordsToUse.get(i)[2], coordsToUse.get(i)[3]);
+                        g.drawImage(albumImg, coords[0], coords[1], imgSize, imgSize, null);
+                        g.drawString(String.format("%s (%s mal gespielt)", artist.getName(), artist.getPlaycount()), coords[2], coords[3]);
                     } else if (responseObj instanceof Album) {
                         album = (Album)responseObj;
                         try {
@@ -451,9 +412,13 @@ public class LastFm {
                             LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
                             albumImg = errorImg;
                         }
-                        g.drawImage(albumImg, coordsToUse.get(i)[0], coordsToUse.get(i)[1], imgSize, imgSize, null);
-                        g.drawString(String.format("%s - %s", album.getArtist(), album.getName()), coordsToUse.get(i)[2], coordsToUse.get(i)[3]);
+                        g.drawImage(albumImg, coords[0], coords[1], imgSize, imgSize, null);
+                        g.drawString(String.format("%s - %s", album.getArtist(), album.getName()), coords[2], coords[3]);
                     }
+
+                    coords[0] += offsetsToUse[1]; // new entry - add x offset for picture
+                    coords[3] += offsetsToUse[2]; // new entry - add y offset for text
+                    iOffset++;
                     i++;
                 }
             }
