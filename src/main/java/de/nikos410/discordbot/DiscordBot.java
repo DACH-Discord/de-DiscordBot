@@ -191,7 +191,11 @@ public class DiscordBot {
         LOG.debug("Loading module \"{}\".", moduleName);
         // Create an instance of the class
         final Object moduleObject = makeModuleObject(moduleClass);
-        if (moduleObject != null) {
+        if (moduleObject == null) {
+            // Module could not be created -> Add to unloaded modules
+            unloadedModules.add(moduleName);
+        }
+        else {
             this.loadedModules.put(moduleName, moduleObject);
 
             // Register EventListener if needed
