@@ -1,5 +1,6 @@
 package de.nikos410.discordbot;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -8,6 +9,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.*;
@@ -44,7 +46,7 @@ public class DiscordBot {
     public final JSONObject configJSON;
 
     private final List<String> unloadedModules = new ArrayList<>();
-    private final Map<String, Object> loadedModules = new HashMap<>();
+    private final Map<String, CommandModule> loadedModules = new HashMap<>();
     private final List<String> failedModules = new ArrayList<>();
 
     private final Map<String, Command> commands = new HashMap<>();
@@ -137,14 +139,32 @@ public class DiscordBot {
 
         // Search in package 'de.nikos410.discordbot.modules'
         final Reflections reflections = new Reflections("de.nikos410.discordbot.modules");
-        // Find classes that are annotated with @CommandModule
-        final Set<Class<?>> moduleClasses = reflections.getTypesAnnotatedWith(CommandModule.class);
+        // Find classes that are subtypes of CommandModule
+        final Set<Class<? extends CommandModule>> moduleClasses = reflections.getSubTypesOf(CommandModule.class);
 
         LOG.info("Found {} total module(s).", moduleClasses.size());
 
         // Load modules from all found classes
-        for (final Class<?> moduleClass : moduleClasses) {
+        for (final Class<? extends CommandModule> moduleClass : moduleClasses) {
             loadModule(moduleClass);
+        }
+
+        // Wait until the bot is ready to run initializations
+        LOG.debug("Waiting until the bot is ready.");
+        while (!client.isReady()) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(100);
+            }
+            catch(InterruptedException e) {
+                LOG.warn("Sleep was interrupted");
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        LOG.debug("Bot is ready. Running Inits.");
+        for (Map.Entry<String, CommandModule> entry : loadedModules.entrySet()) {
+            LOG.debug("Running ready-Init for module {}.", entry.getKey());
+            entry.getValue().initWhenReady();
         }
 
         // Create command map
@@ -157,12 +177,11 @@ public class DiscordBot {
      *
      * @param moduleClass The class containing the module
      */
-    private void loadModule(final Class<?> moduleClass) {
+    private void loadModule(final Class<? extends CommandModule> moduleClass) {
         LOG.debug("Loading module information from class {}.", moduleClass);
 
-        // Get module name from annotation parameters
-        final CommandModule moduleAnnotation = moduleClass.getDeclaredAnnotationsByType(CommandModule.class)[0];
-        final String moduleName = moduleAnnotation.moduleName();
+        // Use class name as module name
+        final String moduleName = moduleClass.getSimpleName();
 
         // Check if module is deactivated in config
         if (this.unloadedModules.contains(moduleName)) {
@@ -190,10 +209,9 @@ public class DiscordBot {
         }
 
         LOG.debug("Loading module \"{}\".", moduleName);
-        // Create an instance of the class
-        final Object moduleObject = makeModuleObject(moduleClass);
+        final CommandModule moduleInstance = instantiateModule(moduleClass);
 
-        if (moduleObject == null) {
+        if (moduleInstance == null) {
             // Module could not be created -> Add to failed modules
             if (!failedModules.contains(moduleName)) {
                 failedModules.add(moduleName);
@@ -203,13 +221,17 @@ public class DiscordBot {
             return;
         }
 
+        // Set bot field and run initialization for module
+        moduleInstance.setBot(this);
+        moduleInstance.init();
+
         // Register EventListener if needed
-        if (!moduleAnnotation.commandOnly()) {
+        if (moduleInstance.hasEvents()) {
             final EventDispatcher dispatcher = this.client.getDispatcher();
-            dispatcher.registerListener(moduleObject);
+            dispatcher.registerListener(moduleInstance);
         }
 
-        loadedModules.put(moduleName, moduleObject);
+        loadedModules.put(moduleName, moduleInstance);
         failedModules.remove(moduleName);
         LOG.info("Successfully loaded module \"{}\".", moduleName);
     }
@@ -218,52 +240,24 @@ public class DiscordBot {
      * Creates an instance of a class containing a module.
      *
      * @param moduleClass The class containing the module
-     * @return The created Object
+     * @return The created module instance
      */
-    private Object makeModuleObject (final Class<?> moduleClass) {
-        LOG.debug("Creating object from class {}.", moduleClass);
-
+    private CommandModule instantiateModule(final Class<? extends CommandModule> moduleClass) {
         try {
-            return createObjectWithConstructors(moduleClass);
+            LOG.debug("Instantiating module class \"{}\".", moduleClass.getName());
+            return moduleClass.getConstructor().newInstance();
         }
         catch (InstantiationException | IllegalAccessException e) {
-            LOG.warn("Something went wrong while creating object from class \"{}\". Skipping.", moduleClass.getName(), e);
+            LOG.warn("Something went wrong while instantiating class \"{}\". Skipping.", moduleClass.getName(), e);
             return null;
         }
         catch (InvocationTargetException e) {
-            LOG.warn("Something went wrong while creating object from class \"{}\". Skipping.", moduleClass.getName(), e.getCause());
+            LOG.warn("Something went wrong while instantiating class \"{}\". Skipping.", moduleClass.getName(), e.getCause());
             return null;
         }
-    }
-
-    /**
-     * Creates an instance of a class containing a module. First, tries to use a constructor with a parameter of
-     * type {@link de.nikos410.discordbot.DiscordBot}. If no such constructor is accessible, uses a constructor
-     * without any parameters.
-     *
-     * @param moduleClass The class containing the module
-     * @return The created Object
-     */
-    private Object createObjectWithConstructors(final Class<?> moduleClass)
-            throws InstantiationException, IllegalAccessException, InvocationTargetException {
-        // Use try-catch to differentiate between two possible constructors
-        Object moduleObject;
-        try {
-            // Constructor with one parameter of type 'DiscordBot'
-            LOG.debug("Trying to create an object from class {} with parameter.", moduleClass.getName());
-            moduleObject = moduleClass.getDeclaredConstructor(DiscordBot.class).newInstance(this);
-
-            LOG.debug("Successfully created object from class {}.", moduleClass);
-            return moduleObject;
-        }
         catch (NoSuchMethodException e) {
-            // Constructor without parameters
-            LOG.debug("Failed to create an object from class {} with parameter. Trying without parameters.",
-                    moduleClass.getName());
-            moduleObject = moduleClass.newInstance();
-
-            LOG.debug("Successfully created object from class {}.", moduleClass);
-            return moduleObject;
+            LOG.error("Could not instantiate module. Constructor does not exist.", e);
+            return null;
         }
     }
 
@@ -276,13 +270,12 @@ public class DiscordBot {
         LOG.debug("Clearing old commands.");
         this.commands.clear();
 
-        for (final Map.Entry<String, Object> entry : this.loadedModules.entrySet()) {
-            final Object module = entry.getValue();
+        for (final Map.Entry<String, CommandModule> entry : this.loadedModules.entrySet()) {
+            final CommandModule module = entry.getValue();
 
             LOG.debug("Registering command(s) for module \"{}\".", entry.getKey());
 
             for (final Method method : module.getClass().getMethods()) {
-
                 // Register methods with the @CommandSubscriber as commands
                 if (method.isAnnotationPresent(CommandSubscriber.class)) {
 
@@ -604,7 +597,7 @@ public class DiscordBot {
      * Print out some text and change the playing-text when bot is ready
      */
     @EventSubscriber
-    public void onStartup(final ReadyEvent event) {
+    public void onReady(final ReadyEvent event) {
         LOG.info("[INFO] Bot ready. Prefix: {}", this.prefix);
         LOG.info("Add this bot to a server: https://discordapp.com/oauth2/authorize?client_id={}&scope=bot", client.getApplicationClientID());
         client.changePresence(StatusType.ONLINE, ActivityType.PLAYING, String.format("%shelp | WIP", this.prefix));
@@ -615,7 +608,7 @@ public class DiscordBot {
      *
      * @return The map containing the loaded modules
      */
-    public Map<String, Object> getLoadedModules() {
+    public Map<String, CommandModule> getLoadedModules() {
         return loadedModules;
     }
 
@@ -685,14 +678,12 @@ public class DiscordBot {
         LOG.info("Deactivating module \"{}\".", moduleName);
 
         // Unregister module from EventListener
-        final Object moduleObject = loadedModules.get(moduleName);
-        final Class<?> moduleClass = moduleObject.getClass();
+        final CommandModule moduleInstance = loadedModules.get(moduleName);
 
-        final CommandModule moduleAnnotation = moduleClass.getDeclaredAnnotationsByType(CommandModule.class)[0];
-        if (!moduleAnnotation.commandOnly()) {
+        if (moduleInstance.hasEvents()) {
             LOG.debug("Unregistering module from EventListener");
             final EventDispatcher dispatcher = this.client.getDispatcher();
-            dispatcher.registerListener(moduleObject);
+            dispatcher.unregisterListener(moduleInstance);
         }
 
         LOG.debug("Adding module to unloaded list");

@@ -5,44 +5,43 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
-import de.nikos410.discordbot.DiscordBot;
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
 
-@CommandModule(moduleName = "Bot-Setup", commandOnly = true)
-public class BotSetup {
-    private static final Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
+public class BotSetup extends CommandModule {
+    private static final Logger LOG = LoggerFactory.getLogger(BotSetup.class);
 
-    private final DiscordBot bot;
-    private final IDiscordClient client;
+    @Override
+    public String getDisplayName() {
+        return "Bot Setup";
+    }
 
-    public BotSetup (final DiscordBot bot) {
-        this.bot = bot;
-        this.client = bot.getClient();
+    @Override
+    public String getDescription() {
+        return "Mit diesem Modul kann der Bot konfiguriert und für einen Server eingerichtet werden.";
     }
 
     @CommandSubscriber(command = "help", help = "Zeigt diese Hilfe an")
     public void command_help(final IMessage message) {
         final EmbedBuilder helpEmbedBuilder = new EmbedBuilder();
-        final Map<String, Object> loadedModules = bot.getLoadedModules();
+        final Map<String, CommandModule> loadedModules = bot.getLoadedModules();
 
         // Visit all modules that are loaded
-        for (final Object module : loadedModules.values()) {
+        for (final CommandModule module : loadedModules.values()) {
             final StringBuilder helpStringBuilder = new StringBuilder();
 
             // Visit all Methods of that module
@@ -58,19 +57,15 @@ public class BotSetup {
                         final String command = annotation.command();
                         final String help = annotation.help();
 
-                        helpStringBuilder.append(String.format("`%s` %s", command, help));
-                        helpStringBuilder.append('\n');
+                        helpStringBuilder.append(String.format("`%s` - %s%n", command, help));
                     }
                 }
             }
 
             final String helpString = helpStringBuilder.toString();
 
-            final CommandModule[] annotations = module.getClass().getDeclaredAnnotationsByType(CommandModule.class);
-            final String moduleName = annotations[0].moduleName();
-
-            if (!helpString.isEmpty()) {
-                helpEmbedBuilder.appendField(moduleName, helpString, false);
+            if (helpStringBuilder.length() > 0) {
+                helpEmbedBuilder.appendField(module.getDisplayName(), helpString, false);
             }
         }
 
@@ -170,14 +165,14 @@ public class BotSetup {
     public void command_shutdown(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
         LOG.info("Shutting down.");
-        this.client.logout();
+        this.bot.getClient().logout();
     }
 
     @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = PermissionLevel.OWNER)
     public void command_setUsername(final IMessage message, final String newUserName) {
         try {
             LOG.info("Changing the username to {}.", newUserName);
-            this.client.changeUsername(newUserName);
+            this.bot.getClient().changeUsername(newUserName);
             DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Username gesetzt: `%s`", newUserName));
         }
         catch (RateLimitException e) {

@@ -2,8 +2,8 @@ package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.DiscordBot;
 import de.nikos410.discordbot.exception.InitializationException;
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.CommandUtils;
 import de.nikos410.discordbot.util.discord.ChannelUtils;
@@ -43,14 +43,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-@CommandModule(moduleName = "Modzeugs", commandOnly = false)
-public class ModStuff {
+public class ModStuff extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(ModStuff.class);
 
     private static final Path MODSTUFF_PATH = Paths.get("data/modstuff.json");
-    private final JSONObject modstuffJSON;
-
-    private final DiscordBot bot;
+    private JSONObject modstuffJSON;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -59,9 +56,23 @@ public class ModStuff {
 
     private final Map<IGuild, List<String>> voiceLog = new HashMap<>();
 
-    public ModStuff (final DiscordBot bot) {
-        this.bot = bot;
+    @Override
+    public String getDisplayName() {
+        return "Moderationswerkzeuge";
+    }
 
+    @Override
+    public String getDescription() {
+        return "Diverse Tools, die die Moderation eines Servers erleichtern.";
+    }
+
+    @Override
+    public boolean hasEvents() {
+        return true;
+    }
+
+    @Override
+    public void init() {
         final String rolesFileContent = IOUtil.readFile(MODSTUFF_PATH);
         if (rolesFileContent == null) {
             LOG.error("Could not read modstuff file.");
