@@ -20,7 +20,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -63,12 +62,11 @@ public class LastFm {
         this.lastFmJSON = new JSONObject(jsonContent);
         LOG.info("Loaded Last.fm config file.");
 
-        try {
-            this.apiKey = lastFmJSON.getString("apiKey");
-        } catch (JSONException ex) {
-            this.apiKey = "";
-            LOG.info("Kein Last.fm API-Key gefunden.");
+        if (!lastFmJSON.has("apiKey")) {
+            throw new InitializationException("No Last.fm Api-Key configured.", LastFm.class);
         }
+
+        this.apiKey = lastFmJSON.getString("apiKey");
 
         Caller.getInstance().setUserAgent("de-DiscordBot/1.0");
         Caller.getInstance().setCache(null); // disable caching to always get recent charts
