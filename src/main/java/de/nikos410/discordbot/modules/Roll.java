@@ -39,9 +39,6 @@ public class Roll extends CommandModule {
         return true;
     }
 
-    @Override
-    public void init() {}
-
     @CommandSubscriber(command = "roll",help = "Würfeln. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`")
     public void command_roll(final IMessage commandMessage, final String diceArgsInput) {
         final IChannel channel = commandMessage.getChannel();
