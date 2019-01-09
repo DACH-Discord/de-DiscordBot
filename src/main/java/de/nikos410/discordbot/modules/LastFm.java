@@ -132,7 +132,7 @@ public class LastFm {
                     break;
                 case "help":
                     String msg = "```Last.fm Modul - Hilfe\n\n"
-                            + String.format("'%slastfm set <last.fm username>' um deinen Last.fm-Nutzernamen zu setzen.\n\n", botPrefix)
+                            + String.format("'%slastfm set <last.fm username>' um deinen Last.fm-Nutzernamen zu setzen.%n%n", botPrefix)
                             + "Verfügbare Parameter:\n\n"
                             + "now\n"
                             + "recenttracks\n"
