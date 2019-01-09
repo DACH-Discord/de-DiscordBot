@@ -437,10 +437,10 @@ public class LastFm {
         }
     }
 
-    private java.awt.Image getErrorImage() {
+    private static java.awt.Image getErrorImage() {
         try {
             return ImageIO.read(ERROR_IMG_URL);
-        } catch (IOException ex) {
+        } catch (IOException | IllegalArgumentException ex) {
             LOG.error("Couldn't find error image.", ex);
             return null;
         }
