@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -356,9 +357,13 @@ public class LastFm {
                     return;
             }
 
-            if (imgFile.exists())
-                if (imgFile.delete())
-                    LOG.info("Chart png file already found - deleting.");
+            try {
+                LOG.debug("Chart png file already found - deleting.");
+                Files.deleteIfExists(imgFile.toPath());
+            }
+            catch (IOException e) {
+                LOG.error("Chart png could not be deleted.", e);
+            }
 
             img = new BufferedImage(3200, 2300, BufferedImage.TYPE_INT_ARGB);
 
