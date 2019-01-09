@@ -192,6 +192,7 @@ public class DiscordBot {
         LOG.debug("Loading module \"{}\".", moduleName);
         // Create an instance of the class
         final Object moduleObject = makeModuleObject(moduleClass);
+
         if (moduleObject == null) {
             // Module could not be created -> Add to failed modules
             if (!failedModules.contains(moduleName)) {
@@ -199,18 +200,18 @@ public class DiscordBot {
             }
 
             loadedModules.remove(moduleName);
+            return;
         }
-        else {
-            // Register EventListener if needed
-            if (!moduleAnnotation.commandOnly()) {
-                final EventDispatcher dispatcher = this.client.getDispatcher();
-                dispatcher.registerListener(moduleObject);
-            }
 
-            loadedModules.put(moduleName, moduleObject);
-            failedModules.remove(moduleName);
-            LOG.info("Successfully loaded module \"{}\".", moduleName);
+        // Register EventListener if needed
+        if (!moduleAnnotation.commandOnly()) {
+            final EventDispatcher dispatcher = this.client.getDispatcher();
+            dispatcher.registerListener(moduleObject);
         }
+
+        loadedModules.put(moduleName, moduleObject);
+        failedModules.remove(moduleName);
+        LOG.info("Successfully loaded module \"{}\".", moduleName);
     }
 
     /**
