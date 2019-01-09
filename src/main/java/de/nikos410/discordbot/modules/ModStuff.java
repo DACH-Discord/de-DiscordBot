@@ -1,6 +1,5 @@
 package de.nikos410.discordbot.modules;
 
-import de.nikos410.discordbot.DiscordBot;
 import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;

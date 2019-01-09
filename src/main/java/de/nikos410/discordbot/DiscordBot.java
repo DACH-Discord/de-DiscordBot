@@ -1,6 +1,5 @@
 package de.nikos410.discordbot;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;

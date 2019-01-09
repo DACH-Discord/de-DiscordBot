@@ -5,7 +5,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import de.nikos410.discordbot.DiscordBot;
 import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.util.discord.DiscordIO;
