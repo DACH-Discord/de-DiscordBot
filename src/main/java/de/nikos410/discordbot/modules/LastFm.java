@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -31,8 +32,12 @@ import java.util.Iterator;
 public class LastFm {
     private static final Logger LOG = LoggerFactory.getLogger(LastFm.class);
 
-    // Download here: https://www.freeiconspng.com/uploads/error-icon-4.png and leave in specified path.
-    private static final Path ERROR_IMG_PATH = Paths.get("data/lastFm/error-icon.png");
+    private static final String ERROR_IMG_RESOURCE = "modules/lastfm/error-icon.png";
+    private static final URL ERROR_IMG_URL;
+    static {
+        ERROR_IMG_URL = LastFm.class.getClassLoader().getResource(ERROR_IMG_RESOURCE);
+    }
+
     private static final Path LASTFM_PATH = Paths.get("data/lastFm/lastFm.json");
     private static final Path TEMP_IMG_PATH = Paths.get("data/lastFm/chart.png");
 
@@ -306,17 +311,10 @@ public class LastFm {
 
             File imgFile = TEMP_IMG_PATH.toFile();
 
-            java.awt.Image errorImg, albumImg;
+            java.awt.Image albumImg;
 
             Artist artist;
             Album album;
-
-            try {
-                errorImg = ImageIO.read(ERROR_IMG_PATH.toFile());
-            } catch (IOException ex) {
-                LOG.error("Couldn't find error image.", ex);
-                return;
-            }
 
             BufferedImage img;
             Graphics2D g;
@@ -399,7 +397,7 @@ public class LastFm {
                             albumImg = ImageIO.read(new URL(artist.getImageURL(ImageSize.LARGE)));
                         } catch (Exception ex) {
                             LOG.info("Bad url while fetching artist image for collage generation - putting in error image instead");
-                            albumImg = errorImg;
+                            albumImg = getErrorImage();
                         }
                         g.drawImage(albumImg, coords[0], coords[1], imgSize, imgSize, null);
                         g.drawString(String.format("%s (%s mal gespielt)", artist.getName(), artist.getPlaycount()), coords[2], coords[3]);
@@ -409,7 +407,7 @@ public class LastFm {
                             albumImg = ImageIO.read(new URL(album.getImageURL(ImageSize.LARGE)));
                         } catch (Exception ex) {
                             LOG.info("Bad url while fetching album image for collage generation - putting in error image instead");
-                            albumImg = errorImg;
+                            albumImg = getErrorImage();
                         }
                         g.drawImage(albumImg, coords[0], coords[1], imgSize, imgSize, null);
                         g.drawString(String.format("%s - %s", album.getArtist(), album.getName()), coords[2], coords[3]);
@@ -433,6 +431,15 @@ public class LastFm {
             DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
         } catch (JSONException ex) {
             DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
+        }
+    }
+
+    private java.awt.Image getErrorImage() {
+        try {
+            return ImageIO.read(ERROR_IMG_URL);
+        } catch (IOException ex) {
+            LOG.error("Couldn't find error image.", ex);
+            return null;
         }
     }
 
