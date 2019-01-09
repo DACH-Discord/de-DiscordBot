@@ -45,6 +45,7 @@ public class DiscordBot {
 
     private final List<String> unloadedModules = new ArrayList<>();
     private final Map<String, Object> loadedModules = new HashMap<>();
+    private final List<String> failedModules = new ArrayList<>();
 
     private final Map<String, Command> commands = new HashMap<>();
 
@@ -192,18 +193,22 @@ public class DiscordBot {
         // Create an instance of the class
         final Object moduleObject = makeModuleObject(moduleClass);
         if (moduleObject == null) {
-            // Module could not be created -> Add to unloaded modules
-            unloadedModules.add(moduleName);
+            // Module could not be created -> Add to failed modules
+            if (!failedModules.contains(moduleName)) {
+                failedModules.add(moduleName);
+            }
+
+            loadedModules.remove(moduleName);
         }
         else {
-            this.loadedModules.put(moduleName, moduleObject);
-
             // Register EventListener if needed
             if (!moduleAnnotation.commandOnly()) {
                 final EventDispatcher dispatcher = this.client.getDispatcher();
                 dispatcher.registerListener(moduleObject);
             }
 
+            loadedModules.put(moduleName, moduleObject);
+            failedModules.remove(moduleName);
             LOG.info("Successfully loaded module \"{}\".", moduleName);
         }
     }
@@ -623,17 +628,26 @@ public class DiscordBot {
     }
 
     /**
+     * Returns the list containing the names of the unloaded modules
+     *
+     * @return The list containing the names of the unloaded modules
+     */
+    public List<String> getFailedModules() {
+        return failedModules;
+    }
+
+    /**
      * Activate a module so the bot loads it
      *
      * @param moduleName The name of the module
      * @return true if everything went fine, false if the module does not exist or is already actived
      */
     public boolean activateModule(final String moduleName) {
-        if (!this.unloadedModules.contains(moduleName)) {
+
+        if (!unloadedModules.contains(moduleName) && !failedModules.contains(moduleName)) {
             // Module either doesn't exist or is already loaded
             return false;
         }
-
         LOG.info("Activating module \"{}\".", moduleName);
 
         LOG.debug("Removing module from unloaded list");
