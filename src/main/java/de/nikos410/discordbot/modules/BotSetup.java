@@ -164,7 +164,11 @@ public class BotSetup extends CommandModule {
     @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = PermissionLevel.OWNER)
     public void command_shutdown(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
-        LOG.info("Shutting down.");
+
+        LOG.info("Shutting down modules.");
+        bot.getLoadedModules().values()
+                .forEach(CommandModule::shutdown);
+
         this.bot.getClient().logout();
     }
 
