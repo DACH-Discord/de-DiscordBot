@@ -339,6 +339,10 @@ public class ModStuff {
      * @param channel The channel to send error messages to. Can be null.
      */
     private void muteUserForGuild(final IUser user, final IGuild guild, final int muteDuration, final ChronoUnit muteDurationUnit, final IChannel channel) {
+        if (!guild.getUsers().contains(user)) {
+            throw new IllegalArgumentException("Specified user is not a member of the specified guild!");
+        }
+
         // Get mute role for this guild
         final IRole muteRole = getMuteRoleForGuild(guild);
         if (muteRole == null) {
@@ -801,10 +805,15 @@ public class ModStuff {
 
             final long guildLongID = Long.parseLong(guildStringID);
             final IGuild guild = event.getClient().getGuildByID(guildLongID);
-            LOG.debug("Found guild '{}'.", guild.getName());
 
-            restoreGuildUserMutes(guild);
-            restoreGuildChannelMutes(guild);
+            if (guild == null) {
+                LOG.warn("Found modstuff entry for guild with invalid ID '%l'. Skipping.", guildLongID);
+            }
+            else {
+                LOG.debug("Found guild '{}'.", guild.getName());
+                restoreGuildUserMutes(guild);
+                restoreGuildChannelMutes(guild);
+            }
         }
 
         LOG.info("Restored all mutes.");
@@ -841,7 +850,11 @@ public class ModStuff {
                 final String unmuteTimestampString = currentUserMute.getString("mutedUntil");
                 final LocalDateTime unmuteTimestamp = LocalDateTime.parse(unmuteTimestampString, formatter);
 
-                if (LocalDateTime.now().isBefore(unmuteTimestamp)) {
+                if (user == null) {
+                    LOG.info("Mute for user with id {} on guild '{}' (ID: {}) could not be restored. User is not a member of the guild",
+                            userLongID, guild.getName(), guild.getStringID());
+                }
+                else if (LocalDateTime.now().isBefore(unmuteTimestamp)) {
                     final int delaySeconds = (int)LocalDateTime.now().until(unmuteTimestamp, ChronoUnit.SECONDS);
                     muteUserForGuild(user, guild, delaySeconds, ChronoUnit.SECONDS, null);
                     LOG.info("Restored mute for user '{}' (ID: {}) on guild '{}' (ID: {}). Muted until {}",

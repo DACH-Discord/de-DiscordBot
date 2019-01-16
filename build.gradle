@@ -16,6 +16,12 @@ apply plugin: 'application'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: "com.github.spotbugs"
 
+javadoc {
+    source = sourceSets.main.allJava
+    classpath = configurations.compile
+    failOnError = false
+}
+
 spotbugs {
     ignoreFailures = true
 }
@@ -25,7 +31,7 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-version = '2.5.0'
+version = '2.5.1'
 sourceCompatibility = 1.8
 mainClassName = 'de.nikos410.discordbot.DiscordBot'
 
