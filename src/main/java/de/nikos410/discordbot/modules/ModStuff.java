@@ -807,7 +807,7 @@ public class ModStuff {
             final IGuild guild = event.getClient().getGuildByID(guildLongID);
 
             if (guild == null) {
-                LOG.warn("Found modstuff entry for guild with invalid ID '%l'. Skipping.", guildLongID);
+                LOG.warn("Found modstuff entry for guild with invalid ID '{}'. Skipping.", guildLongID);
             }
             else {
                 LOG.debug("Found guild '{}'.", guild.getName());
