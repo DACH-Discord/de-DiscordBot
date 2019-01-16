@@ -41,4 +41,9 @@ public abstract class CommandModule {
      * Gets called when the module is initialized and the bot is ready.
      */
     public void initWhenReady() {}
+
+    /**
+     * Gets called when the module is disabled or the bot is shut down
+     */
+    public void shutdown() {}
 }
