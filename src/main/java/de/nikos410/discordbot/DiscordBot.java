@@ -190,7 +190,7 @@ public class DiscordBot {
      *
      * @param moduleClass The class containing the module
      */
-    private void loadModule(final Class<? extends CommandModule> moduleClass) {
+    private CommandModule loadModule(final Class<? extends CommandModule> moduleClass) {
         LOG.debug("Loading module information from class {}.", moduleClass);
 
         // Use class name as module name
@@ -222,7 +222,7 @@ public class DiscordBot {
             }
             else {
                 LOG.info("Module \"{}\" is deactivated. Skipping.", moduleName);
-                return;
+                return null;
             }
         }
 
@@ -235,7 +235,7 @@ public class DiscordBot {
                 failedModules.add(moduleName);
             }
 
-            return;
+            return null;
         }
 
         // Set bot field and run initialization for module
@@ -251,6 +251,8 @@ public class DiscordBot {
         loadedModules.put(moduleName, moduleInstance);
         failedModules.remove(moduleName);
         LOG.info("Successfully loaded module \"{}\".", moduleName);
+
+        return moduleInstance;
     }
 
     private void unloadModule(final String moduleName) {
@@ -690,7 +692,17 @@ public class DiscordBot {
         this.saveConfig();
 
         LOG.info("Activating module \"{}\".", moduleName);
-        loadModule(moduleClasses.get(moduleName));
+        final CommandModule moduleInstance = loadModule(moduleClasses.get(moduleName));
+        if (moduleInstance == null) {
+            LOG.error("Module {} could not be loaded.", moduleName);
+            return false;
+        }
+
+        // Run init tasks
+        LOG.debug("Running init tasks.");
+        moduleInstance.init();
+        moduleInstance.initWhenReady(); // This method can only be executed by a command, so we don't have to check if the bot is ready
+
         LOG.info("Rebuilding command map to include commands from module \"{}\"", moduleName);
         makeCommandMap();
 
