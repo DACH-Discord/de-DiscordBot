@@ -2,6 +2,7 @@ package de.nikos410.discordbot.modules;
 
 import java.lang.reflect.Method;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 
 import de.nikos410.discordbot.DiscordBot;
@@ -187,6 +188,8 @@ public class BotSetup {
 
     @CommandSubscriber(command = "modules", help = "Alle Module anzeigen")
     public void command_listModules(final IMessage message) {
+        final EmbedBuilder embedBuilder = new EmbedBuilder();
+
         // List loaded modules
         final StringBuilder loadedBuilder = new StringBuilder();
         for (final String key : bot.getLoadedModules().keySet()) {
@@ -194,6 +197,7 @@ public class BotSetup {
             loadedBuilder.append('\n');
         }
         final String loadedModulesString = loadedBuilder.toString().isEmpty() ? "_keine_" : loadedBuilder.toString();
+        embedBuilder.appendField("Aktivierte Module", loadedModulesString, true);
 
         // List unloaded modules
         final StringBuilder unloadedBuilder = new StringBuilder();
@@ -202,11 +206,18 @@ public class BotSetup {
             unloadedBuilder.append('\n');
         }
         final String unloadedModulesString = unloadedBuilder.toString().isEmpty() ? "_keine_" : unloadedBuilder.toString();
-
-        // Build embed
-        final EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.appendField("Aktivierte Module", loadedModulesString, true);
         embedBuilder.appendField("Deaktivierte Module", unloadedModulesString, true);
+
+        // Add failed modules, if present
+        final List<String> failedModules = bot.getFailedModules();
+        if (!failedModules.isEmpty()) {
+            final StringBuilder failedBuilder = new StringBuilder();
+            for (final String module : failedModules) {
+                failedBuilder.append(module);
+                failedBuilder.append('\n');
+            }
+            embedBuilder.appendField("Folgende Module konnten nicht geladen werden:", failedBuilder.toString(), true);
+        }
 
         DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
     }
@@ -214,15 +225,31 @@ public class BotSetup {
     @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = PermissionLevel.ADMIN)
     public void command_loadModule(final IMessage message, final String moduleName) {
         final boolean result = bot.activateModule(moduleName);
+        final List<String> failedModules = bot.getFailedModules();
 
-        if (result) {
-            // Method returned true, everything went fine
+        if(result && failedModules.isEmpty()) {
+            // Method returned true and there are no failed modules, everything went fine
             message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
+            return;
         }
-        else {
+
+        if(!result) {
             // Method returned false, module doesn't exist or is already activated
             DiscordIO.sendMessage(message.getChannel(),
                     String.format("Fehler! Modul `%s` ist bereits aktiviert oder existiert nicht.", moduleName));
+        }
+
+        if (!failedModules.isEmpty()) {
+            // At least one module could not be initialized
+            final StringBuilder failedBuilder = new StringBuilder();
+            failedBuilder.append("__There was a problem while reloading modules. Following modules could not be initialized:__\n");
+
+            for (String module : failedModules) {
+                failedBuilder.append(module);
+                failedBuilder.append('\n');
+            }
+
+            DiscordIO.sendMessage(message.getChannel(), failedBuilder.toString());
         }
     }
 
@@ -233,16 +260,32 @@ public class BotSetup {
             return;
         }
 
-        final boolean result = bot.deactivateModule(moduleName);
+        final boolean result = bot.activateModule(moduleName);
+        final List<String> failedModules = bot.getFailedModules();
 
-        if (result) {
-            // Method returned true, everything went fine
+        if(result && failedModules.isEmpty()) {
+            // Method returned true and there are no failed modules, everything went fine
             message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
+            return;
         }
-        else {
-            // Method returned false, module doesn't exist or is already deactivated
+
+        if(!result) {
+            // Method returned false, module doesn't exist or is already activated
             DiscordIO.sendMessage(message.getChannel(),
                     String.format("Fehler! Modul `%s` ist bereits deaktiviert oder existiert nicht.", moduleName));
+        }
+
+        if (!failedModules.isEmpty()) {
+            // At least one module could not be initialized
+            final StringBuilder failedBuilder = new StringBuilder();
+            failedBuilder.append("__There was a problem while reloading modules. Following modules could not be initialized:__\n");
+
+            for (String module : failedModules) {
+                failedBuilder.append(module);
+                failedBuilder.append('\n');
+            }
+
+            DiscordIO.sendMessage(message.getChannel(), failedBuilder.toString());
         }
     }
 }

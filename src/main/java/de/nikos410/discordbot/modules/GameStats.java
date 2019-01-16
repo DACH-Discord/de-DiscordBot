@@ -196,7 +196,7 @@ public class GameStats {
                 .collect(Collectors.toList());
     }
 
-    private class GameFuzzyScore implements Comparable {
+    private static class GameFuzzyScore implements Comparable {
         private final String name;
         private final int score;
 
@@ -227,6 +227,11 @@ public class GameStats {
 
             final GameFuzzyScore otherScore = (GameFuzzyScore)other;
             return otherScore.getScore() == score;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, score);
         }
     }
 
