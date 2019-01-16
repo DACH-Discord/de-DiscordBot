@@ -16,6 +16,12 @@ apply plugin: 'application'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: "com.github.spotbugs"
 
+javadoc {
+    source = sourceSets.main.allJava
+    classpath = configurations.compile
+    failOnError = false
+}
+
 spotbugs {
     ignoreFailures = true
 }
