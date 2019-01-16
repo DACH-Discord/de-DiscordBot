@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
@@ -98,6 +97,22 @@ public class ModStuff extends CommandModule {
         }
 
         LOG.info("Restored all mutes.");
+    }
+
+    @Override
+    public void shutdown() {
+        // Usermutes
+        userMuteFutures.values()
+                .forEach(guildUserMutes -> guildUserMutes.values()
+                        .forEach(future -> future.cancel(false)));
+
+        // Channel mutes
+        channelMuteFutures.values()
+                .forEach(guildChannelMutes -> guildChannelMutes.values()
+                        .forEach(channelMutes -> channelMutes.values()
+                            .forEach(future -> future.cancel(false))));
+
+        scheduler.shutdown();
     }
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
