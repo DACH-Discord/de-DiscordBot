@@ -81,6 +81,25 @@ public class ModStuff extends CommandModule {
         LOG.info("Loaded modstuff file for {} guilds.", modstuffJSON.keySet().size());
     }
 
+    @Override
+    public void initWhenReady() {
+        // Restore all mutes that can be found in the JSON file
+        LOG.info("Restoring muted users.");
+
+        for (final String guildStringID : modstuffJSON.keySet()) {
+            LOG.debug("Processing JSON for guild with ID '{}'.", guildStringID);
+
+            final long guildLongID = Long.parseLong(guildStringID);
+            final IGuild guild = bot.getClient().getGuildByID(guildLongID);
+            LOG.debug("Found guild '{}'.", guild.getName());
+
+            restoreGuildUserMutes(guild);
+            restoreGuildChannelMutes(guild);
+        }
+
+        LOG.info("Restored all mutes.");
+    }
+
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false, ignoreParameterCount = true)
     public void command_kick(final IMessage message, final String userString, String customMessage) {
@@ -799,25 +818,6 @@ public class ModStuff extends CommandModule {
 
             user.addRole(muteRole);
         }
-    }
-
-    @EventSubscriber
-    public void onStartup(final ReadyEvent event) {
-        // Restore all mutes that can be found in the JSON file
-        LOG.info("Restoring muted users.");
-
-        for (final String guildStringID : modstuffJSON.keySet()) {
-            LOG.debug("Processing JSON for guild with ID '{}'.", guildStringID);
-
-            final long guildLongID = Long.parseLong(guildStringID);
-            final IGuild guild = event.getClient().getGuildByID(guildLongID);
-            LOG.debug("Found guild '{}'.", guild.getName());
-
-            restoreGuildUserMutes(guild);
-            restoreGuildChannelMutes(guild);
-        }
-
-        LOG.info("Restored all mutes.");
     }
 
     /**
