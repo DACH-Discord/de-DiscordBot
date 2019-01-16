@@ -726,7 +726,7 @@ public class DiscordBot {
 
         LOG.info("Deactivating module \"{}\".", moduleName);
 
-        // Unregister module from EventListener if neccessary
+        // Unregister module from EventListener if necessary
         if (moduleInstance.hasEvents()) {
             LOG.debug("Unregistering module {} from EventListener", moduleName);
             final EventDispatcher dispatcher = client.getDispatcher();
@@ -746,7 +746,7 @@ public class DiscordBot {
         LOG.debug("Shutting down and unloading module \"{}\"", moduleName);
         unloadModule(moduleName);
 
-        LOG.info("Rebuilding command map to exclue commands from module \"{}\"", moduleName);
+        LOG.info("Rebuilding command map to exclude commands from module \"{}\"", moduleName);
         makeCommandMap();
 
         // Everything went fine
