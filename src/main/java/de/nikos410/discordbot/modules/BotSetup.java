@@ -255,7 +255,7 @@ public class BotSetup extends CommandModule {
             return;
         }
 
-        final boolean result = bot.activateModule(moduleName);
+        final boolean result = bot.deactivateModule(moduleName);
         final List<String> failedModules = bot.getFailedModules();
 
         if(result && failedModules.isEmpty()) {

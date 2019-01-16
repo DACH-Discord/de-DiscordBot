@@ -44,8 +44,9 @@ public class DiscordBot {
     private static final Path ROLES_PATH = Paths.get("data/roles.json");
     public final JSONObject configJSON;
 
-    private final List<String> unloadedModules = new ArrayList<>();
+    private final Map<String, Class<? extends CommandModule>> moduleClasses = new HashMap<>();
     private final Map<String, CommandModule> loadedModules = new HashMap<>();
+    private final List<String> unloadedModules = new ArrayList<>();
     private final List<String> failedModules = new ArrayList<>();
 
     private final Map<String, Command> commands = new HashMap<>();
@@ -136,15 +137,11 @@ public class DiscordBot {
         LOG.debug("Clearing old modules.");
         this.loadedModules.clear();
 
-        // Search in package 'de.nikos410.discordbot.modules'
-        final Reflections reflections = new Reflections("de.nikos410.discordbot.modules");
-        // Find classes that are subtypes of CommandModule
-        final Set<Class<? extends CommandModule>> moduleClasses = reflections.getSubTypesOf(CommandModule.class);
-
-        LOG.info("Found {} total module(s).", moduleClasses.size());
+        findModules();
+        LOG.info("Found {} total module(s).", this.moduleClasses.size());
 
         // Load modules from all found classes
-        for (final Class<? extends CommandModule> moduleClass : moduleClasses) {
+        for (final Class<? extends CommandModule> moduleClass : moduleClasses.values()) {
             loadModule(moduleClass);
         }
 
@@ -172,6 +169,23 @@ public class DiscordBot {
     }
 
     /**
+     * Finds all classes in the package {@link de.nikos410.discordbot.modules} that extend {@link CommandModule}
+     * and populates the moduleClasses field using the class names as keys.
+     *
+     */
+    private void findModules() {
+        // Search in package 'de.nikos410.discordbot.modules'
+        final Reflections reflections = new Reflections("de.nikos410.discordbot.modules");
+        // Find classes that are subtypes of CommandModule
+        final Set<Class<? extends CommandModule>> foundModuleClasses = reflections.getSubTypesOf(CommandModule.class);
+
+        for (Class<? extends CommandModule> currentModuleClass : foundModuleClasses) {
+            this.moduleClasses.put(currentModuleClass.getSimpleName(), currentModuleClass);
+        }
+
+    }
+
+    /**
      * Loads a module from a class. The specified class has to be annotated with @CommandModule.
      *
      * @param moduleClass The class containing the module
@@ -181,6 +195,11 @@ public class DiscordBot {
 
         // Use class name as module name
         final String moduleName = moduleClass.getSimpleName();
+
+        // First, shut down all instance of this module that are already loaded
+        while(loadedModules.containsKey(moduleName)) {
+            unloadModule(moduleName);
+        }
 
         // Check if module is deactivated in config
         if (this.unloadedModules.contains(moduleName)) {
@@ -216,7 +235,6 @@ public class DiscordBot {
                 failedModules.add(moduleName);
             }
 
-            loadedModules.remove(moduleName);
             return;
         }
 
@@ -233,6 +251,24 @@ public class DiscordBot {
         loadedModules.put(moduleName, moduleInstance);
         failedModules.remove(moduleName);
         LOG.info("Successfully loaded module \"{}\".", moduleName);
+    }
+
+    private void unloadModule(final String moduleName) {
+        if(!loadedModules.containsKey(moduleName)) {
+            throw new IllegalArgumentException("Invalid module specified: " + moduleName);
+        }
+
+        final CommandModule module = loadedModules.get(moduleName);
+
+        // Shutdown the module
+        module.shutdown();
+        // Unregister the module with the EventListener
+        client.getDispatcher().unregisterListener(module.getClass());
+
+        loadedModules.remove(moduleName);
+        unloadedModules.remove(moduleName);
+        unloadedModules.add(moduleName);
+        removeFromJSONArray(configJSON.getJSONArray("unloadedModules"), moduleName);
     }
 
     /**
@@ -636,27 +672,27 @@ public class DiscordBot {
      * @return true if everything went fine, false if the module does not exist or is already actived
      */
     public boolean activateModule(final String moduleName) {
-
-        if (!unloadedModules.contains(moduleName) && !failedModules.contains(moduleName)) {
-            // Module either doesn't exist or is already loaded
+        if (!moduleClasses.containsKey(moduleName)) {
+            // Module does not exist
             return false;
         }
-        LOG.info("Activating module \"{}\".", moduleName);
+        if (!unloadedModules.contains(moduleName) && !failedModules.contains(moduleName)) {
+            // Module is not unloaded/failed already loaded
+            return false;
+        }
 
-        LOG.debug("Removing module from unloaded list");
+        LOG.debug("Removing module from unloaded and failed list, if present");
         this.unloadedModules.remove(moduleName);
+        this.failedModules.remove(moduleName);
 
         LOG.debug("Removing module from unloaded JSON array");
-        final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
-        for (int i = 0; i < jsonUnloadedModules.length(); i++) {
-            if (jsonUnloadedModules.getString(i).equals(moduleName)) {
-                jsonUnloadedModules.remove(i);
-            }
-        }
+        removeFromJSONArray(configJSON.getJSONArray("unloadedModules"), moduleName);
         this.saveConfig();
 
-        LOG.info("Reloading modules to include {}", moduleName);
-        this.loadModules();
+        LOG.info("Activating module \"{}\".", moduleName);
+        loadModule(moduleClasses.get(moduleName));
+        LOG.info("Rebuilding command map to include commands from module \"{}\"", moduleName);
+        makeCommandMap();
 
         // Everything went fine
         return true;
@@ -674,30 +710,49 @@ public class DiscordBot {
             return false;
         }
 
-        LOG.info("Deactivating module \"{}\".", moduleName);
-
-        // Unregister module from EventListener
         final CommandModule moduleInstance = loadedModules.get(moduleName);
 
+        LOG.info("Deactivating module \"{}\".", moduleName);
+
+        // Unregister module from EventListener if neccessary
         if (moduleInstance.hasEvents()) {
-            LOG.debug("Unregistering module from EventListener");
-            final EventDispatcher dispatcher = this.client.getDispatcher();
+            LOG.debug("Unregistering module {} from EventListener", moduleName);
+            final EventDispatcher dispatcher = client.getDispatcher();
             dispatcher.unregisterListener(moduleInstance);
         }
 
         LOG.debug("Adding module to unloaded list");
+        this.unloadedModules.remove(moduleName);
         this.unloadedModules.add(moduleName);
 
         LOG.debug("Adding module to unloaded JSON array");
-        final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
+        final JSONArray jsonUnloadedModules = configJSON.getJSONArray("unloadedModules");
+        removeFromJSONArray(jsonUnloadedModules, moduleName);
         jsonUnloadedModules.put(moduleName);
-        this.saveConfig();
+        saveConfig();
 
-        LOG.info("Reloading modules to remove {}", moduleName);
-        this.loadModules();
+        LOG.debug("Shutting down and unloading module \"{}\"", moduleName);
+        unloadModule(moduleName);
+
+        LOG.info("Rebuilding command map to exclue commands from module \"{}\"", moduleName);
+        makeCommandMap();
 
         // Everything went fine
         return true;
+    }
+
+    /**
+     * Remove a value from a {@link JSONArray}
+     *
+     * @param array The JSONArray to remove the value from.
+     * @param value The value to remove from the array.
+     */
+    private void removeFromJSONArray(final JSONArray array, final Object value) {
+        for (int i = 0; i < array.length(); i++) {
+            if (array.get(i).equals(value)) {
+                array.remove(i);
+            }
+        }
     }
 
     /**
