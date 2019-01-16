@@ -26,7 +26,7 @@ public class DiscordIO {
     }
 
     /**
-     * Send a list of lines to the specified channel. If the message gets too long (>2000 characters)
+     * Send a list of lines to the specified channel. If the message gets too long (&gt;2000 characters)
      * it will be split into multiple messages. The individual lines will not be split.
      *
      * Will try 20 times, once every 0.5 seconds, if the bot gets rate limited.
@@ -61,7 +61,7 @@ public class DiscordIO {
     }
 
     /**
-     * Send a string to a channel. If the string is too long (>2000 characters), it will be split into
+     * Send a string to a channel. If the string is too long (&gt;2000 characters), it will be split into
      * multiple messages. Will split in the middle of lines or words.
      *
      * Will try 20 times, once every 0.5 seconds, if the bot gets rate limited.
