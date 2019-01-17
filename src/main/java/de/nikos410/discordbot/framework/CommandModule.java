@@ -6,7 +6,7 @@ public abstract class CommandModule {
     protected DiscordBot bot = null;
 
     /**
-     * Specify the name of this module that is seen by the public. (e.g. when listing commands)
+     * @return Specify the name of this module that is seen by the public. (e.g. when listing commands)
      */
     public abstract String getDisplayName();
 

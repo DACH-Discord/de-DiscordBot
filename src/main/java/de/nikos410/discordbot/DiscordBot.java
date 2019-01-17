@@ -590,6 +590,8 @@ public class DiscordBot {
 
     /**
      * Print out some text and change the playing-text when bot is ready
+     *
+     * @param event The event that triggers this method.
      */
     @EventSubscriber
     public void onReady(final ReadyEvent event) {

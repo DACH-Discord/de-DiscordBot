@@ -19,6 +19,8 @@ public class CommandWrapper {
     /**
      * Create a new command wrapper.
      *
+     * @param name The name of this command.
+     * @param help The help for this command.
      * @param module The name of module that contains the command.
      * @param method The method that should be invoked to execute the command.
      * @param pmAllowed Set whether the command should be available in private messages.
