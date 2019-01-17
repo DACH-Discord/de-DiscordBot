@@ -1,9 +1,7 @@
 package de.nikos410.discordbot.modules;
 
-import java.lang.reflect.Method;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.CommandWrapper;
