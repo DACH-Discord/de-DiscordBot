@@ -308,7 +308,7 @@ public class GameStats extends CommandModule {
     }
 
     /**
-     * Add an empty entry for a game to a guild's JSON object. Will not check if entry already exists.
+     * Add an empty entry for a game to a guild's JSON instance. Will not check if entry already exists.
      *
      * @param game The game for which to add the entry.
      * @param guild The guild for which to create the entry.
