@@ -1,76 +1,60 @@
 package de.nikos410.discordbot.modules;
 
-import java.lang.reflect.Method;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 
-import de.nikos410.discordbot.DiscordBot;
+import de.nikos410.discordbot.framework.CommandModule;
+import de.nikos410.discordbot.framework.CommandWrapper;
+import de.nikos410.discordbot.framework.ModuleWrapper;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
 
-@CommandModule(moduleName = "Bot-Setup", commandOnly = true)
-public class BotSetup {
-    private static final Logger LOG = LoggerFactory.getLogger(DiscordBot.class);
+public class BotSetup extends CommandModule {
+    private static final Logger LOG = LoggerFactory.getLogger(BotSetup.class);
 
-    private final DiscordBot bot;
-    private final IDiscordClient client;
+    @Override
+    public String getDisplayName() {
+        return "Bot Setup";
+    }
 
-    public BotSetup (final DiscordBot bot) {
-        this.bot = bot;
-        this.client = bot.getClient();
+    @Override
+    public String getDescription() {
+        return "Mit diesem Modul kann der Bot konfiguriert und für einen Server eingerichtet werden.";
     }
 
     @CommandSubscriber(command = "help", help = "Zeigt diese Hilfe an")
     public void command_help(final IMessage message) {
         final EmbedBuilder helpEmbedBuilder = new EmbedBuilder();
-        final Map<String, Object> loadedModules = bot.getLoadedModules();
+        final List<ModuleWrapper> loadedModules = bot.getLoadedModules();
 
-        // Visit all modules that are loaded
-        for (final Object module : loadedModules.values()) {
-            final StringBuilder helpStringBuilder = new StringBuilder();
+        for (ModuleWrapper module : loadedModules) {
+            final StringBuilder moduleHelpBuilder = new StringBuilder();
 
-            // Visit all Methods of that module
-            for (final Method method : module.getClass().getMethods()) {
+            for (CommandWrapper command : module.getCommands()) {
+                // Only list commands that are available to that user
+                if (bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel()
+                        >= command.getPermissionLevel().getLevel()) {
 
-                // Ignore methods that are not a command
-                if (method.isAnnotationPresent(CommandSubscriber.class)) {
-                    final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
-
-                    // Only list commands that are available to that user
-                    if (bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel()
-                            >= annotation.permissionLevel().getLevel()) {
-                        final String command = annotation.command();
-                        final String help = annotation.help();
-
-                        helpStringBuilder.append(String.format("`%s` %s", command, help));
-                        helpStringBuilder.append('\n');
-                    }
+                    moduleHelpBuilder.append(String.format("`%s` - %s%n", command.getName(), command.getHelp()));
                 }
             }
 
-            final String helpString = helpStringBuilder.toString();
-
-            final CommandModule[] annotations = module.getClass().getDeclaredAnnotationsByType(CommandModule.class);
-            final String moduleName = annotations[0].moduleName();
-
-            if (!helpString.isEmpty()) {
-                helpEmbedBuilder.appendField(moduleName, helpString, false);
+            final String helpString = moduleHelpBuilder.toString();
+            if (moduleHelpBuilder.length() > 0) {
+                helpEmbedBuilder.appendField(module.getDisplayName(), helpString, false);
             }
         }
 
@@ -128,10 +112,10 @@ public class BotSetup {
             guildRoles = rolesJSON.getJSONObject(guildID);
         }
         else {
-            LOG.debug("No JSON object found for this guild. Creating.");
+            LOG.debug("No JSON instance found for this guild. Creating.");
             guildRoles = new JSONObject();
             rolesJSON.put(guildID, guildRoles);
-            LOG.debug("Successfully created JSON object for this guild.");
+            LOG.debug("Successfully created JSON instance for this guild.");
         }
         guildRoles.put(fieldName, role.getLongID());
 
@@ -169,15 +153,18 @@ public class BotSetup {
     @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = PermissionLevel.OWNER)
     public void command_shutdown(final IMessage message) {
         DiscordIO.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
-        LOG.info("Shutting down.");
-        this.client.logout();
+
+        LOG.info("Shutting down modules.");
+        bot.getLoadedModules().forEach(module -> module.getInstance().shutdown());
+
+        this.bot.getClient().logout();
     }
 
     @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = PermissionLevel.OWNER)
     public void command_setUsername(final IMessage message, final String newUserName) {
         try {
             LOG.info("Changing the username to {}.", newUserName);
-            this.client.changeUsername(newUserName);
+            this.bot.getClient().changeUsername(newUserName);
             DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Username gesetzt: `%s`", newUserName));
         }
         catch (RateLimitException e) {
@@ -192,8 +179,8 @@ public class BotSetup {
 
         // List loaded modules
         final StringBuilder loadedBuilder = new StringBuilder();
-        for (final String key : bot.getLoadedModules().keySet()) {
-            loadedBuilder.append(key);
+        for (ModuleWrapper module : bot.getLoadedModules()) {
+            loadedBuilder.append(module.getName());
             loadedBuilder.append('\n');
         }
         final String loadedModulesString = loadedBuilder.toString().isEmpty() ? "_keine_" : loadedBuilder.toString();
@@ -201,19 +188,19 @@ public class BotSetup {
 
         // List unloaded modules
         final StringBuilder unloadedBuilder = new StringBuilder();
-        for (final String key : bot.getUnloadedModules()) {
-            unloadedBuilder.append(key);
+        for (ModuleWrapper module : bot.getUnloadedModules()) {
+            unloadedBuilder.append(module.getName());
             unloadedBuilder.append('\n');
         }
         final String unloadedModulesString = unloadedBuilder.toString().isEmpty() ? "_keine_" : unloadedBuilder.toString();
         embedBuilder.appendField("Deaktivierte Module", unloadedModulesString, true);
 
         // Add failed modules, if present
-        final List<String> failedModules = bot.getFailedModules();
+        final List<ModuleWrapper> failedModules = bot.getFailedModules();
         if (!failedModules.isEmpty()) {
             final StringBuilder failedBuilder = new StringBuilder();
-            for (final String module : failedModules) {
-                failedBuilder.append(module);
+            for (ModuleWrapper module : failedModules) {
+                failedBuilder.append(module.getName());
                 failedBuilder.append('\n');
             }
             embedBuilder.appendField("Folgende Module konnten nicht geladen werden:", failedBuilder.toString(), true);
@@ -224,32 +211,18 @@ public class BotSetup {
 
     @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = PermissionLevel.ADMIN)
     public void command_loadModule(final IMessage message, final String moduleName) {
-        final boolean result = bot.activateModule(moduleName);
-        final List<String> failedModules = bot.getFailedModules();
+        final ModuleWrapper result = bot.activateModule(moduleName);
 
-        if(result && failedModules.isEmpty()) {
-            // Method returned true and there are no failed modules, everything went fine
-            message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
-            return;
-        }
-
-        if(!result) {
-            // Method returned false, module doesn't exist or is already activated
+        if (result == null) {
             DiscordIO.sendMessage(message.getChannel(),
                     String.format("Fehler! Modul `%s` ist bereits aktiviert oder existiert nicht.", moduleName));
         }
-
-        if (!failedModules.isEmpty()) {
-            // At least one module could not be initialized
-            final StringBuilder failedBuilder = new StringBuilder();
-            failedBuilder.append("__There was a problem while reloading modules. Following modules could not be initialized:__\n");
-
-            for (String module : failedModules) {
-                failedBuilder.append(module);
-                failedBuilder.append('\n');
-            }
-
-            DiscordIO.sendMessage(message.getChannel(), failedBuilder.toString());
+        else if (result.getStatus().equals(ModuleWrapper.ModuleStatus.FAILED)) {
+            DiscordIO.sendMessage(message.getChannel(),
+                    String.format("Fehler! Modul `%s` konnte nicht geladen werden!", moduleName));
+        }
+        else {
+            message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
         }
     }
 
@@ -260,32 +233,15 @@ public class BotSetup {
             return;
         }
 
-        final boolean result = bot.deactivateModule(moduleName);
-        final List<String> failedModules = bot.getFailedModules();
+        final ModuleWrapper result = bot.deactivateModule(moduleName);
 
-        if(result && failedModules.isEmpty()) {
-            // Method returned true and there are no failed modules, everything went fine
-            message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
-            return;
-        }
-
-        if(!result) {
-            // Method returned false, module doesn't exist or is already activated
+        if(result == null) {
             DiscordIO.sendMessage(message.getChannel(),
                     String.format("Fehler! Modul `%s` ist bereits deaktiviert oder existiert nicht.", moduleName));
         }
+        else {
+            message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
 
-        if (!failedModules.isEmpty()) {
-            // At least one module could not be initialized
-            final StringBuilder failedBuilder = new StringBuilder();
-            failedBuilder.append("__There was a problem while reloading modules. Following modules could not be initialized:__\n");
-
-            for (String module : failedModules) {
-                failedBuilder.append(module);
-                failedBuilder.append('\n');
-            }
-
-            DiscordIO.sendMessage(message.getChannel(), failedBuilder.toString());
         }
     }
 }

@@ -3,15 +3,29 @@ package de.nikos410.discordbot.modules;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.util.discord.DiscordIO;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
 
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IMessage;
 
-@CommandModule(moduleName = "Reddit-Linker", commandOnly = false)
-public class RedditLinker {
+public class RedditLinker extends CommandModule {
+
+    @Override
+    public String getDisplayName() {
+        return "Reddit-Linker";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Verlinkt Subreddits die erwähnt werden.";
+    }
+
+    @Override
+    public boolean hasEvents() {
+        return true;
+    }
 
     @EventSubscriber
     public void onMessageReceived(final MessageReceivedEvent event) {

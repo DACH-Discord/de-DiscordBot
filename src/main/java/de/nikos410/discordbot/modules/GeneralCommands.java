@@ -1,7 +1,7 @@
 package de.nikos410.discordbot.modules;
 
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.util.discord.*;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import sx.blah.discord.handle.obj.*;
@@ -13,12 +13,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
 
-@CommandModule(moduleName = "Allgemeine Befehle", commandOnly = true)
-public class GeneralCommands {
+public class GeneralCommands extends CommandModule {
     private final LocalDateTime startupTimestamp;
 
     public GeneralCommands() {
         startupTimestamp = LocalDateTime.now();
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Allgemeines";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Allgemeine Befehle";
     }
 
     @CommandSubscriber(command = "Ping", help = ":ping_pong:")

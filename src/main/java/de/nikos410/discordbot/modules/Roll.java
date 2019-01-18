@@ -5,8 +5,8 @@ import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.stream.IntStream;
 
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.util.discord.DiscordIO;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
@@ -14,8 +14,7 @@ import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.util.EmbedBuilder;
 
-@CommandModule(moduleName = "Würfel", commandOnly = true)
-public class Roll {
+public class Roll extends CommandModule {
     private static final int DEFAULT_DOT_COUNT = 6;
 
     private static final SecureRandom rng;
@@ -23,6 +22,21 @@ public class Roll {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(System.currentTimeMillis());
         rng = new SecureRandom(buffer.array());
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Würfel";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Würfeln mit Einstellungsmöglichkeiten.";
+    }
+
+    @Override
+    public boolean hasEvents() {
+        return true;
     }
 
     @CommandSubscriber(command = "roll",help = "Würfeln. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`")

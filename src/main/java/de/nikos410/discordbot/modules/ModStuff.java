@@ -1,9 +1,8 @@
 package de.nikos410.discordbot.modules;
 
-import de.nikos410.discordbot.DiscordBot;
 import de.nikos410.discordbot.exception.InitializationException;
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.CommandUtils;
 import de.nikos410.discordbot.util.discord.ChannelUtils;
@@ -19,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
@@ -43,14 +41,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-@CommandModule(moduleName = "Modzeugs", commandOnly = false)
-public class ModStuff {
+public class ModStuff extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(ModStuff.class);
 
     private static final Path MODSTUFF_PATH = Paths.get("data/modstuff.json");
-    private final JSONObject modstuffJSON;
-
-    private final DiscordBot bot;
+    private JSONObject modstuffJSON;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -59,9 +54,23 @@ public class ModStuff {
 
     private final Map<IGuild, List<String>> voiceLog = new HashMap<>();
 
-    public ModStuff (final DiscordBot bot) {
-        this.bot = bot;
+    @Override
+    public String getDisplayName() {
+        return "Moderationswerkzeuge";
+    }
 
+    @Override
+    public String getDescription() {
+        return "Diverse Tools, die die Moderation eines Servers erleichtern.";
+    }
+
+    @Override
+    public boolean hasEvents() {
+        return true;
+    }
+
+    @Override
+    public void init() {
         final String rolesFileContent = IOUtil.readFile(MODSTUFF_PATH);
         if (rolesFileContent == null) {
             LOG.error("Could not read modstuff file.");
@@ -69,6 +78,41 @@ public class ModStuff {
         }
         this.modstuffJSON = new JSONObject(rolesFileContent);
         LOG.info("Loaded modstuff file for {} guilds.", modstuffJSON.keySet().size());
+    }
+
+    @Override
+    public void initWhenReady() {
+        // Restore all mutes that can be found in the JSON file
+        LOG.info("Restoring muted users.");
+
+        for (final String guildStringID : modstuffJSON.keySet()) {
+            LOG.debug("Processing JSON for guild with ID '{}'.", guildStringID);
+
+            final long guildLongID = Long.parseLong(guildStringID);
+            final IGuild guild = bot.getClient().getGuildByID(guildLongID);
+            LOG.debug("Found guild '{}'.", guild.getName());
+
+            restoreGuildUserMutes(guild);
+            restoreGuildChannelMutes(guild);
+        }
+
+        LOG.info("Restored all mutes.");
+    }
+
+    @Override
+    public void shutdown() {
+        // Usermutes
+        userMuteFutures.values()
+                .forEach(guildUserMutes -> guildUserMutes.values()
+                        .forEach(future -> future.cancel(false)));
+
+        // Channel mutes
+        channelMuteFutures.values()
+                .forEach(guildChannelMutes -> guildChannelMutes.values()
+                        .forEach(channelMutes -> channelMutes.values()
+                            .forEach(future -> future.cancel(false))));
+
+        scheduler.shutdown();
     }
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
@@ -793,30 +837,6 @@ public class ModStuff {
 
             user.addRole(muteRole);
         }
-    }
-
-    @EventSubscriber
-    public void onStartup(final ReadyEvent event) {
-        // Restore all mutes that can be found in the JSON file
-        LOG.info("Restoring muted users.");
-
-        for (final String guildStringID : modstuffJSON.keySet()) {
-            LOG.debug("Processing JSON for guild with ID '{}'.", guildStringID);
-
-            final long guildLongID = Long.parseLong(guildStringID);
-            final IGuild guild = event.getClient().getGuildByID(guildLongID);
-
-            if (guild == null) {
-                LOG.warn("Found modstuff entry for guild with invalid ID '{}'. Skipping.", guildLongID);
-            }
-            else {
-                LOG.debug("Found guild '{}'.", guild.getName());
-                restoreGuildUserMutes(guild);
-                restoreGuildChannelMutes(guild);
-            }
-        }
-
-        LOG.info("Restored all mutes.");
     }
 
     /**

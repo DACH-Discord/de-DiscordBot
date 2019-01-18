@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.*;
@@ -15,6 +17,7 @@ import de.nikos410.discordbot.framework.annotations.*;
 import de.nikos410.discordbot.modules.BotSetup;
 import de.nikos410.discordbot.util.discord.*;
 import de.nikos410.discordbot.util.io.IOUtil;
+import static de.nikos410.discordbot.framework.ModuleWrapper.ModuleStatus;
 
 import org.reflections.Reflections;
 import org.slf4j.Logger;
@@ -43,11 +46,8 @@ public class DiscordBot {
     private static final Path ROLES_PATH = Paths.get("data/roles.json");
     public final JSONObject configJSON;
 
-    private final List<String> unloadedModules = new ArrayList<>();
-    private final Map<String, Object> loadedModules = new HashMap<>();
-    private final List<String> failedModules = new ArrayList<>();
-
-    private final Map<String, Command> commands = new HashMap<>();
+    private final Map<String, ModuleWrapper> modules = new HashMap<>();
+    private final Map<String, CommandWrapper> commands = new HashMap<>();
 
     private final String prefix;
     private final long ownerID;
@@ -82,16 +82,6 @@ public class DiscordBot {
             throw new InitializationException("No owner configured.", DiscordBot.class);
         }
         this.ownerID = configJSON.getLong("owner");
-
-        // Get unloaded modules
-        if (!configJSON.has("unloadedModules")) {
-            throw new InitializationException("Could not find unloaded modules.", DiscordBot.class);
-        }
-        final JSONArray unloadedModulesJSON = this.configJSON.getJSONArray("unloadedModules");
-
-        for (int i = 0; i < unloadedModulesJSON.length(); i++) {
-            this.unloadedModules.add(unloadedModulesJSON.getString(i));
-        }
     }
 
     private void start() {
@@ -118,11 +108,29 @@ public class DiscordBot {
         }
 
         // Initialize Modules
-        this.loadModules();
+        discoverModules();
+        loadModules();
     }
 
     public IDiscordClient getClient() {
         return this.client;
+    }
+
+    /**
+     * Finds all classes in the package {@link de.nikos410.discordbot.modules} that extend {@link CommandModule}
+     * and populates the module map using the module names as keys.
+     */
+    private void discoverModules() {
+        // Search in package 'de.nikos410.discordbot.modules'
+        final Reflections reflections = new Reflections("de.nikos410.discordbot.modules");
+        // Find classes that are subtypes of CommandModule
+        final Set<Class<? extends CommandModule>> foundModuleClasses = reflections.getSubTypesOf(CommandModule.class);
+
+        for (Class<? extends CommandModule> currentModuleClass : foundModuleClasses) {
+            final ModuleWrapper module = new ModuleWrapper(currentModuleClass);
+            modules.put(module.getName(), module);
+        }
+
     }
 
     /**
@@ -132,143 +140,174 @@ public class DiscordBot {
     private void loadModules() {
         LOG.debug("Loading modules.");
 
-        LOG.debug("Clearing old modules.");
-        this.loadedModules.clear();
-
-        // Search in package 'de.nikos410.discordbot.modules'
-        final Reflections reflections = new Reflections("de.nikos410.discordbot.modules");
-        // Find classes that are annotated with @CommandModule
-        final Set<Class<?>> moduleClasses = reflections.getTypesAnnotatedWith(CommandModule.class);
-
-        LOG.info("Found {} total module(s).", moduleClasses.size());
+        LOG.info("Found {} total module(s).", this.modules.size());
 
         // Load modules from all found classes
-        for (final Class<?> moduleClass : moduleClasses) {
-            loadModule(moduleClass);
+        for (ModuleWrapper wrapper : this.modules.values()) {
+            loadModule(wrapper);
+        }
+
+        // Wait until the bot is ready to run initializations
+        LOG.debug("Waiting until the bot is ready.");
+        while (!client.isReady()) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(100);
+            }
+            catch(InterruptedException e) {
+                LOG.warn("Sleep was interrupted");
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        LOG.debug("Bot is ready. Running Inits.");
+        for (ModuleWrapper wrapper : this.modules.values()) {
+            final CommandModule module = wrapper.getInstance();
+            if (wrapper.getStatus().equals(ModuleStatus.ACTIVE)) {
+                module.initWhenReady();
+            }
+
         }
 
         // Create command map
         this.makeCommandMap();
-        LOG.info("{} module(s) with {} command(s) active.", this.loadedModules.size(), this.commands.size());
+        LOG.info("{} module(s) with {} command(s) active.", this.modules.size(), this.commands.size());
     }
 
     /**
-     * Loads a module from a class. The specified class has to be annotated with @CommandModule.
+     * Load a module from a class specified in a {@link ModuleWrapper}
      *
-     * @param moduleClass The class containing the module
+     * @param wrapper The
      */
-    private void loadModule(final Class<?> moduleClass) {
-        LOG.debug("Loading module information from class {}.", moduleClass);
-
-        // Get module name from annotation parameters
-        final CommandModule moduleAnnotation = moduleClass.getDeclaredAnnotationsByType(CommandModule.class)[0];
-        final String moduleName = moduleAnnotation.moduleName();
+    private CommandModule loadModule(final ModuleWrapper wrapper) {
+        LOG.debug("Loading module {}.", wrapper.getName());
 
         // Check if module is deactivated in config
-        if (this.unloadedModules.contains(moduleName)) {
-            // BotSetup Module must always be loaded
-            if (moduleClass.equals(BotSetup.class)) {
-                LOG.info("Module \"{}\" can not be deactivated. Loading anyways.",
-                        moduleName);
+        final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
+        if (!wrapper.getModuleClass().equals(BotSetup.class)
+                && jsonUnloadedModules.toList().contains(wrapper.getName())) {
+            LOG.info("Module '{}' is deactivated. Skipping.", wrapper.getName());
 
-                // Remove entry from unloaded list and JSON
-                LOG.debug("Removing module from unloaded list.");
-                unloadedModules.remove(moduleName);
-                LOG.debug("Removing module from unloaded JSON array");
-                final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
-                for (int i = 0; i < jsonUnloadedModules.length(); i++) {
-                    if (jsonUnloadedModules.getString(i).equals(moduleName)) {
-                        jsonUnloadedModules.remove(i);
-                    }
-                }
-                this.saveConfig();
-            }
-            else {
-                LOG.info("Module \"{}\" is deactivated. Skipping.", moduleName);
-                return;
-            }
+            wrapper.setStatus(ModuleStatus.INACTIVE);
+            return null;
         }
 
-        LOG.debug("Loading module \"{}\".", moduleName);
-        // Create an instance of the class
-        final Object moduleObject = makeModuleObject(moduleClass);
+        LOG.debug("Loading module '{}'.", wrapper.getName());
+        final CommandModule moduleInstance = instantiateModule(wrapper.getModuleClass());
+        wrapper.setInstance(moduleInstance);
 
-        if (moduleObject == null) {
+        if (moduleInstance == null) {
             // Module could not be created -> Add to failed modules
-            if (!failedModules.contains(moduleName)) {
-                failedModules.add(moduleName);
-            }
-
-            loadedModules.remove(moduleName);
-            return;
+            wrapper.setStatus(ModuleStatus.FAILED);
+            return null;
         }
+
+        // Fill wrapper fields
+        wrapper.setDisplayName(moduleInstance.getDisplayName());
+
+        // Set bot field and run initialization for module
+        moduleInstance.setBot(this);
+        moduleInstance.init();
 
         // Register EventListener if needed
-        if (!moduleAnnotation.commandOnly()) {
+        if (moduleInstance.hasEvents()) {
             final EventDispatcher dispatcher = this.client.getDispatcher();
-            dispatcher.registerListener(moduleObject);
+            dispatcher.registerListener(moduleInstance);
         }
 
-        loadedModules.put(moduleName, moduleObject);
-        failedModules.remove(moduleName);
-        LOG.info("Successfully loaded module \"{}\".", moduleName);
+        // Register all commands
+        wrapper.setCommands(discoverCommands(wrapper));
+
+        wrapper.setStatus(ModuleStatus.ACTIVE);
+
+        LOG.info("Successfully loaded module '{}'.", wrapper.getName());
+        return moduleInstance;
+    }
+
+    private void unloadModule(final ModuleWrapper wrapper) {
+        LOG.debug("Unloading module '{}'.", wrapper.getName());
+
+        wrapper.getInstance().shutdown();
+        client.getDispatcher().unregisterListener(wrapper.getClass());
+
+        wrapper.setStatus(ModuleStatus.INACTIVE);
+        wrapper.setInstance(null);
+        wrapper.setCommands(null);
+
+        final JSONArray unloadedModulesJSON = configJSON.getJSONArray("unloadedModules");
+        removeFromJSONArray(unloadedModulesJSON, wrapper.getName());
+        unloadedModulesJSON.put(wrapper.getName());
     }
 
     /**
      * Creates an instance of a class containing a module.
      *
      * @param moduleClass The class containing the module
-     * @return The created Object
+     * @return The created module instance
      */
-    private Object makeModuleObject (final Class<?> moduleClass) {
-        LOG.debug("Creating object from class {}.", moduleClass);
-
+    private CommandModule instantiateModule(final Class<? extends CommandModule> moduleClass) {
         try {
-            return createObjectWithConstructors(moduleClass);
+            LOG.debug("Instantiating module class \"{}\".", moduleClass.getName());
+            return moduleClass.getConstructor().newInstance();
         }
         catch (InstantiationException | IllegalAccessException e) {
-            LOG.warn("Something went wrong while creating object from class \"{}\". Skipping.", moduleClass.getName(), e);
+            LOG.warn("Something went wrong while instantiating class \"{}\". Skipping.", moduleClass.getName(), e);
             return null;
         }
         catch (InvocationTargetException e) {
-            LOG.warn("Something went wrong while creating object from class \"{}\". Skipping.", moduleClass.getName(), e.getCause());
+            LOG.warn("Something went wrong while instantiating class \"{}\". Skipping.", moduleClass.getName(), e.getCause());
+            return null;
+        }
+        catch (NoSuchMethodException e) {
+            LOG.error("Could not instantiate module. Constructor does not exist.", e);
             return null;
         }
     }
 
-    /**
-     * Creates an instance of a class containing a module. First, tries to use a constructor with a parameter of
-     * type {@link de.nikos410.discordbot.DiscordBot}. If no such constructor is accessible, uses a constructor
-     * without any parameters.
-     *
-     * @param moduleClass The class containing the module
-     * @return The created Object
-     */
-    private Object createObjectWithConstructors(final Class<?> moduleClass)
-            throws InstantiationException, IllegalAccessException, InvocationTargetException {
-        // Use try-catch to differentiate between two possible constructors
-        Object moduleObject;
-        try {
-            // Constructor with one parameter of type 'DiscordBot'
-            LOG.debug("Trying to create an object from class {} with parameter.", moduleClass.getName());
-            moduleObject = moduleClass.getDeclaredConstructor(DiscordBot.class).newInstance(this);
+    private List<CommandWrapper> discoverCommands(final ModuleWrapper moduleWrapper) {
+        LOG.debug("Registering command(s) for module '{}'.", moduleWrapper.getName());
 
-            LOG.debug("Successfully created object from class {}.", moduleClass);
-            return moduleObject;
-        }
-        catch (NoSuchMethodException e) {
-            // Constructor without parameters
-            LOG.debug("Failed to create an object from class {} with parameter. Trying without parameters.",
-                    moduleClass.getName());
-            moduleObject = moduleClass.newInstance();
+        final List<CommandWrapper> commands = new LinkedList<>();
 
-            LOG.debug("Successfully created object from class {}.", moduleClass);
-            return moduleObject;
+        final Method[] allMethods = moduleWrapper.getModuleClass().getMethods();
+        final List<Method> commandMethods = Arrays.stream(allMethods)
+                .filter(module -> module.isAnnotationPresent(CommandSubscriber.class))
+                .collect(Collectors.toList());
+
+        for (final Method method : commandMethods) {
+            // Register methods with the @CommandSubscriber as commands
+
+            // All annotations of type CommandSubscriber declared for that Method. Should be exactly 1
+            final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
+
+            // Get command properties from annotation
+            final String commandName = annotation.command();
+            final String commandHelp = annotation.help();
+            final boolean pmAllowed = annotation.pmAllowed();
+            final PermissionLevel permissionLevel = annotation.permissionLevel();
+            final boolean passContext = annotation.passContext();
+            final boolean ignoreParameterCount = annotation.ignoreParameterCount();
+
+            final int parameterCount = method.getParameterCount()-1;
+
+            if ((parameterCount >= 0 && parameterCount <= 5) || ignoreParameterCount) {
+                final CommandWrapper commandWrapper = new CommandWrapper(commandName, commandHelp, moduleWrapper, method, pmAllowed,
+                        permissionLevel, parameterCount, passContext, ignoreParameterCount);
+
+                commands.add(commandWrapper);
+
+                LOG.debug("Saved command '{}'.", commandName);
+            }
+            else {
+                LOG.warn("Method '{}' has an invalid number of arguments. Skipping", commandName);
+            }
+
         }
+
+        return commands;
     }
 
     /**
-     * Populates global command map, maps a 'Command' object, containing a commands attributes, to each command.
+     * Populates global command map, maps a 'CommandWrapper' instance, containing a commands attributes, to each command.
      */
     private void makeCommandMap() {
         LOG.debug("Creating command map.");
@@ -276,39 +315,11 @@ public class DiscordBot {
         LOG.debug("Clearing old commands.");
         this.commands.clear();
 
-        for (final Map.Entry<String, Object> entry : this.loadedModules.entrySet()) {
-            final Object module = entry.getValue();
+        final List<ModuleWrapper> loadedModules = getLoadedModules();
 
-            LOG.debug("Registering command(s) for module \"{}\".", entry.getKey());
-
-            for (final Method method : module.getClass().getMethods()) {
-
-                // Register methods with the @CommandSubscriber as commands
-                if (method.isAnnotationPresent(CommandSubscriber.class)) {
-
-                    // All annotations of type CommandSubscriber declared for that Method. Should be exactly 1
-                    final CommandSubscriber[] annotations = method.getDeclaredAnnotationsByType(CommandSubscriber.class);
-
-                    // Get command properties from annotation
-                    final String command = annotations[0].command();
-                    final boolean pmAllowed = annotations[0].pmAllowed();
-                    final PermissionLevel permissionLevel = annotations[0].permissionLevel();
-                    final int parameterCount = method.getParameterCount();
-                    final boolean passContext = annotations[0].passContext();
-                    final boolean ignoreParameterCount = annotations[0].ignoreParameterCount();
-
-                    // At least 1 (message), max 6 (message + 5 parameter)
-                    if ((parameterCount > 0 && parameterCount <= 6) || ignoreParameterCount) {
-                        final Command cmd = new Command(module, method, pmAllowed, permissionLevel,
-                                parameterCount-1, passContext, ignoreParameterCount);
-                        this.commands.put(command.toLowerCase(), cmd);
-
-                        LOG.debug("Registered command \"{}\".", command);
-                    }
-                    else {
-                        LOG.warn("Command \"{}\" has an invalid number of arguments. Skipping", command);
-                    }
-                }
+        for (final ModuleWrapper moduleWrapper : loadedModules) {
+            for (final CommandWrapper commandWrapper : moduleWrapper.getCommands()) {
+                this.commands.put(commandWrapper.getName().toLowerCase(), commandWrapper);
             }
         }
     }
@@ -402,22 +413,22 @@ public class DiscordBot {
             return;
         }
 
-        final Command command = commands.get(commandName);
+        final CommandWrapper command = commands.get(commandName);
 
         LOG.info("User {} used command {}", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), commandName);
 
         // The command was received in a PM but is only available on guilds
-        if (message.getChannel().isPrivate() && !command.pmAllowed) {
+        if (message.getChannel().isPrivate() && !command.isPmAllowed()) {
             DiscordIO.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
-            LOG.info("Command {} is not available in PMs.", commandName);
+            LOG.info("CommandWrapper {} is not available in PMs.", commandName);
             return;
         }
 
         // Check if the user is allowed to use that command
         final PermissionLevel userPermissionLevel = this.getUserPermissionLevel(message.getAuthor(), message.getGuild());
-        LOG.debug("Checking permissions. User: {} | Required: {}", userPermissionLevel, command.permissionLevel);
+        LOG.debug("Checking permissions. User: {} | Required: {}", userPermissionLevel, command.getPermissionLevel());
 
-        if (userPermissionLevel.getLevel() < command.permissionLevel.getLevel()) {
+        if (userPermissionLevel.getLevel() < command.getPermissionLevel().getLevel()) {
             DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
                     userPermissionLevel.getName()));
             LOG.info("User {} doesn't have the required permissions for using the command {}.",
@@ -426,14 +437,12 @@ public class DiscordBot {
             return;
         }
 
-        final int expectedParameterCount = command.expectedParameterCount;
-        final boolean passContext = command.passContext;
-        final boolean ignoreParameterCount = command.ignoreParameterCount;
-        final List<String> parameters = parseParameters(messageContent, commandName, expectedParameterCount, passContext);
+        final int expectedParameterCount = command.getExpectedParameterCount();
+        final List<String> parameters = parseParameters(messageContent, commandName, expectedParameterCount, command.isPassContext());
 
         // Check if the user used the correct number of parameters
         if (parameters.size() < expectedParameterCount) {
-            if (ignoreParameterCount) {
+            if (command.isIgnoreParameterCount()) {
                 while (parameters.size() < expectedParameterCount) {
                     parameters.add(null);
                 }
@@ -446,53 +455,52 @@ public class DiscordBot {
             }
         }
 
-        executeCommand(commandName, command, parameters, message);
+        executeCommand(command, parameters, message);
     }
 
     /**
-     * Invoke the method specified in a Command object with the parameters in a List
+     * Invoke the method specified in a CommandWrapper with the parameters in a List
      *
-     * @param commandName The name of the command
-     * @param command The object containing the attributes of the command, specifically the method to invoke
+     * @param command The instance containing the attributes of the command, specifically the method to invoke
      * @param parameters The parameters to use while invoking the method
      * @param message The message that triggered the command
      */
-    private void executeCommand(final String commandName, final Command command, final List<String> parameters, final IMessage message) {
-        LOG.debug("Executing command {} with {} parameters.", commandName, parameters.size());
+    private void executeCommand(final CommandWrapper command, final List<String> parameters, final IMessage message) {
+        LOG.debug("Executing command {} with {} parameters.", command.getName(), parameters.size());
+
+        final Method method = command.getMethod();
+        final CommandModule instance = command.getModule().getInstance();
 
         try {
             switch (parameters.size()) {
                 case 0:
-                    command.method.invoke(command.object, message);
+                    method.invoke(instance, message);
                     break;
                 case 1:
-                    command.method.invoke(command.object, message, parameters.get(0));
+                    method.invoke(instance, message, parameters.get(0));
                     break;
                 case 2:
-                    command.method.invoke(command.object, message, parameters.get(0), parameters.get(1));
+                    method.invoke(instance, message, parameters.get(0), parameters.get(1));
                     break;
                 case 3:
-                    command.method.invoke(command.object, message, parameters.get(0), parameters.get(1), parameters.get(2));
+                    method.invoke(instance, message, parameters.get(0), parameters.get(1), parameters.get(2));
                     break;
                 case 4:
-                    command.method.invoke(command.object, message, parameters.get(0), parameters.get(1), parameters.get(2),
+                    method.invoke(instance, message, parameters.get(0), parameters.get(1), parameters.get(2),
                             parameters.get(3));
                     break;
                 case 5:
-                    command.method.invoke(command.object, message, parameters.get(0), parameters.get(1), parameters.get(2),
+                    method.invoke(instance, message, parameters.get(0), parameters.get(1), parameters.get(2),
                             parameters.get(3), parameters.get(4));
                     break;
                 default:
-                    LOG.error("Command \"{}\" has an invalid number of arguments. This should never happen.",
-                            commandName);
-                    DiscordIO.errorNotify("Befehl kann wegen einer ungültigen Anzahl an Argumenten nicht " +
-                            "ausgeführt werden. Dies sollte niemals passieren!", message.getChannel());
+                    throw new IllegalArgumentException("Command has an invalid number of arguments. This should never happen.");
             }
         }
         catch (IllegalAccessException | InvocationTargetException e) {
             final Throwable cause = e.getCause();
 
-            LOG.error("Command \"{}\" could not be executed.", commandName, e.getCause());
+            LOG.error("Command '{}' could not be executed.", command.getName(), e.getCause());
             DiscordIO.errorNotify(cause.toString(), message.getChannel());
         }
     }
@@ -602,9 +610,11 @@ public class DiscordBot {
 
     /**
      * Print out some text and change the playing-text when bot is ready
+     *
+     * @param event The event that triggers this method.
      */
     @EventSubscriber
-    public void onStartup(final ReadyEvent event) {
+    public void onReady(final ReadyEvent event) {
         LOG.info("[INFO] Bot ready. Prefix: {}", this.prefix);
         LOG.info("Add this bot to a server: https://discordapp.com/oauth2/authorize?client_id={}&scope=bot", client.getApplicationClientID());
         client.changePresence(StatusType.ONLINE, ActivityType.PLAYING, String.format("%shelp | WIP", this.prefix));
@@ -615,26 +625,35 @@ public class DiscordBot {
      *
      * @return The map containing the loaded modules
      */
-    public Map<String, Object> getLoadedModules() {
-        return loadedModules;
+    public List<ModuleWrapper> getLoadedModules() {
+        return modules.values()
+                .stream()
+                .filter(module -> module.getStatus().equals(ModuleStatus.ACTIVE))
+                .collect(Collectors.toList());
     }
 
     /**
-     * Returns the list containing the names of the unloaded modules
+     * Returns the list containing the unloaded modules
      *
-     * @return The list containing the names of the unloaded modules
+     * @return The list containing the unloaded modules
      */
-    public List<String> getUnloadedModules() {
-        return unloadedModules;
+    public List<ModuleWrapper> getUnloadedModules() {
+        return modules.values()
+                .stream()
+                .filter(module -> module.getStatus().equals(ModuleStatus.INACTIVE))
+                .collect(Collectors.toList());
     }
 
     /**
-     * Returns the list containing the names of the unloaded modules
+     * Returns the list containing the failed modules
      *
-     * @return The list containing the names of the unloaded modules
+     * @return The list containing the failed modules
      */
-    public List<String> getFailedModules() {
-        return failedModules;
+    public List<ModuleWrapper> getFailedModules() {
+        return modules.values()
+                .stream()
+                .filter(module -> module.getStatus().equals(ModuleStatus.FAILED))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -643,31 +662,39 @@ public class DiscordBot {
      * @param moduleName The name of the module
      * @return true if everything went fine, false if the module does not exist or is already actived
      */
-    public boolean activateModule(final String moduleName) {
-
-        if (!unloadedModules.contains(moduleName) && !failedModules.contains(moduleName)) {
-            // Module either doesn't exist or is already loaded
-            return false;
+    public ModuleWrapper activateModule(final String moduleName) {
+        if (!modules.containsKey(moduleName)) {
+            // Module does not exist
+            return null;
         }
-        LOG.info("Activating module \"{}\".", moduleName);
 
-        LOG.debug("Removing module from unloaded list");
-        this.unloadedModules.remove(moduleName);
+        final ModuleWrapper module = modules.get(moduleName);
+        if (module.getStatus().equals(ModuleStatus.ACTIVE)) {
+            // Module is already active
+            return null;
+        }
 
         LOG.debug("Removing module from unloaded JSON array");
-        final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
-        for (int i = 0; i < jsonUnloadedModules.length(); i++) {
-            if (jsonUnloadedModules.getString(i).equals(moduleName)) {
-                jsonUnloadedModules.remove(i);
-            }
-        }
+        removeFromJSONArray(configJSON.getJSONArray("unloadedModules"), moduleName);
         this.saveConfig();
 
-        LOG.info("Reloading modules to include {}", moduleName);
-        this.loadModules();
+        LOG.info("Activating module '{}'.", moduleName);
+        final CommandModule moduleInstance = loadModule(module);
+        if (moduleInstance == null) {
+            LOG.error("Module {} could not be loaded.", moduleName);
+            return module;
+        }
+
+        // Run init tasks
+        LOG.debug("Running init tasks.");
+        moduleInstance.init();
+        moduleInstance.initWhenReady(); // This method can only be executed by a command, so we don't have to check if the bot is ready
+
+        LOG.info("Rebuilding command map to include commands from module '{}'.", moduleName);
+        makeCommandMap();
 
         // Everything went fine
-        return true;
+        return module;
     }
 
     /**
@@ -676,38 +703,40 @@ public class DiscordBot {
      * @param moduleName The name of the module
      * @return true if everything went fine, false if the module does not exist or is already deactivated
      */
-    public boolean deactivateModule(final String moduleName) {
-        if (!this.loadedModules.containsKey(moduleName)) {
-            // Module either doesn't exist or is already unloaded
-            return false;
+    public ModuleWrapper deactivateModule(final String moduleName) {
+        if (!modules.containsKey(moduleName)) {
+            // Module does not exist
+            return null;
         }
 
-        LOG.info("Deactivating module \"{}\".", moduleName);
-
-        // Unregister module from EventListener
-        final Object moduleObject = loadedModules.get(moduleName);
-        final Class<?> moduleClass = moduleObject.getClass();
-
-        final CommandModule moduleAnnotation = moduleClass.getDeclaredAnnotationsByType(CommandModule.class)[0];
-        if (!moduleAnnotation.commandOnly()) {
-            LOG.debug("Unregistering module from EventListener");
-            final EventDispatcher dispatcher = this.client.getDispatcher();
-            dispatcher.registerListener(moduleObject);
+        final ModuleWrapper module = modules.get(moduleName);
+        if (module.getStatus().equals(ModuleStatus.INACTIVE)) {
+            // Module is already inactive
+            return null;
         }
 
-        LOG.debug("Adding module to unloaded list");
-        this.unloadedModules.add(moduleName);
+        LOG.info("Deactivating module '{}'.", moduleName);
+        unloadModule(module);
 
-        LOG.debug("Adding module to unloaded JSON array");
-        final JSONArray jsonUnloadedModules = this.configJSON.getJSONArray("unloadedModules");
-        jsonUnloadedModules.put(moduleName);
-        this.saveConfig();
-
-        LOG.info("Reloading modules to remove {}", moduleName);
-        this.loadModules();
+        LOG.info("Rebuilding command map to exclude commands from module \"{}\"", moduleName);
+        makeCommandMap();
 
         // Everything went fine
-        return true;
+        return module;
+    }
+
+    /**
+     * Remove a value from a {@link JSONArray}
+     *
+     * @param array The JSONArray to remove the value from.
+     * @param value The value to remove from the array.
+     */
+    private void removeFromJSONArray(final JSONArray array, final Object value) {
+        for (int i = 0; i < array.length(); i++) {
+            if (array.get(i).equals(value)) {
+                array.remove(i);
+            }
+        }
     }
 
     /**
