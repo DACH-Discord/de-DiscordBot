@@ -162,7 +162,7 @@ public class DiscordBot {
         LOG.debug("Bot is ready. Running Inits.");
         for (ModuleWrapper wrapper : this.modules.values()) {
             final CommandModule module = wrapper.getInstance();
-            if (wrapper.getStatus() == ModuleStatus.ACTIVE) {
+            if (wrapper.getStatus().equals(ModuleStatus.ACTIVE)) {
                 module.initWhenReady();
             }
 
@@ -193,6 +193,7 @@ public class DiscordBot {
 
         LOG.debug("Loading module '{}'.", wrapper.getName());
         final CommandModule moduleInstance = instantiateModule(wrapper.getModuleClass());
+        wrapper.setInstance(moduleInstance);
 
         if (moduleInstance == null) {
             // Module could not be created -> Add to failed modules
@@ -212,6 +213,9 @@ public class DiscordBot {
             final EventDispatcher dispatcher = this.client.getDispatcher();
             dispatcher.registerListener(moduleInstance);
         }
+
+        // Register all commands
+        wrapper.setCommands(discoverCommands(wrapper));
 
         wrapper.setStatus(ModuleStatus.ACTIVE);
 
@@ -259,6 +263,49 @@ public class DiscordBot {
         }
     }
 
+    private List<CommandWrapper> discoverCommands(final ModuleWrapper moduleWrapper) {
+        LOG.debug("Registering command(s) for module '{}'.", moduleWrapper.getName());
+
+        final List<CommandWrapper> commands = new LinkedList<>();
+
+        final Method[] allMethods = moduleWrapper.getModuleClass().getMethods();
+        final List<Method> commandMethods = Arrays.stream(allMethods)
+                .filter(module -> module.isAnnotationPresent(CommandSubscriber.class))
+                .collect(Collectors.toList());
+
+        for (final Method method : commandMethods) {
+            // Register methods with the @CommandSubscriber as commands
+
+            // All annotations of type CommandSubscriber declared for that Method. Should be exactly 1
+            final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
+
+            // Get command properties from annotation
+            final String commandName = annotation.command();
+            final String commandHelp = annotation.help();
+            final boolean pmAllowed = annotation.pmAllowed();
+            final PermissionLevel permissionLevel = annotation.permissionLevel();
+            final boolean passContext = annotation.passContext();
+            final boolean ignoreParameterCount = annotation.ignoreParameterCount();
+
+            final int parameterCount = method.getParameterCount()-1;
+
+            if ((parameterCount >= 0 && parameterCount <= 5) || ignoreParameterCount) {
+                final CommandWrapper commandWrapper = new CommandWrapper(commandName, commandHelp, moduleWrapper, method, pmAllowed,
+                        permissionLevel, parameterCount, passContext, ignoreParameterCount);
+
+                commands.add(commandWrapper);
+
+                LOG.debug("Saved command '{}'.", commandName);
+            }
+            else {
+                LOG.warn("Method '{}' has an invalid number of arguments. Skipping", commandName);
+            }
+
+        }
+
+        return commands;
+    }
+
     /**
      * Populates global command map, maps a 'CommandWrapper' instance, containing a commands attributes, to each command.
      */
@@ -268,38 +315,11 @@ public class DiscordBot {
         LOG.debug("Clearing old commands.");
         this.commands.clear();
 
-        for (final ModuleWrapper moduleWrapper : modules.values()) {
-            LOG.debug("Registering command(s) for module '{}'.", moduleWrapper.getName());
+        final List<ModuleWrapper> loadedModules = getLoadedModules();
 
-            final Reflections reflections = new Reflections(moduleWrapper.getModuleClass());
-            for (final Method method : reflections.getMethodsAnnotatedWith(CommandSubscriber.class)) {
-                // Register methods with the @CommandSubscriber as commands
-
-                // All annotations of type CommandSubscriber declared for that Method. Should be exactly 1
-                final CommandSubscriber annotation = method.getDeclaredAnnotationsByType(CommandSubscriber.class)[0];
-
-                // Get command properties from annotation
-                final String commandName = annotation.command();
-                final String commandHelp = annotation.help();
-                final boolean pmAllowed = annotation.pmAllowed();
-                final PermissionLevel permissionLevel = annotation.permissionLevel();
-                final boolean passContext = annotation.passContext();
-                final boolean ignoreParameterCount = annotation.ignoreParameterCount();
-
-                final int parameterCount = method.getParameterCount()-1;
-
-                if ((parameterCount >= 0 && parameterCount <= 5) || ignoreParameterCount) {
-                    final CommandWrapper commandWrapper = new CommandWrapper(commandName, commandHelp, moduleWrapper, method, pmAllowed,
-                            permissionLevel, parameterCount, passContext, ignoreParameterCount);
-
-                        this.commands.put(commandName.toLowerCase(), commandWrapper);
-
-                        LOG.debug("Registered command '{}'.", commandName);
-                    }
-                    else {
-                        LOG.warn("Method '{}' has an invalid number of arguments. Skipping", commandName);
-                    }
-
+        for (final ModuleWrapper moduleWrapper : loadedModules) {
+            for (final CommandWrapper commandWrapper : moduleWrapper.getCommands()) {
+                this.commands.put(commandWrapper.getName().toLowerCase(), commandWrapper);
             }
         }
     }
