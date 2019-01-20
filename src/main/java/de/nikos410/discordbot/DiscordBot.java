@@ -698,7 +698,7 @@ public class DiscordBot {
     }
 
     /**
-     * Deactivate a module so the bot loads it
+     * Deactivate a module so the bot unloads it
      *
      * @param moduleName The name of the module
      * @return true if everything went fine, false if the module does not exist or is already deactivated
