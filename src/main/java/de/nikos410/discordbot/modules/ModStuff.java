@@ -309,7 +309,7 @@ public class ModStuff extends CommandModule {
 
         // Modlog
         LOG.info("Guild '{}': User {} was muted for {} {}. Message: {}",
-                guild,
+                guild.getName(),
                 UserUtils.makeUserString(muteUser, message.getGuild()),
                 muteDuration,
                 muteDurationUnit.name(),
@@ -550,10 +550,11 @@ public class ModStuff extends CommandModule {
 
         // Modlog
         LOG.info("Guild '{}': User {} was muted for {} {} for the channel {}. Message: {}",
-                UserUtils.makeUserString(muteUser, guild), muteDuration,
+                guild.getName(),
+                UserUtils.makeUserString(muteUser, guild),
+                muteDuration,
                 muteDurationUnit.name(),
                 muteChannel.getName(),
-                guild.getName(),
                 customMessage);
 
         final IChannel modLogChannel = getModlogChannelForGuild(guild);
