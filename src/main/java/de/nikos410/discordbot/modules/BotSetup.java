@@ -1,26 +1,24 @@
 package de.nikos410.discordbot.modules;
 
-import java.util.EnumSet;
-import java.util.List;
-
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.CommandWrapper;
 import de.nikos410.discordbot.framework.ModuleWrapper;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
-import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
+
+import java.util.EnumSet;
+import java.util.List;
 
 public class BotSetup extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(BotSetup.class);

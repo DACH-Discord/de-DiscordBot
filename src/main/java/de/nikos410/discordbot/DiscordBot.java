@@ -1,5 +1,30 @@
 package de.nikos410.discordbot;
 
+import de.nikos410.discordbot.exception.InitializationException;
+import de.nikos410.discordbot.framework.CommandModule;
+import de.nikos410.discordbot.framework.CommandWrapper;
+import de.nikos410.discordbot.framework.ModuleWrapper;
+import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
+import de.nikos410.discordbot.modules.BotSetup;
+import de.nikos410.discordbot.util.discord.Authorization;
+import de.nikos410.discordbot.util.discord.DiscordIO;
+import de.nikos410.discordbot.util.discord.UserUtils;
+import de.nikos410.discordbot.util.io.IOUtil;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.reflections.Reflections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventDispatcher;
+import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.ReadyEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.MessageUpdateEvent;
+import sx.blah.discord.handle.obj.*;
+import sx.blah.discord.util.DiscordException;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -11,29 +36,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import de.nikos410.discordbot.exception.InitializationException;
-import de.nikos410.discordbot.framework.*;
-import de.nikos410.discordbot.framework.annotations.*;
-import de.nikos410.discordbot.modules.BotSetup;
-import de.nikos410.discordbot.util.discord.*;
-import de.nikos410.discordbot.util.io.IOUtil;
 import static de.nikos410.discordbot.framework.ModuleWrapper.ModuleStatus;
-
-import org.reflections.Reflections;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventDispatcher;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageUpdateEvent;
-import sx.blah.discord.handle.obj.*;
-
-import org.json.JSONObject;
-import org.json.JSONArray;
-import sx.blah.discord.util.DiscordException;
 
 /**
  * The bots main class, containing most of the modular framework

@@ -1,10 +1,13 @@
 package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
-import de.nikos410.discordbot.util.discord.*;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-
-import sx.blah.discord.handle.obj.*;
+import de.nikos410.discordbot.util.discord.DiscordIO;
+import de.nikos410.discordbot.util.discord.UserUtils;
+import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.handle.obj.IRole;
+import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
 import java.time.LocalDateTime;

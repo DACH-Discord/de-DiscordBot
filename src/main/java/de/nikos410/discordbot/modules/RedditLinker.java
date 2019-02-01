@@ -1,14 +1,13 @@
 package de.nikos410.discordbot.modules;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.util.discord.DiscordIO;
-
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IMessage;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class RedditLinker extends CommandModule {
 

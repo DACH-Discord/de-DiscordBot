@@ -1,18 +1,17 @@
 package de.nikos410.discordbot.modules;
 
-import java.nio.ByteBuffer;
-import java.security.SecureRandom;
-import java.text.MessageFormat;
-import java.util.stream.IntStream;
-
 import de.nikos410.discordbot.framework.CommandModule;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-
+import de.nikos410.discordbot.util.discord.DiscordIO;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.util.EmbedBuilder;
+
+import java.nio.ByteBuffer;
+import java.security.SecureRandom;
+import java.text.MessageFormat;
+import java.util.stream.IntStream;
 
 public class Roll extends CommandModule {
     private static final int DEFAULT_DOT_COUNT = 6;
