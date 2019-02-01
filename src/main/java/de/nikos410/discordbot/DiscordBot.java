@@ -147,7 +147,12 @@ public class DiscordBot {
 
         // Load modules from all found classes
         for (ModuleWrapper wrapper : this.modules.values()) {
-            loadModule(wrapper);
+            try {
+                loadModule(wrapper);
+            } catch (Exception e) {
+                LOG.error("Failed to load module " + wrapper.getName() + ".", e);
+                wrapper.setStatus(ModuleStatus.FAILED);
+            }
         }
 
         // Wait until the bot is ready to run initializations
