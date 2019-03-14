@@ -156,9 +156,8 @@ public class ModStuff extends CommandModule {
             message.addReaction(ReactionEmoji.of("\uD83D\uDEAA")); // :door:
 
             // Modlog
-            LOG.info("Guild '{}': {} kicked user {}. Message: {}",
+            LOG.info("Guild '{}': User {} was kicked. Message: {}",
                     guild.getName(),
-                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                     UserUtils.makeUserString(kickUser, message.getGuild()),
                     customMessage);
 
@@ -166,8 +165,7 @@ public class ModStuff extends CommandModule {
 
             if (modLogChannel != null) {
                 final List<String> modLogMessage = new ArrayList<>();
-                modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**.",
-                        UserUtils.makeUserString(message.getAuthor(), guild),
+                modLogMessage.add(String.format("Nutzer **%s** wurde im Kanal %s vom Server **gekickt**.",
                         UserUtils.makeUserString(kickUser, guild),
                         message.getChannel().mention()));
                 modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
@@ -222,9 +220,8 @@ public class ModStuff extends CommandModule {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
-            LOG.info("Guild '{}': {} banned user {}. Message: {}",
+            LOG.info("Guild '{}': User {} was banned. Message: {}",
                     guild.getName(),
-                    UserUtils.makeUserString(message.getAuthor(), guild),
                     UserUtils.makeUserString(banUser, guild),
                     customMessage);
 
@@ -232,8 +229,7 @@ public class ModStuff extends CommandModule {
 
             if (modLogChannel != null) {
                 final List<String> modLogMessage = new ArrayList<>();
-                modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**.",
-                        UserUtils.makeUserString(message.getAuthor(), guild),
+                modLogMessage.add(String.format("Nutzer **%s** wurde im Kanal %s vom Server **gebannt**.",
                         UserUtils.makeUserString(banUser, guild),
                         message.getChannel().mention()));
                 modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
@@ -561,8 +557,7 @@ public class ModStuff extends CommandModule {
 
         if (modLogChannel != null) {
             final List<String> modLogMessage = new ArrayList<>();
-            modLogMessage.add(String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s für den Kanal %s **gemuted**.",
-                    UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
+            modLogMessage.add(String.format("Nutzer **%s** wurde im Kanal %s für %s %s für den Kanal %s **gemuted**.",
                     UserUtils.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
                     muteDuration, muteDurationUnit.name(), muteChannel.mention()));
             modLogMessage.add(String.format("Hinweis: _%s _", customMessage));
@@ -800,7 +795,7 @@ public class ModStuff extends CommandModule {
         message.addReaction(ReactionEmoji.of("✅")); // :white_check_mark:
     }
 
-    @CommandSubscriber(command = "setMuteRole", help = "Mute Rolle einstellen einstellen",
+    @CommandSubscriber(command = "setMuteRole", help = "Mute Rolle einstellen",
             pmAllowed = false, passContext = false, permissionLevel = PermissionLevel.ADMIN)
     public void command_setMuteRole(final IMessage message, final String roleParameter) {
         final IRole muteRole = GuildUtils.getRoleFromMessage(message, roleParameter);
