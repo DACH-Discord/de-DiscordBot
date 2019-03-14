@@ -291,7 +291,7 @@ public class ModStuff extends CommandModule {
 
         // Do not notify a bot user
         if (!muteUser.isBot()) {
-            final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest auf dem Server %s für %s %s gemuted!",
+            final List<String> muteMessage = Arrays.asList(String.format("**Du wurdest auf dem Server %s für %s %s gemuted!**",
                     guild.getName(),
                     muteDuration,
                     muteDurationUnit.name()),
