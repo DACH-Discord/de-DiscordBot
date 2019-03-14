@@ -1,26 +1,14 @@
 package de.nikos410.discordbot.modules;
 
-import java.awt.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
-import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-
 import org.json.JSONObject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.member.UserBanEvent;
@@ -33,16 +21,40 @@ import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
-@CommandModule(moduleName = "Userlog", commandOnly = false)
-public class UserLog {
+import java.awt.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+public class UserLog extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(UserLog.class);
 
     private static final Path USERLOG_PATH = Paths.get("data/userLog.json");
     private JSONObject userlogJSON;
 
-    public UserLog () {
+    @Override
+    public String getDisplayName() {
+        return "Nutzer-Log";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Loggt in einen konfigurierbaren Kanal, welche Nutzer den Server betreten und verlassen.";
+    }
+
+    @Override
+    public boolean hasEvents() {
+        return true;
+    }
+
+    @Override
+    public void init() {
         final String jsonContent = IOUtil.readFile(USERLOG_PATH);
-        userlogJSON = new JSONObject(jsonContent);
+        this.userlogJSON = new JSONObject(jsonContent);
     }
 
     @EventSubscriber

@@ -1,23 +1,15 @@
 package de.nikos410.discordbot.modules;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-
-import de.nikos410.discordbot.DiscordBot;
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
-import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-
 import org.json.JSONObject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
@@ -25,20 +17,35 @@ import sx.blah.discord.handle.impl.events.guild.role.RoleDeleteEvent;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 
-@CommandModule(moduleName = "Nutzergruppen", commandOnly = false)
-public class UserGroups {
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+
+public class UserGroups extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(UserGroups.class);
 
     private static final String NON_GAME_GROUP_NAME_PREFIX = "~";
 
     private static final Path USERGROUPS_PATH = Paths.get("data/usergroups.json");
-    private final JSONObject usergroupsJSON;
+    private JSONObject usergroupsJSON;
 
-    private final DiscordBot bot;
+    @Override
+    public String getDisplayName() {
+        return "Nutzergruppen";
+    }
 
-    public UserGroups(final DiscordBot bot) {
-        this.bot = bot;
+    @Override
+    public String getDescription() {
+        return "Mods können Gruppen erstellen, Nutzer können sich diese selbst zuweisen.";
+    }
 
+    @Override
+    public boolean hasEvents() {
+        return true;
+    }
+
+    @Override
+    public void init() {
         final String jsonContent = IOUtil.readFile(USERGROUPS_PATH);
         usergroupsJSON = new JSONObject(jsonContent);
     }

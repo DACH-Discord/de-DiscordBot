@@ -1,61 +1,58 @@
 package de.nikos410.discordbot.modules;
 
+import de.nikos410.discordbot.exception.InitializationException;
+import de.nikos410.discordbot.framework.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
+import de.nikos410.discordbot.util.discord.DiscordIO;
+import de.nikos410.discordbot.util.discord.UserUtils;
+import de.nikos410.discordbot.util.io.IOUtil;
+import org.apache.commons.text.similarity.FuzzyScore;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.user.PresenceUpdateEvent;
+import sx.blah.discord.handle.obj.*;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import de.nikos410.discordbot.DiscordBot;
-import de.nikos410.discordbot.exception.InitializationException;
-import de.nikos410.discordbot.util.discord.DiscordIO;
-import de.nikos410.discordbot.util.discord.UserUtils;
-import de.nikos410.discordbot.util.io.IOUtil;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
-import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-
-import org.apache.commons.text.similarity.FuzzyScore;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
-import sx.blah.discord.handle.impl.events.user.PresenceUpdateEvent;
-import sx.blah.discord.handle.obj.*;
-
-@CommandModule(moduleName = "Spiel-Informationen", commandOnly = false)
-public class GameStats {
+public class GameStats extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(GameStats.class);
 
     private static final Path GAMESTATS_PATH = Paths.get("data/gameStats.json");
-    private final JSONObject gameStatsJSON;
+    private JSONObject gameStatsJSON;
 
-    private final IDiscordClient client;
+    @Override
+    public String getDisplayName() {
+        return "Game Stats";
+    }
 
-    public GameStats (final DiscordBot bot) {
-        this.client = bot.getClient();
+    @Override
+    public String getDescription() {
+        return "Hilft dabei, Mitspieler zu finden";
+    }
 
-        // Read game list
+    @Override
+    public boolean hasEvents() {
+        return true;
+    }
+
+    @Override
+    public void init() {
         final String jsonContent = IOUtil.readFile(GAMESTATS_PATH);
         if (jsonContent == null) {
             throw new InitializationException("Could not read module data.", GameStats.class);
         }
         this.gameStatsJSON = new JSONObject(jsonContent);
         LOG.info("Loaded GameStats file for {} guilds.", gameStatsJSON.keySet().size());
-
-        // If the client is not ready, the module was loaded on startup, in this case we use the Event Subscriber method.
-        if (client.isReady()) {
-            updateAllUsers();
-            LOG.info("Gamestats Module ready.");
-        }
     }
 
-    @EventSubscriber
-    public void onStartUp(final ReadyEvent event) {
+    @Override
+    public void initWhenReady() {
         updateAllUsers();
         LOG.info("Gamestats Module ready.");
     }
@@ -64,7 +61,7 @@ public class GameStats {
      * Update the status of every user known to the bot.
      */
     private void updateAllUsers() {
-        for(IUser user : client.getUsers()) {
+        for(IUser user : this.bot.getClient().getUsers()) {
             this.updateUserStatus(user);
         }
         saveJSON();
@@ -263,7 +260,7 @@ public class GameStats {
         final long userID = user.getLongID();
 
         // Add game info for all guilds this user is on
-        for (IGuild guild : client.getGuilds()) {
+        for (IGuild guild : this.bot.getClient().getGuilds()) {
             if (guild.getUsers().contains(user)) {
                 if (!hasGame(gameName, guild)) {
                     this.addGame(gameName, guild);
@@ -307,7 +304,7 @@ public class GameStats {
     }
 
     /**
-     * Add an empty entry for a game to a guild's JSON object. Will not check if entry already exists.
+     * Add an empty entry for a game to a guild's JSON instance. Will not check if entry already exists.
      *
      * @param game The game for which to add the entry.
      * @param guild The guild for which to create the entry.

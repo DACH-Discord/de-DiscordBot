@@ -1,12 +1,12 @@
 package de.nikos410.discordbot.modules;
 
 
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
-import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +18,7 @@ import sx.blah.discord.handle.obj.IMessage;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-@CommandModule(moduleName = "Regeln", commandOnly = false)
-public class Rules {
+public class Rules extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(Rules.class);
     
     private static final Path RULES_PATH = Paths.get("data/rules.json");
@@ -29,6 +28,21 @@ public class Rules {
         // Read configuration
         final String welcomeFileContent = IOUtil.readFile(RULES_PATH);
         this.rulesJSON = new JSONObject(welcomeFileContent);
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Regeln";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Einfaches verwalten und Bereitstellen von Regeln für einen Server.";
+    }
+
+    @Override
+    public boolean hasEvents() {
+        return true;
     }
 
     @EventSubscriber

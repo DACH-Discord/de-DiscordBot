@@ -1,9 +1,8 @@
 package de.nikos410.discordbot.modules;
 
-import de.nikos410.discordbot.DiscordBot;
 import de.nikos410.discordbot.exception.InitializationException;
+import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
-import de.nikos410.discordbot.framework.annotations.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.io.IOUtil;
@@ -14,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.util.EmbedBuilder;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -28,8 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Iterator;
 
-@CommandModule(moduleName = "Last.fm", commandOnly = true)
-public class LastFm {
+public class LastFm extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(LastFm.class);
 
     private static final String ERROR_IMG_RESOURCE = "modules/lastfm/error-icon.png";
@@ -41,19 +40,30 @@ public class LastFm {
     private static final Path LASTFM_PATH = Paths.get("data/lastFm/lastFm.json");
     private static final Path TEMP_IMG_PATH = Paths.get("data/lastFm/chart.png");
 
-    private final String botPrefix;
+    private String botPrefix;
 
-    private final JSONObject lastFmJSON;
+    private JSONObject lastFmJSON;
 
-    private final int[] offsets3x3;
-    private final int[] offsets4x4;
-    private final int[] offsets5x5;
+    private int[] offsets3x3;
+    private int[] offsets4x4;
+    private int[] offsets5x5;
 
     private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private String apiKey;
 
-    public LastFm(final DiscordBot bot) {
+    @Override
+    public String getDisplayName() {
+        return "Last.fm";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Erzeugt collagen aus verschiedenen Last.fm Informationen.";
+    }
+
+    @Override
+    public void init() {
         this.botPrefix = bot.configJSON.getString("prefix");
 
         final String jsonContent = IOUtil.readFile(LASTFM_PATH);
