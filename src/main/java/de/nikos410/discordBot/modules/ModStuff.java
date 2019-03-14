@@ -83,14 +83,12 @@ public class ModStuff {
             //Util.sendMessage(message.getChannel(), ":door:");
 
             // Modlog
-            log.info(String.format("%s hat Nutzer %s vom Server gekickt. Hinweis: %s",
-                    Util.makeUserString(message.getAuthor(), message.getGuild()),
+            log.info(String.format("%s vom Server gekickt. Hinweis: %s",
                     Util.makeUserString(kickUser, message.getGuild()),
                     customMessage));
 
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gekickt**. \nHinweis: _%s _",
-                    Util.makeUserString(message.getAuthor(), message.getGuild()),
+            final String modLogMessage = String.format("**%s** im Kanal %s vom Server **gekickt**. \nHinweis: _%s _",
                     Util.makeUserString(kickUser, message.getGuild()),
                     message.getChannel().mention(),
                     customMessage);
@@ -134,13 +132,12 @@ public class ModStuff {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD28")); // :hammer:
 
             // Modlog
-            log.info(String.format("%s hat Nutzer %s vom Server gebannt. Hinweis: %s",
-                    Util.makeUserString(message.getAuthor(), message.getGuild()),
+            log.info(String.format("%s vom Server gebannt. Hinweis: %s",
                     Util.makeUserString(banUser, message.getGuild()),
                     customMessage));
 
             IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-            final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
+            final String modLogMessage = String.format("**%s** im Kanal %s vom Server **gebannt**. \nHinweis: _%s _",
                     Util.makeUserString(message.getAuthor(), message.getGuild()),
                     Util.makeUserString(banUser, message.getGuild()),
                     message.getChannel().mention(),
@@ -247,8 +244,7 @@ public class ModStuff {
 
         // Modlog
         IChannel modLogChannel = message.getGuild().getChannelByID(this.modlogChannelID);
-        final String modLogMessage = String.format("**%s** hat Nutzer **%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
-                Util.makeUserString(message.getAuthor(), message.getGuild()),
+        final String modLogMessage = String.format("**%s** im Kanal %s für %s %s **gemuted**. \nHinweis: _%s _",
                 Util.makeUserString(muteUser, message.getGuild()), message.getChannel().mention(),
                 muteDuration, muteDurationUnitString, customMessage);
         Util.sendMessage(modLogChannel, modLogMessage);
