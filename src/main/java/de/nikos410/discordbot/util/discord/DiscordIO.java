@@ -92,7 +92,7 @@ public class DiscordIO {
 
     private static synchronized IMessage sendSingleMessage(final IChannel channel, final String message, final int tries){
         try {
-            return channel.sendMessage(message);
+            return channel.sendMessage(sanitizeMessage(message));
         }
         catch (RateLimitException rle) {
             if (tries > 0) {
@@ -175,9 +175,9 @@ public class DiscordIO {
         return sendFile(channel, content, file, 20);
     }
 
-    private static IMessage sendFile(final IChannel channel, final String content, final File file, final int tries) {
+    private static IMessage sendFile(final IChannel channel, final String message, final File file, final int tries) {
         try {
-            return channel.sendFile(content, file);
+            return channel.sendFile(sanitizeMessage(message), file);
         }
         catch (RateLimitException rle) {
             if (tries > 0) {
@@ -191,7 +191,7 @@ public class DiscordIO {
                     Thread.currentThread().interrupt();
                 }
 
-                return sendFile(channel, content, file, tries - 1);
+                return sendFile(channel, message, file, tries - 1);
             }
             else {
                 LOG.warn("Bot was ratelimited while trying to send file.", rle);
@@ -205,6 +205,16 @@ public class DiscordIO {
         }
 
         return null;
+    }
+
+    /**
+     * Sanitize a message by replacing "@everyone" with "(at)everyone"
+     *
+     * @param message The message to be sanitized
+     * @return The sanitized message
+     */
+    public static String sanitizeMessage(final String message) {
+        return message.replaceAll("@everyone", "(at)everyone");
     }
 
     /**
