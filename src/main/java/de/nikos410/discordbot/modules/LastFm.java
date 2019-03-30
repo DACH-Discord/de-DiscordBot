@@ -4,7 +4,6 @@ import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.io.IOUtil;
 import de.umass.lastfm.*;
 import org.json.JSONException;
@@ -94,7 +93,7 @@ public class LastFm extends CommandModule {
 
         this.apiKey = key;
 
-        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Last.fm API-Key gesetzt.");
+        messageService.sendMessage(message.getChannel(), ":white_check_mark: Last.fm API-Key gesetzt.");
     }
 
     @CommandSubscriber(command = "lastfm", help = "Last.fm Modul - Parameter 'help' für Hilfe", pmAllowed = false)
@@ -107,7 +106,7 @@ public class LastFm extends CommandModule {
                     try {
                         setUsername(message, args[1]);
                     } catch (ArrayIndexOutOfBoundsException ex) {
-                        DiscordIO.sendMessage(message.getChannel(), String.format(":x: Keinen Last.fm-Usernamen angegeben. '%slastfm help' für Hilfe.", botPrefix));
+                        messageService.sendMessage(message.getChannel(), String.format(":x: Keinen Last.fm-Usernamen angegeben. '%slastfm help' für Hilfe.", botPrefix));
                     }
                     break;
                 case "now":
@@ -138,7 +137,7 @@ public class LastFm extends CommandModule {
                     try {
                         sendCollage(message, args[1], args[2]);
                     } catch (ArrayIndexOutOfBoundsException ex) {
-                        DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
+                        messageService.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
                     }
                     break;
                 case "help":
@@ -156,13 +155,13 @@ public class LastFm extends CommandModule {
                             + "collage <artists|albums> <3x3|4x4|5x5>"
                             + "```";
 
-                    DiscordIO.sendMessage(message.getChannel(), msg);
+                    messageService.sendMessage(message.getChannel(), msg);
                     break;
                 default:
-                    DiscordIO.sendMessage(message.getChannel(), String.format(":x: Keine gültigen Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
+                    messageService.sendMessage(message.getChannel(), String.format(":x: Keine gültigen Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
             }
         } else {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Kein Last.fm API-Key vorhanden.");
+            messageService.sendMessage(message.getChannel(), ":x: Kein Last.fm API-Key vorhanden.");
         }
     }
 
@@ -177,9 +176,9 @@ public class LastFm extends CommandModule {
             }
             saveJSON();
 
-            DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Last.fm-Username gesetzt.");
+            messageService.sendMessage(message.getChannel(), ":white_check_mark: Last.fm-Username gesetzt.");
         } else {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Ungültigen Last.fm-Usernamen angegeben oder fehlerhafter API-Key.");
+            messageService.sendMessage(message.getChannel(), ":x: Ungültigen Last.fm-Usernamen angegeben oder fehlerhafter API-Key.");
         }
     }
 
@@ -270,7 +269,7 @@ public class LastFm extends CommandModule {
                                 embedBuilder.withThumbnail(track.getImageURL(ImageSize.LARGE));
                                 break; // only process first track, if target is NOWPLAYING.
                             } else {
-                                DiscordIO.sendMessage(message.getChannel(), ":x: Du hörst gerade nichts.");
+                                messageService.sendMessage(message.getChannel(), ":x: Du hörst gerade nichts.");
                                 return; // leave method if no track is playing
                             }
                         } else if (target == Target.RECENT) {
@@ -294,9 +293,9 @@ public class LastFm extends CommandModule {
 
             embedBuilder.withDesc(chart.toString());
 
-            DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+            messageService.sendEmbed(message.getChannel(), embedBuilder.build());
         } catch (JSONException ex) {
-            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
+            messageService.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
     }
 
@@ -342,7 +341,7 @@ public class LastFm extends CommandModule {
                     title = String.format("Künstler-Charts von %s (%s - %s)", message.getAuthor().getDisplayName(message.getGuild()), fromDate.format(dateFormat), toDate.format(dateFormat));
                     break;
                 default:
-                    DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
+                    messageService.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
                     return;
             }
 
@@ -363,7 +362,7 @@ public class LastFm extends CommandModule {
                     imgSize = 290;
                     break;
                 default:
-                    DiscordIO.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
+                    messageService.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
                     return;
             }
 
@@ -441,9 +440,9 @@ public class LastFm extends CommandModule {
                 return;
             }
 
-            DiscordIO.sendFile(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
+            messageService.sendMessage(message.getChannel(), message.getAuthor().mention(), TEMP_IMG_PATH.toFile());
         } catch (JSONException ex) {
-            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
+            messageService.sendMessage(message.getChannel(), String.format(":x: Du hast noch keinen Last.fm-Usernamen gesetzt. '%slastfm help' für Hilfe.", botPrefix));
         }
     }
 

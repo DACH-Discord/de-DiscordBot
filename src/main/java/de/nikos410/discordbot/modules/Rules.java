@@ -4,7 +4,6 @@ package de.nikos410.discordbot.modules;
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
 import org.json.JSONObject;
@@ -52,7 +51,7 @@ public class Rules extends CommandModule {
 
         if (guildJSON.has("welcome") && guildJSON.has("rulesDE") && guildJSON.has("footer") && !event.getUser().isBot()) {
 
-            DiscordIO.sendMessage(event.getUser().getOrCreatePMChannel(), guildJSON.getString("welcome") +
+            messageService.sendMessage(event.getUser().getOrCreatePMChannel(), guildJSON.getString("welcome") +
                     "\n\n" + guildJSON.getString("rulesDE") + "\n\n\n" + guildJSON.getString("footer"));
         }
     }
@@ -63,14 +62,14 @@ public class Rules extends CommandModule {
         final JSONObject guildJSON = getJSONForGuild(guild);
 
         if (guildJSON.has("rulesDE")) {
-            DiscordIO.sendMessage(message.getAuthor().getOrCreatePMChannel(), guildJSON.getString("rulesDE"));
+            messageService.sendMessage(message.getAuthor().getOrCreatePMChannel(), guildJSON.getString("rulesDE"));
 
             if (!message.getChannel().isPrivate()) {
-                DiscordIO.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+                messageService.sendMessage(message.getChannel(), ":mailbox_with_mail:");
             }
         }
         else {
-            DiscordIO.sendMessage(message.getChannel(), "Keine Regeln für diesen Server hinterlegt.");
+            messageService.sendMessage(message.getChannel(), "Keine Regeln für diesen Server hinterlegt.");
         }
     }
 
@@ -80,14 +79,14 @@ public class Rules extends CommandModule {
         final JSONObject guildJSON = getJSONForGuild(guild);
 
         if (guildJSON.has("rulesEN")) {
-            DiscordIO.sendMessage(message.getAuthor().getOrCreatePMChannel(), guildJSON.getString("rulesEN"));
+            messageService.sendMessage(message.getAuthor().getOrCreatePMChannel(), guildJSON.getString("rulesEN"));
 
             if (!message.getChannel().isPrivate()) {
-                DiscordIO.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+                messageService.sendMessage(message.getChannel(), ":mailbox_with_mail:");
             }
         }
         else {
-            DiscordIO.sendMessage(message.getChannel(), "No rules found for this server.");
+            messageService.sendMessage(message.getChannel(), "No rules found for this server.");
         }
     }
 
@@ -99,7 +98,7 @@ public class Rules extends CommandModule {
 
         if (guildJSON.has("welcome") && guildJSON.has("rulesDE") && guildJSON.has("footer")) {
 
-            DiscordIO.sendMessage(message.getChannel(), guildJSON.getString("welcome") +
+            messageService.sendMessage(message.getChannel(), guildJSON.getString("welcome") +
                     "\n\n" + guildJSON.getString("rulesDE") + "\n\n\n" + guildJSON.getString("footer"));
         }
     }
@@ -112,7 +111,7 @@ public class Rules extends CommandModule {
         guildJSON.put("on", true);
         saveJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
+        messageService.sendMessage(message.getChannel(), ":white_check_mark: Aktiviert!");
         LOG.info(String.format("%s enabled welcome messages for server %s (ID: %s)", UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                 guild.getName(), guild.getStringID()));
     }
@@ -125,7 +124,7 @@ public class Rules extends CommandModule {
         guildJSON.put("on", false);
         saveJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Deaktiviert!");
+        messageService.sendMessage(message.getChannel(), ":white_check_mark: Deaktiviert!");
         LOG.info(String.format("%s disabled welcome messages for server %s (ID: %s)", UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
                 guild.getName(), guild.getStringID()));
     }
@@ -138,8 +137,8 @@ public class Rules extends CommandModule {
         guildJSON.put("welcome", welcomeMessage);
         saveJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Nachricht geändert:");
-        DiscordIO.sendMessage(message.getChannel(), welcomeMessage);
+        messageService.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Nachricht geändert:");
+        messageService.sendMessage(message.getChannel(), welcomeMessage);
     }
 
     @CommandSubscriber(command = "setRegeln", help = "Regeln (deutsch) ändern", permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
@@ -150,8 +149,8 @@ public class Rules extends CommandModule {
         guildJSON.put("rulesDE", rulesDE);
         saveJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Regeln (DE) geändert:");
-        DiscordIO.sendMessage(message.getChannel(), rulesDE);
+        messageService.sendMessage(message.getChannel(), ":white_check_mark: Regeln (DE) geändert:");
+        messageService.sendMessage(message.getChannel(), rulesDE);
         LOG.info(String.format("%s changed rules. (DE)", UserUtils.makeUserString(message.getAuthor(), message.getGuild())));
     }
 
@@ -163,8 +162,8 @@ public class Rules extends CommandModule {
         guildJSON.put("rulesEN", rulesEN);
         saveJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Regeln (EN) geändert:");
-        DiscordIO.sendMessage(message.getChannel(), rulesEN);
+        messageService.sendMessage(message.getChannel(), ":white_check_mark: Regeln (EN) geändert:");
+        messageService.sendMessage(message.getChannel(), rulesEN);
         LOG.info(String.format("%s changed rules. (EN)", UserUtils.makeUserString(message.getAuthor(), message.getGuild())));
     }
 
@@ -177,8 +176,8 @@ public class Rules extends CommandModule {
         guildJSON.put("footer", footer);
         saveJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Footer geändert:");
-        DiscordIO.sendMessage(message.getChannel(), footer);
+        messageService.sendMessage(message.getChannel(), ":white_check_mark: Begrüßungs-Footer geändert:");
+        messageService.sendMessage(message.getChannel(), footer);
         LOG.info(String.format("%s changed rules. (DE)", UserUtils.makeUserString(message.getAuthor(), message.getGuild())));
     }
 

@@ -2,7 +2,6 @@ package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
@@ -35,24 +34,24 @@ public class GeneralCommands extends CommandModule {
 
     @CommandSubscriber(command = "Ping", help = ":ping_pong:")
     public void command_ping(final IMessage message) {
-        DiscordIO.sendMessage(message.getChannel(), "pong");
+        messageService.sendMessage(message.getChannel(), "pong");
     }
 
     @CommandSubscriber(command = "uptime", help = "Zeigt seit wann der Bot online ist")
     public void command_uptime(final IMessage message) {
         final DateTimeFormatter timeStampFormatter = DateTimeFormatter.ofPattern("dd.MM. | HH:mm");
-        DiscordIO.sendMessage(message.getChannel(), String.format("Online seit: %s", startupTimestamp.format(timeStampFormatter)));
+        messageService.sendMessage(message.getChannel(), String.format("Online seit: %s", startupTimestamp.format(timeStampFormatter)));
     }
 
     @CommandSubscriber(command = "git", help = "Quellcode des Bots")
     public void command_git(final IMessage message) {
-        DiscordIO.sendMessage(message.getChannel(), "https://github.com/DACH-Discord/de-DiscordBot/");
+        messageService.sendMessage(message.getChannel(), "https://github.com/DACH-Discord/de-DiscordBot/");
     }
 
     @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID.", pmAllowed = false, passContext = false)
     public void command_quote(final IMessage commandMessage, final String id) {
         if (id.isEmpty()) {
-            DiscordIO.sendMessage(commandMessage.getChannel(), "Keine ID angegeben!");
+            messageService.sendMessage(commandMessage.getChannel(), "Keine ID angegeben!");
             return;
         }
 
@@ -60,7 +59,7 @@ public class GeneralCommands extends CommandModule {
         final IGuild guild = commandMessage.getGuild();
 
         if (!id.matches("^[0-9]{18}$")) {
-            DiscordIO.sendMessage(commandMessage.getChannel(), "Keine gültige ID eingegeben!");
+            messageService.sendMessage(commandMessage.getChannel(), "Keine gültige ID eingegeben!");
             return;
         }
         final long quoteMessageID = Long.parseLong(id);
@@ -69,7 +68,7 @@ public class GeneralCommands extends CommandModule {
                 .filter(Objects::nonNull).findFirst();
 
         if (!optQuoteMessage.isPresent()) {
-            DiscordIO.sendMessage(commandMessage.getChannel(), String.format("Nachricht mit der ID `%s` nicht gefunden!", quoteMessageID));
+            messageService.sendMessage(commandMessage.getChannel(), String.format("Nachricht mit der ID `%s` nicht gefunden!", quoteMessageID));
             return;
         }
 
@@ -93,6 +92,6 @@ public class GeneralCommands extends CommandModule {
 
         embedBuilder.withFooterText(String.format("%s | Zitiert von: %s", timestampString, UserUtils.makeUserString(commandAuthor, guild)));
 
-        DiscordIO.sendEmbed(commandMessage.getChannel(), embedBuilder.build());
+        messageService.sendEmbed(commandMessage.getChannel(), embedBuilder.build());
     }
 }

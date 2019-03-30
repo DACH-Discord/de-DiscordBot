@@ -7,8 +7,9 @@ import de.nikos410.discordbot.framework.ModuleWrapper;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.modules.BotSetup;
+import de.nikos410.discordbot.service.DiscordMessageService;
+import de.nikos410.discordbot.service.impl.DiscordMessageServiceImpl;
 import de.nikos410.discordbot.util.discord.Authorization;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
 import org.json.JSONArray;
@@ -48,6 +49,8 @@ public class DiscordBot {
     public final JSONObject rolesJSON;
     private static final Path ROLES_PATH = Paths.get("data/roles.json");
     public final JSONObject configJSON;
+
+    private final static DiscordMessageService MESSAGE_SERVICE = new DiscordMessageServiceImpl();
 
     private final Map<String, ModuleWrapper> modules = new HashMap<>();
     private final Map<String, CommandWrapper> commands = new HashMap<>();
@@ -214,6 +217,7 @@ public class DiscordBot {
 
         // Set bot field and run initialization for module
         moduleInstance.setBot(this);
+        moduleInstance.setMessageService(MESSAGE_SERVICE);
         moduleInstance.init();
 
         // Register EventListener if needed
@@ -427,7 +431,7 @@ public class DiscordBot {
 
         // The command was received in a PM but is only available on guilds
         if (message.getChannel().isPrivate() && !command.isPmAllowed()) {
-            DiscordIO.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
+            MESSAGE_SERVICE.sendMessage(message.getChannel(), "Dieser Befehl ist nicht in Privatnachrichten verfügbar!");
             LOG.info("CommandWrapper {} is not available in PMs.", commandName);
             return;
         }
@@ -437,7 +441,7 @@ public class DiscordBot {
         LOG.debug("Checking permissions. User: {} | Required: {}", userPermissionLevel, command.getPermissionLevel());
 
         if (userPermissionLevel.getLevel() < command.getPermissionLevel().getLevel()) {
-            DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
+            MESSAGE_SERVICE.sendMessage(message.getChannel(), String.format("Dieser Befehl ist für deine Gruppe (%s) nicht verfügbar.",
                     userPermissionLevel.getName()));
             LOG.info("User {} doesn't have the required permissions for using the command {}.",
                     UserUtils.makeUserString(message.getAuthor(), message.getGuild()),
@@ -456,7 +460,7 @@ public class DiscordBot {
                 }
             }
             else {
-                DiscordIO.sendMessage(message.getChannel(), String.format("Dieser Befehl benötigt mindestens %s Parameter! (Gegeben: %s)", expectedParameterCount, parameters.size()));
+                MESSAGE_SERVICE.sendMessage(message.getChannel(), String.format("Dieser Befehl benötigt mindestens %s Parameter! (Gegeben: %s)", expectedParameterCount, parameters.size()));
                 LOG.info("Wrong number of arguments. Expected number: {} Actual number: {}",
                         expectedParameterCount, parameters.size());
                 return;
@@ -509,7 +513,7 @@ public class DiscordBot {
             final Throwable cause = e.getCause();
 
             LOG.error("Command '{}' could not be executed.", command.getName(), e.getCause());
-            DiscordIO.errorNotify(cause.toString(), message.getChannel());
+            MESSAGE_SERVICE.errorNotify(cause.toString(), message.getChannel());
         }
     }
 

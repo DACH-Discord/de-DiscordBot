@@ -6,7 +6,6 @@ import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.CommandUtils;
 import de.nikos410.discordbot.util.discord.ChannelUtils;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
@@ -123,7 +122,7 @@ public class ModStuff extends CommandModule {
             // Find the user to kick
             final IUser kickUser = UserUtils.getUserFromMessage(message, userString);
             if (kickUser == null) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
+                messageService.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
                 return;
             }
 
@@ -131,7 +130,7 @@ public class ModStuff extends CommandModule {
             final IGuild guild = message.getGuild();
 
             if (!PermissionUtils.hasHierarchicalPermissions(guild, message.getClient().getOurUser(), kickUser, Permissions.KICK)) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Nutzer kann nicht gekickt werden! (Unzureichende Berechtigungen)");
+                messageService.sendMessage(message.getChannel(), ":x: Nutzer kann nicht gekickt werden! (Unzureichende Berechtigungen)");
                 return;
             }
 
@@ -145,7 +144,7 @@ public class ModStuff extends CommandModule {
                 final List<String> kickMessage = Arrays.asList(
                         String.format("**Du wurdest vom Server %s gekickt!** (Du kannst dem Server jedoch erneut beitreten.)", guild.getName()),
                         String.format("Hinweis: _%s_", customMessage));
-                DiscordIO.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
+                messageService.sendMessage(kickUser.getOrCreatePMChannel(), kickMessage);
             }
 
             guild.kickUser(kickUser, customMessage);
@@ -167,12 +166,12 @@ public class ModStuff extends CommandModule {
                         message.getChannel().mention()));
                 modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
 
-                DiscordIO.sendMessage(modLogChannel, modLogMessage);
+                messageService.sendMessage(modLogChannel, modLogMessage);
             }
         }
         else {
             message.getGuild().kickUser(message.getAuthor());
-            DiscordIO.sendMessage(message.getChannel(), "¯\\_(ツ)_/¯");
+            messageService.sendMessage(message.getChannel(), "¯\\_(ツ)_/¯");
         }
     }
 
@@ -187,7 +186,7 @@ public class ModStuff extends CommandModule {
             // Find the user to ban
             final IUser banUser = UserUtils.getUserFromMessage(message, userString);
             if (banUser == null) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
+                messageService.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
                 return;
             }
 
@@ -195,7 +194,7 @@ public class ModStuff extends CommandModule {
             final IGuild guild = message.getGuild();
 
             if (!PermissionUtils.hasHierarchicalPermissions(guild, message.getClient().getOurUser(), banUser, Permissions.BAN)) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Nutzer kann nicht gebannt werden! (Unzureichende Berechtigungen)");
+                messageService.sendMessage(message.getChannel(), ":x: Nutzer kann nicht gebannt werden! (Unzureichende Berechtigungen)");
                 return;
             }
 
@@ -209,7 +208,7 @@ public class ModStuff extends CommandModule {
                 final List<String> banMessage = Arrays.asList(String.format("**Du wurdest vom Server %s gebannt!**", guild.getName()),
                         String.format("Hinweis: _%s_", customMessage));
 
-                DiscordIO.sendMessage(banUser.getOrCreatePMChannel(), banMessage);
+                messageService.sendMessage(banUser.getOrCreatePMChannel(), banMessage);
             }
 
             guild.banUser(banUser, customMessage, 0);
@@ -231,12 +230,12 @@ public class ModStuff extends CommandModule {
                         message.getChannel().mention()));
                 modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
 
-                DiscordIO.sendMessage(modLogChannel, modLogMessage);
+                messageService.sendMessage(modLogChannel, modLogMessage);
             }
         }
         else {
             message.getGuild().kickUser(message.getAuthor(), customMessage);
-            DiscordIO.sendMessage(message.getChannel(), "¯\\_(ツ)_/¯");
+            messageService.sendMessage(message.getChannel(), "¯\\_(ツ)_/¯");
         }
     }
 
@@ -248,7 +247,7 @@ public class ModStuff extends CommandModule {
         if (modLogChannel != null) {
             final String modLogMessage = String.format("**%s** wurde vom Server **gebannt**.",
                     UserUtils.makeUserString(event.getUser(), event.getGuild()));
-            DiscordIO.sendMessage(modLogChannel, modLogMessage);
+            messageService.sendMessage(modLogChannel, modLogMessage);
         }
     }
 
@@ -258,20 +257,20 @@ public class ModStuff extends CommandModule {
         // Find the user to mute
         final IUser muteUser = UserUtils.getUserFromMessage(message, userString);
         if (muteUser == null) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Nutzer nicht gefunden!");
+            messageService.sendMessage(message.getChannel(), ":x: Fehler: Nutzer nicht gefunden!");
             return;
         }
 
         // Check if mute duration was specified
         if (muteDurationInput == null) {
-            DiscordIO.sendMessage(message.getChannel(), "Fehler! Es muss eine Mute-Dauer angegeben werden.");
+            messageService.sendMessage(message.getChannel(), "Fehler! Es muss eine Mute-Dauer angegeben werden.");
             return;
         }
 
         // Parse mute duration
         final CommandUtils.DurationParameters durationParameters = CommandUtils.parseDurationParameters(muteDurationInput);
         if (durationParameters == null) {
-            DiscordIO.sendMessage(message.getChannel(),
+            messageService.sendMessage(message.getChannel(),
                     "Ungültige Dauer angegeben. Mögliche Einheiten sind: s, m, h, d");
             return;
         }
@@ -297,7 +296,7 @@ public class ModStuff extends CommandModule {
                     muteDurationUnit.name()),
                     String.format("Hinweis: _%s_", customMessage));
 
-            DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
+            messageService.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
 
         // Modlog
@@ -318,7 +317,7 @@ public class ModStuff extends CommandModule {
                     muteDuration, muteDurationUnit.name()));
             modLogMessage.add(String.format("Hinweis: _%s_", customMessage));
 
-            DiscordIO.sendMessage(modLogChannel, modLogMessage);
+            messageService.sendMessage(modLogChannel, modLogMessage);
         }
 
         saveUserMutes();
@@ -333,7 +332,7 @@ public class ModStuff extends CommandModule {
         // Parse mute duration
         final CommandUtils.DurationParameters durationParameters = CommandUtils.parseDurationParameters(muteDurationInput);
         if (durationParameters == null) {
-            DiscordIO.sendMessage(message.getChannel(),
+            messageService.sendMessage(message.getChannel(),
                     "Ungültige Dauer angegeben. Mögliche Einheiten sind: s, m, h, d");
             return;
         }
@@ -341,7 +340,7 @@ public class ModStuff extends CommandModule {
         // Users can only mute themself for a maximum of one day
         final LocalDateTime muteEnd = LocalDateTime.now().plus(durationParameters.getDuration(), durationParameters.getDurationUnit());
         if (muteEnd.isAfter(LocalDateTime.now().plusDays(1))) {
-            DiscordIO.sendMessage(message.getChannel(), "Du kannst dich für maximal einen Tag selbst muten!");
+            messageService.sendMessage(message.getChannel(), "Du kannst dich für maximal einen Tag selbst muten!");
             return;
         }
 
@@ -383,7 +382,7 @@ public class ModStuff extends CommandModule {
         final IRole muteRole = getMuteRoleForGuild(guild);
         if (muteRole == null) {
             if (channel != null) {
-                DiscordIO.sendMessage(channel, ":x: Keine Mute-Rolle konfiguriert. Nutzer kann nicht gemuted werden.");
+                messageService.sendMessage(channel, ":x: Keine Mute-Rolle konfiguriert. Nutzer kann nicht gemuted werden.");
             }
             else {
                 LOG.warn("No mute role configured for guild {} (ID: {}). Cannot mute user.",
@@ -403,7 +402,7 @@ public class ModStuff extends CommandModule {
             if (newDateTime.isBefore(oldDateTime)) {
                 // Existing mute lasts longer than the existing one -> Do nothing
                 if (channel != null) {
-                    DiscordIO.sendMessage(channel, ":x: Nutzer ist bereits für einen längeren Zeitraum gemuted.");
+                    messageService.sendMessage(channel, ":x: Nutzer ist bereits für einen längeren Zeitraum gemuted.");
                 }
                 return;
             }
@@ -449,7 +448,7 @@ public class ModStuff extends CommandModule {
         final IRole muteRole = getMuteRoleForGuild(guild);
         if (muteRole == null) {
             if (channel != null) {
-                DiscordIO.sendMessage(channel, ":x: Keine Mute-Rolle konfiguriert. Nutzer kann nicht entmuted werden.");
+                messageService.sendMessage(channel, ":x: Keine Mute-Rolle konfiguriert. Nutzer kann nicht entmuted werden.");
             }
             else {
                 LOG.warn("No mute role configured for guild {} (ID: {}). Cannot unmute user.",
@@ -489,21 +488,21 @@ public class ModStuff extends CommandModule {
         // Parse user
         final IUser muteUser = UserUtils.getUserFromMessage(message, userInput);
         if (muteUser == null) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
+            messageService.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Nutzer angegeben!");
             return;
         }
 
         // Parse channel
         final IChannel muteChannel = ChannelUtils.getChannelFromMessage(message, channelInput);
         if (muteChannel == null) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Kanal angegeben!");
+            messageService.sendMessage(message.getChannel(), ":x: Fehler: Kein gültiger Kanal angegeben!");
             return;
         }
 
         // Parse mute duration and message
         final CommandUtils.DurationParameters durationParameters = CommandUtils.parseDurationParameters(muteDurationInput);
         if (durationParameters == null) {
-            DiscordIO.sendMessage(message.getChannel(),
+            messageService.sendMessage(message.getChannel(),
                     "Ungültige Dauer angegeben. Mögliche Einheiten sind: s, m, h, d");
             return;
         }
@@ -522,7 +521,7 @@ public class ModStuff extends CommandModule {
             message.addReaction(ReactionEmoji.of("\uD83D\uDD07")); // :mute:
         }
         else {
-            DiscordIO.sendMessage(message.getChannel(), output);
+            messageService.sendMessage(message.getChannel(), output);
             return;
         }
 
@@ -537,7 +536,7 @@ public class ModStuff extends CommandModule {
                     guild.getName()));
             muteMessage.add(String.format("Hinweis: _%s_", customMessage));
 
-            DiscordIO.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
+            messageService.sendMessage(muteUser.getOrCreatePMChannel(), muteMessage);
         }
 
         // Modlog
@@ -558,7 +557,7 @@ public class ModStuff extends CommandModule {
                     muteDuration, muteDurationUnit.name(), muteChannel.mention()));
             modLogMessage.add(String.format("Hinweis: _%s _", customMessage));
 
-            DiscordIO.sendMessage(modLogChannel, modLogMessage);
+            messageService.sendMessage(modLogChannel, modLogMessage);
         }
     }
 
@@ -704,7 +703,7 @@ public class ModStuff extends CommandModule {
                 listCount = Integer.parseInt(listCountArg);
             }
             catch (NumberFormatException e) {
-                DiscordIO.sendMessage(message.getChannel(), ":x: Die angegebene Anzahl ist keine gültige Zahl!");
+                messageService.sendMessage(message.getChannel(), ":x: Die angegebene Anzahl ist keine gültige Zahl!");
                 return;
             }
         }
@@ -732,7 +731,7 @@ public class ModStuff extends CommandModule {
             responseBuilder.withFooterText("Einer oder mehrere Einträge wurden ignoriert, weil die maximale Textlänge erreicht wurde.");
         }
 
-        DiscordIO.sendEmbed(message.getChannel(), responseBuilder.build());
+        messageService.sendEmbed(message.getChannel(), responseBuilder.build());
     }
 
     @EventSubscriber
@@ -771,7 +770,7 @@ public class ModStuff extends CommandModule {
         final IChannel modlogChannel = ChannelUtils.getChannelFromMessage(message, channelParameter);
         if (modlogChannel == null) {
             // No valid channel was specified
-            DiscordIO.sendMessage(message.getChannel(), "Kein gültiger Kanal angegeben!");
+            messageService.sendMessage(message.getChannel(), "Kein gültiger Kanal angegeben!");
             return;
         }
 
@@ -797,7 +796,7 @@ public class ModStuff extends CommandModule {
         final IRole muteRole = GuildUtils.getRoleFromMessage(message, roleParameter);
         if(muteRole == null) {
             // No valid role specified
-            DiscordIO.sendMessage(message.getChannel(), "Keine gültige Rolle angegeben!");
+            messageService.sendMessage(message.getChannel(), "Keine gültige Rolle angegeben!");
             return;
         }
 

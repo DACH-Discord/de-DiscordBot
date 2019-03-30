@@ -1,9 +1,11 @@
 package de.nikos410.discordbot.framework;
 
 import de.nikos410.discordbot.DiscordBot;
+import de.nikos410.discordbot.service.DiscordMessageService;
 
 public abstract class CommandModule {
     protected DiscordBot bot = null;
+    protected DiscordMessageService messageService = null;
 
     /**
      * @return Specify the name of this module that is seen by the public. (e.g. when listing commands)
@@ -30,6 +32,15 @@ public abstract class CommandModule {
      */
     public void setBot(final DiscordBot bot) {
         this.bot = bot;
+    }
+
+    /**
+     * Set the {@link DiscordMessageService} to use.
+     *
+     * @param messageService The implementation to use.
+     */
+    public void setMessageService(final DiscordMessageService messageService) {
+        this.messageService = messageService;
     }
 
     /**

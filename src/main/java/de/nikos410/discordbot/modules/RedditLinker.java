@@ -1,7 +1,6 @@
 package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IMessage;
@@ -36,7 +35,7 @@ public class RedditLinker extends CommandModule {
 
 
         if (matcher.matches()) {
-            DiscordIO.sendMessage(message.getChannel(), "https://www.reddit.com/r/" + matcher.group(1));
+            messageService.sendMessage(message.getChannel(), "https://www.reddit.com/r/" + matcher.group(1));
         }
     }
 }

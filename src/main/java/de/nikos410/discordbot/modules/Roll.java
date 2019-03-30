@@ -2,7 +2,6 @@ package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
@@ -66,15 +65,15 @@ public class Roll extends CommandModule {
                         false
                 );
                 EmbedObject rollObject = outputBuilder.build();
-                DiscordIO.sendEmbed(channel, rollObject);
+                messageService.sendEmbed(channel, rollObject);
             }
             catch (NumberFormatException ex) {
-                DiscordIO.sendMessage(channel, MessageFormat.format("Konnte Eingabe '{0}' nicht verarbeiten." +
+                messageService.sendMessage(channel, MessageFormat.format("Konnte Eingabe '{0}' nicht verarbeiten." +
                         "Bitte sicherstellen, dass sowohl die Würfelanzahl als auch die maximale Augenzahl Integer-Zahlen > 0 sind!", diceArgsInput));
             }
         }
         else {
-            DiscordIO.sendMessage(channel, "Syntax: `roll AnzahlWürfel;[AugenJeWürfel=6]`");
+            messageService.sendMessage(channel, "Syntax: `roll AnzahlWürfel;[AugenJeWürfel=6]`");
         }
     }
 }

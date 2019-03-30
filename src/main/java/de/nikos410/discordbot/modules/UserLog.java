@@ -3,7 +3,6 @@ package de.nikos410.discordbot.modules;
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
 import org.json.JSONObject;
@@ -125,7 +124,7 @@ public class UserLog extends CommandModule {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        DiscordIO.sendEmbed(channel, embedObject);
+        messageService.sendEmbed(channel, embedObject);
     }
 
     private void userLeaveNotify(final IUser user, final IChannel channel) {
@@ -145,7 +144,7 @@ public class UserLog extends CommandModule {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        DiscordIO.sendEmbed(channel, embedObject);
+        messageService.sendEmbed(channel, embedObject);
     }
 
     private void userBanNotify(final IUser user, final IChannel channel) {
@@ -164,7 +163,7 @@ public class UserLog extends CommandModule {
 
         final EmbedObject embedObject = embedBuilder.build();
 
-        DiscordIO.sendEmbed(channel, embedObject);
+        messageService.sendEmbed(channel, embedObject);
     }
 
     @CommandSubscriber(command = "setUserlogChannel", help = "Kanal für Userlog ändern",
@@ -183,7 +182,7 @@ public class UserLog extends CommandModule {
         }
         else {
             // Kein Kanal angegeben
-            DiscordIO.sendMessage(message.getChannel(), "Kein gültiger Kanal angegeben!");
+            messageService.sendMessage(message.getChannel(), "Kein gültiger Kanal angegeben!");
             return;
         }
 
@@ -203,7 +202,7 @@ public class UserLog extends CommandModule {
         final JSONObject guildJSON = getJSONForGuild(guild);
 
         if (!guildJSON.has("channel")) {
-            DiscordIO.sendMessage(message.getChannel(), "Es ist noch kein Kanal hinterlegt!");
+            messageService.sendMessage(message.getChannel(), "Es ist noch kein Kanal hinterlegt!");
         }
 
         guildJSON.put("on", true);
@@ -233,7 +232,7 @@ public class UserLog extends CommandModule {
         final JSONObject guildJSON = getJSONForGuild(guild);
 
         if (!guildJSON.has("channel")) {
-            DiscordIO.sendMessage(message.getChannel(), "Fehler! Kein Kanal hinterlegt!");
+            messageService.sendMessage(message.getChannel(), "Fehler! Kein Kanal hinterlegt!");
             return;
         }
 

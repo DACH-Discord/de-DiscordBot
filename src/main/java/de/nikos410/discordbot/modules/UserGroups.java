@@ -3,7 +3,6 @@ package de.nikos410.discordbot.modules;
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
@@ -57,7 +56,7 @@ public class UserGroups extends CommandModule {
         final JSONObject guildJSON = getJSONForGuild(guild);
 
         if (guildJSON.has(groupName)) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Gruppe existiert bereits!");
+            messageService.sendMessage(message.getChannel(), ":x: Gruppe existiert bereits!");
             return;
         }
 
@@ -71,7 +70,7 @@ public class UserGroups extends CommandModule {
         guildJSON.put(groupName, role.getLongID());
         saveJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Gruppe `%s` erstellt.", groupName));
+        messageService.sendMessage(message.getChannel(), String.format(":white_check_mark: Gruppe `%s` erstellt.", groupName));
         LOG.info(String.format("%s created new group %s.", UserUtils.makeUserString(message.getAuthor(), guild), groupName));
     }
 
@@ -86,7 +85,7 @@ public class UserGroups extends CommandModule {
         final JSONObject guildJSON = getJSONForGuild(guild);
 
         if (!guildJSON.has(groupName)) {
-            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Gruppe `%s` nicht gefunden!", groupName));
+            messageService.sendMessage(message.getChannel(), String.format(":x: Gruppe `%s` nicht gefunden!", groupName));
             return;
         }
 
@@ -96,7 +95,7 @@ public class UserGroups extends CommandModule {
         guildJSON.remove(groupName);
         saveJSON();
 
-        DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Gruppe `%s` entfernt.", groupName));
+        messageService.sendMessage(message.getChannel(), String.format(":white_check_mark: Gruppe `%s` entfernt.", groupName));
         LOG.info(String.format("%s deleted group %s.", UserUtils.makeUserString(message.getAuthor(), guild), groupName));
     }
 
@@ -117,17 +116,17 @@ public class UserGroups extends CommandModule {
 
             if (UserUtils.hasRole(user, role, guild)) {
                 user.removeRole(role);
-                DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Du wurdest aus der Gruppe `%s` entfernt.", groupName));
+                messageService.sendMessage(message.getChannel(), String.format(":white_check_mark: Du wurdest aus der Gruppe `%s` entfernt.", groupName));
                 LOG.info(String.format("%s left group %s.", UserUtils.makeUserString(message.getAuthor(), guild), groupName));
             }
             else {
                 user.addRole(role);
-                DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Du wurdest zur Gruppe `%s` hinzugefügt.", groupName));
+                messageService.sendMessage(message.getChannel(), String.format(":white_check_mark: Du wurdest zur Gruppe `%s` hinzugefügt.", groupName));
                 LOG.info(String.format("%s joined group %s.", UserUtils.makeUserString(message.getAuthor(), guild), groupName));
             }
         }
         else {
-            DiscordIO.sendMessage(message.getChannel(), String.format(":x: Gruppe `%s` nicht gefunden!", groupName));
+            messageService.sendMessage(message.getChannel(), String.format(":x: Gruppe `%s` nicht gefunden!", groupName));
         }
     }
 
@@ -161,7 +160,7 @@ public class UserGroups extends CommandModule {
 
         embedBuilder.withFooterText(String.format("Weise dir mit '%sgroup <Gruppe> selbst eine dieser Gruppen zu'", bot.configJSON.getString("prefix")));
 
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        messageService.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     private JSONObject getJSONForGuild (final IGuild guild) {

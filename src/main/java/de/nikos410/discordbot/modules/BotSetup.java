@@ -5,7 +5,6 @@ import de.nikos410.discordbot.framework.CommandWrapper;
 import de.nikos410.discordbot.framework.ModuleWrapper;
 import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
-import de.nikos410.discordbot.util.discord.DiscordIO;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import org.json.JSONObject;
@@ -57,10 +56,10 @@ public class BotSetup extends CommandModule {
         }
 
         final EmbedObject embedObject = helpEmbedBuilder.build();
-        DiscordIO.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
+        messageService.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
 
         if (!message.getChannel().isPrivate()) {
-            DiscordIO.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+            messageService.sendMessage(message.getChannel(), ":mailbox_with_mail:");
         }
     }
 
@@ -89,7 +88,7 @@ public class BotSetup extends CommandModule {
 
         // User needs to have the permission "Manage Server" or "Admin"
         if (!canUserSetup(message.getAuthor(), guild)) {
-            DiscordIO.sendMessage(channel, "Du benötigst die permission \"Server Verwalten\" oder \"Administrator\" um diesen Befehl zu benutzen");
+            messageService.sendMessage(channel, "Du benötigst die permission \"Server Verwalten\" oder \"Administrator\" um diesen Befehl zu benutzen");
             LOG.info("Missing permissions. Aborting.");
             return;
         }
@@ -98,7 +97,7 @@ public class BotSetup extends CommandModule {
         final IRole role = GuildUtils.getRoleFromMessage(message, roleIDParameter);
         if (role == null) {
             LOG.info("No valid role specified. Aborting.");
-            DiscordIO.sendMessage(channel, ":x: Keine gültige Rolle angegeben!");
+            messageService.sendMessage(channel, ":x: Keine gültige Rolle angegeben!");
             return;
         }
 
@@ -150,7 +149,7 @@ public class BotSetup extends CommandModule {
 
     @CommandSubscriber(command = "shutdown", help = "Schaltet den Bot aus", permissionLevel = PermissionLevel.OWNER)
     public void command_shutdown(final IMessage message) {
-        DiscordIO.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
+        messageService.sendMessage(message.getChannel(), "Ausschalten... :zzz:");
 
         LOG.info("Shutting down modules.");
         bot.getLoadedModules().forEach(module -> module.getInstance().shutdown());
@@ -163,10 +162,10 @@ public class BotSetup extends CommandModule {
         try {
             LOG.info("Changing the username to {}.", newUserName);
             this.bot.getClient().changeUsername(newUserName);
-            DiscordIO.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Username gesetzt: `%s`", newUserName));
+            messageService.sendMessage(message.getChannel(), String.format(":white_check_mark: Neuer Username gesetzt: `%s`", newUserName));
         }
         catch (RateLimitException e) {
-            DiscordIO.errorNotify(e, message.getChannel());
+            messageService.errorNotify(e.toString(), message.getChannel());
             LOG.warn("Ratelimited while trying to change username.");
         }
     }
@@ -204,7 +203,7 @@ public class BotSetup extends CommandModule {
             embedBuilder.appendField("Folgende Module konnten nicht geladen werden:", failedBuilder.toString(), true);
         }
 
-        DiscordIO.sendEmbed(message.getChannel(), embedBuilder.build());
+        messageService.sendEmbed(message.getChannel(), embedBuilder.build());
     }
 
     @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = PermissionLevel.ADMIN)
@@ -212,11 +211,11 @@ public class BotSetup extends CommandModule {
         final ModuleWrapper result = bot.activateModule(moduleName);
 
         if (result == null) {
-            DiscordIO.sendMessage(message.getChannel(),
+            messageService.sendMessage(message.getChannel(),
                     String.format("Fehler! Modul `%s` ist bereits aktiviert oder existiert nicht.", moduleName));
         }
         else if (result.getStatus().equals(ModuleWrapper.ModuleStatus.FAILED)) {
-            DiscordIO.sendMessage(message.getChannel(),
+            messageService.sendMessage(message.getChannel(),
                     String.format("Fehler! Modul `%s` konnte nicht geladen werden!", moduleName));
         }
         else {
@@ -227,14 +226,14 @@ public class BotSetup extends CommandModule {
     @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = PermissionLevel.ADMIN)
     public void command_unloadModule(final IMessage message, final String moduleName) {
         if (moduleName.equalsIgnoreCase("Bot-Setup")) {
-            DiscordIO.sendMessage(message.getChannel(), ":x: Das Bot-Setup Modul kann nicht deaktiviert werden.");
+            messageService.sendMessage(message.getChannel(), ":x: Das Bot-Setup Modul kann nicht deaktiviert werden.");
             return;
         }
 
         final ModuleWrapper result = bot.deactivateModule(moduleName);
 
         if(result == null) {
-            DiscordIO.sendMessage(message.getChannel(),
+            messageService.sendMessage(message.getChannel(),
                     String.format("Fehler! Modul `%s` ist bereits deaktiviert oder existiert nicht.", moduleName));
         }
         else {
