@@ -1,7 +1,6 @@
 package de.nikos410.discordbot.framework;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
 
 /**

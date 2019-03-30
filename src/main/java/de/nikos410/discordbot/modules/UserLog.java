@@ -5,7 +5,6 @@ import de.nikos410.discordbot.framework.PermissionLevel;
 import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.ChannelUtils;
-import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -29,7 +28,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 public class UserLog extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(UserLog.class);

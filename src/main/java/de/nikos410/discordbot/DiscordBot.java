@@ -52,10 +52,10 @@ public class DiscordBot {
     private static final Path ROLES_PATH = Paths.get("data/roles.json");
     public final JSONObject configJSON;
 
-    private final static DiscordMessageService MESSAGE_SERVICE = new DiscordMessageServiceImpl();
+    private static final DiscordMessageService MESSAGE_SERVICE = new DiscordMessageServiceImpl();
 
     private final Map<String, ModuleWrapper> modules = new HashMap<>();
-    private final Map<String, CommandWrapper> commands = new HashMap<>();
+    private final Map<String, CommandWrapper> acticeCommands = new HashMap<>();
 
     private final String prefix;
     private final long ownerID;
@@ -183,7 +183,7 @@ public class DiscordBot {
 
         // Create command map
         this.makeCommandMap();
-        LOG.info("{} module(s) with {} command(s) active.", this.modules.size(), this.commands.size());
+        LOG.info("{} module(s) with {} command(s) active.", this.modules.size(), this.acticeCommands.size());
     }
 
     /**
@@ -347,13 +347,13 @@ public class DiscordBot {
         LOG.debug("Creating command map.");
 
         LOG.debug("Clearing old commands.");
-        this.commands.clear();
+        this.acticeCommands.clear();
 
         final List<ModuleWrapper> loadedModules = getLoadedModules();
 
         for (final ModuleWrapper moduleWrapper : loadedModules) {
             for (final CommandWrapper commandWrapper : moduleWrapper.getCommands()) {
-                this.commands.put(commandWrapper.getName().toLowerCase(), commandWrapper);
+                this.acticeCommands.put(commandWrapper.getName().toLowerCase(), commandWrapper);
             }
         }
     }
@@ -443,11 +443,11 @@ public class DiscordBot {
                 ).toLowerCase();
 
         // Check if a command with that name is known
-        if (!commands.containsKey(commandName)) {
+        if (!acticeCommands.containsKey(commandName)) {
             return;
         }
 
-        final CommandWrapper command = commands.get(commandName);
+        final CommandWrapper command = acticeCommands.get(commandName);
 
         LOG.info("User {} used command {}", UserUtils.makeUserString(message.getAuthor(), message.getGuild()), commandName);
 
@@ -691,7 +691,7 @@ public class DiscordBot {
     }
 
     public Map<String, CommandWrapper> getActiveCommands() {
-        return commands;
+        return acticeCommands;
     }
 
     /**
