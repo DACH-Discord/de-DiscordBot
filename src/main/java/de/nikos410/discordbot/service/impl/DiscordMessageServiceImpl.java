@@ -164,7 +164,7 @@ public class DiscordMessageServiceImpl implements DiscordMessageService {
      */
     public static String sanitizeMessage(final String message) {
         return message
-                .replaceAll("@everyone", "@\\u{200B}everyone")
-                .replaceAll("@here", "@\\u{200B}here");
+                .replaceAll("@everyone", "@\u200Beveryone")
+                .replaceAll("@here", "@\u200Bhere");
     }
 }
