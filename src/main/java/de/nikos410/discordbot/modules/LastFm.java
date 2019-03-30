@@ -3,6 +3,7 @@ package de.nikos410.discordbot.modules;
 import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.io.IOUtil;
 import de.umass.lastfm.*;
@@ -86,8 +87,10 @@ public class LastFm extends CommandModule {
         offsets5x5 = new int[]{5, 340, 58, 49};
     }
 
-    @CommandSubscriber(command = "lastFmSetApiKey", help = "Last.fm API-Key setzen - nur für Admins", pmAllowed = false, permissionLevel = PermissionLevel.ADMIN)
-    public void command_lastFmSetApiKey(final IMessage message, final String key) {
+    @CommandSubscriber(command = "lastFmSetApiKey", help = "Last.fm API-Key setzen.", pmAllowed = false, permissionLevel = PermissionLevel.ADMIN)
+    public void command_lastFmSetApiKey(final IMessage message,
+                                        @CommandParameter(name = "Key", help = "Der Last.fm API-Key der benutzt werden soll.")
+                                        final String key) {
         lastFmJSON.put("apiKey", key);
         saveJSON();
 
@@ -96,15 +99,19 @@ public class LastFm extends CommandModule {
         messageService.sendMessage(message.getChannel(), ":white_check_mark: Last.fm API-Key gesetzt.");
     }
 
-    @CommandSubscriber(command = "lastfm", help = "Last.fm Modul - Parameter 'help' für Hilfe", pmAllowed = false)
-    public void command_lastfm(final IMessage message, final String argString) {
+    @CommandSubscriber(command = "lastfm", help = "Last.fm Modul - Parameter 'help' für Hilfe", pmAllowed = false, ignoreParameterCount = true)
+    public void command_lastfm(final IMessage message,
+                               @CommandParameter(name = "Funktion", help = "Die Funktion, die benutzt werden soll. 'help' um alle anzuzeigen.")
+                               final String function,
+                               @CommandParameter(name = "Parameter", help = "Die Parameter für die Funktion, die benutzt wird.")
+                               final String arguments) {
         if (!apiKey.equals("")) {
-            final String[] args = argString.trim().split(" ");
+            final String[] args = arguments.trim().split(" ");
 
-            switch (args[0]) {
+            switch (function) {
                 case "set":
                     try {
-                        setUsername(message, args[1]);
+                        setUsername(message, args[0]);
                     } catch (ArrayIndexOutOfBoundsException ex) {
                         messageService.sendMessage(message.getChannel(), String.format(":x: Keinen Last.fm-Usernamen angegeben. '%slastfm help' für Hilfe.", botPrefix));
                     }
@@ -135,7 +142,7 @@ public class LastFm extends CommandModule {
                     break;
                 case "collage":
                     try {
-                        sendCollage(message, args[1], args[2]);
+                        sendCollage(message, args[0], args[1]);
                     } catch (ArrayIndexOutOfBoundsException ex) {
                         messageService.sendMessage(message.getChannel(), String.format(":x: Falsche Parameter angegeben. '%slastfm help' für Hilfe.", botPrefix));
                     }

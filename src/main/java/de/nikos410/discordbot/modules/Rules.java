@@ -3,6 +3,7 @@ package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
@@ -130,7 +131,9 @@ public class Rules extends CommandModule {
     }
 
     @CommandSubscriber(command = "setWelcome", help = "Begrüßungsnachricht ändern", permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_setWelcome(final IMessage message, final String welcomeMessage) {
+    public void command_setWelcome(final IMessage message,
+                                   @CommandParameter(name = "Nachricht", help = "Die Begrüßungsnachricht.")
+                                   final String welcomeMessage) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -142,7 +145,9 @@ public class Rules extends CommandModule {
     }
 
     @CommandSubscriber(command = "setRegeln", help = "Regeln (deutsch) ändern", permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_setRegeln(final IMessage message, final String rulesDE) {
+    public void command_setRegeln(final IMessage message,
+                                  @CommandParameter(name = "Regeln", help = "Die Regeln für den Server. (Auf Deutsch)")
+                                  final String rulesDE) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -155,7 +160,9 @@ public class Rules extends CommandModule {
     }
 
     @CommandSubscriber(command = "setRules", help = "Regeln (englisch) ändern", permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_setRules(final IMessage message, final String rulesEN) {
+    public void command_setRules(final IMessage message,
+                                 @CommandParameter(name = "Regeln", help = "Die Regeln für den Server. (Auf Englisch)")
+                                 final String rulesEN) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -169,7 +176,9 @@ public class Rules extends CommandModule {
 
     @CommandSubscriber(command = "setFooter", help = "Footer der Begüßungsnachricht ändern.",
             permissionLevel = PermissionLevel.ADMIN, pmAllowed = false)
-    public void command_setFooter(final IMessage message, final String footer) {
+    public void command_setFooter(final IMessage message,
+                                  @CommandParameter(name = "Footer", help = "Der Text, der am Ende der Begrüßung angezeigt werden soll.")
+                                  final String footer) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 

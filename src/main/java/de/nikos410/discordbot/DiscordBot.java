@@ -5,6 +5,7 @@ import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.CommandWrapper;
 import de.nikos410.discordbot.framework.ModuleWrapper;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.modules.BotSetup;
 import de.nikos410.discordbot.service.DiscordMessageService;
@@ -28,6 +29,7 @@ import sx.blah.discord.util.DiscordException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -301,8 +303,28 @@ public class DiscordBot {
 
             final int parameterCount = method.getParameterCount()-1;
 
+            // Read parameter help from annotations
+            final Map<String, String> parametersDescriptions = new HashMap<>();
+            for (Parameter parameter : Arrays.stream(method.getParameters())
+                    .filter(m -> m.getType() == String.class)
+                    .collect(Collectors.toList())) {
+                    final CommandParameter[] commandParameterAnnotations = parameter.getAnnotationsByType(CommandParameter.class);
+
+                    if (commandParameterAnnotations.length < 1) {
+                        LOG.warn(String.format("A parameter without a @CommandParameter annotation was found for the method %s in class %s. The help for this command will be incomplete.",
+                                method.getName(), method.getDeclaringClass()));
+                    }
+                    else if (commandParameterAnnotations.length > 1) {
+                        LOG.warn(String.format("Multiple @CommandParameter annotations were found for the method %s in class %s",
+                                method.getName(), method.getDeclaringClass()));
+                    }
+                    else {
+                        parametersDescriptions.put(commandParameterAnnotations[0].name(), commandParameterAnnotations[0].help());
+                    }
+            }
+
             if ((parameterCount >= 0 && parameterCount <= 5) || ignoreParameterCount) {
-                final CommandWrapper commandWrapper = new CommandWrapper(commandName, commandHelp, moduleWrapper, method, pmAllowed,
+                final CommandWrapper commandWrapper = new CommandWrapper(commandName, commandHelp, parametersDescriptions, moduleWrapper, method, pmAllowed,
                         permissionLevel, parameterCount, passContext, ignoreParameterCount);
 
                 commands.add(commandWrapper);
@@ -666,6 +688,10 @@ public class DiscordBot {
                 .stream()
                 .filter(module -> module.getStatus().equals(ModuleStatus.FAILED))
                 .collect(Collectors.toList());
+    }
+
+    public Map<String, CommandWrapper> getActiveCommands() {
+        return commands;
     }
 
     /**

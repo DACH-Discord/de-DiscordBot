@@ -1,6 +1,7 @@
 package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import sx.blah.discord.handle.obj.IGuild;
@@ -49,7 +50,9 @@ public class GeneralCommands extends CommandModule {
     }
 
     @CommandSubscriber(command = "quote", help = "Zitiert die Nachricht mit der angegebenen ID.", pmAllowed = false, passContext = false)
-    public void command_quote(final IMessage commandMessage, final String id) {
+    public void command_quote(final IMessage commandMessage,
+                              @CommandParameter(name = "ID", help = "Die ID der Nachricht, die zitiert werden soll.")
+                              final String id) {
         if (id.isEmpty()) {
             messageService.sendMessage(commandMessage.getChannel(), "Keine ID angegeben!");
             return;

@@ -2,7 +2,9 @@ package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
+import de.nikos410.discordbot.util.discord.ChannelUtils;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
 import org.json.JSONObject;
@@ -168,23 +170,10 @@ public class UserLog extends CommandModule {
 
     @CommandSubscriber(command = "setUserlogChannel", help = "Kanal für Userlog ändern",
             permissionLevel = PermissionLevel.ADMIN)
-    public void command_setUserlogChannel(final IMessage message, final String channel) {
-        final IChannel modlogChannel;
-        final List<IChannel> channelMentions = message.getChannelMentions();
-
-        if (GuildUtils.channelExists(message.getGuild(), channel)) {
-            // Kanal ID wurde als Parameter angegeben
-            modlogChannel = message.getGuild().getChannelByID(Long.parseLong(channel));
-        }
-        else if (channelMentions.size() == 1) {
-            // ein Kanal wurde erwähnt
-            modlogChannel = channelMentions.get(0);
-        }
-        else {
-            // Kein Kanal angegeben
-            messageService.sendMessage(message.getChannel(), "Kein gültiger Kanal angegeben!");
-            return;
-        }
+    public void command_setUserlogChannel(final IMessage message,
+                                          @CommandParameter(name = "Kanal", help = "Der Kanal der für den Userlog benutzt werden soll als ID oder #mention.")
+                                          final String channel) {
+        final IChannel modlogChannel = ChannelUtils.getChannelFromMessage(message, channel);
 
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);

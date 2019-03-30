@@ -2,6 +2,7 @@ package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
@@ -51,7 +52,9 @@ public class UserGroups extends CommandModule {
 
     @CommandSubscriber(command = "createGroup", help = "Neue Gruppe erstellen", pmAllowed = false,
             permissionLevel = PermissionLevel.MODERATOR)
-    public void command_createGroup(final IMessage message, final String groupName) {
+    public void command_createGroup(final IMessage message,
+                                    @CommandParameter(name = "Gruppe", help = "Der Name der Gruppe.")
+                                    final String groupName) {
         final IGuild guild = message.getGuild();
         final JSONObject guildJSON = getJSONForGuild(guild);
 
@@ -76,7 +79,9 @@ public class UserGroups extends CommandModule {
 
     @CommandSubscriber(command = "removeGroup", help = "Gruppe entfernen", pmAllowed = false,
             permissionLevel = PermissionLevel.MODERATOR)
-    public void command_removeGroup(final IMessage message, final String groupName) {
+    public void command_removeGroup(final IMessage message,
+                                    @CommandParameter(name = "Gruppe", help = "Der Name der Gruppe.")
+                                    final String groupName) {
         final IGuild guild = message.getGuild();
 
         // Validate group first
@@ -99,8 +104,10 @@ public class UserGroups extends CommandModule {
         LOG.info(String.format("%s deleted group %s.", UserUtils.makeUserString(message.getAuthor(), guild), groupName));
     }
 
-    @CommandSubscriber(command = "group", help = "Sich selbst eine Rolle zuweisen / wieder entfernen", pmAllowed = false)
-    public void command_group(final IMessage message, final String groupName) {
+    @CommandSubscriber(command = "group", help = "Einer Gruppe beitreten / verlassen", pmAllowed = false)
+    public void command_group(final IMessage message,
+                              @CommandParameter(name = "Gruppe", help = "Der Name der Gruppe.")
+                              final String groupName) {
         final IGuild guild = message.getGuild();
 
         // Validate group first

@@ -2,6 +2,7 @@ package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.UserUtils;
 import de.nikos410.discordbot.util.io.IOUtil;
@@ -67,7 +68,9 @@ public class GameStats extends CommandModule {
     }
 
     @CommandSubscriber(command = "playing", help = "Zeigt alle Nutzer die das angegebene Spiel spielen", pmAllowed = false)
-    public void command_playing(final IMessage message, final String game) {
+    public void command_playing(final IMessage message,
+                                @CommandParameter(name = "Spiel", help = "Das spiel dessen Spieler angezeigt werden sollen.")
+                                final String game) {
         final IGuild guild = message.getGuild();
 
         // Similar games

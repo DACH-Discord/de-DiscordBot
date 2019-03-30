@@ -4,6 +4,7 @@ import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.CommandWrapper;
 import de.nikos410.discordbot.framework.ModuleWrapper;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.discord.GuildUtils;
 import de.nikos410.discordbot.util.discord.UserUtils;
@@ -16,8 +17,7 @@ import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
 
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 
 public class BotSetup extends CommandModule {
     private static final Logger LOG = LoggerFactory.getLogger(BotSetup.class);
@@ -32,17 +32,36 @@ public class BotSetup extends CommandModule {
         return "Mit diesem Modul kann der Bot konfiguriert und für einen Server eingerichtet werden.";
     }
 
-    @CommandSubscriber(command = "help", help = "Zeigt diese Hilfe an")
-    public void command_help(final IMessage message) {
-        final EmbedBuilder helpEmbedBuilder = new EmbedBuilder();
-        final List<ModuleWrapper> loadedModules = bot.getLoadedModules();
+    @CommandSubscriber(command = "help", help = "Zeigt diese Hilfe an", ignoreParameterCount = true, passContext = false)
+    public void command_help(final IMessage message,
+                             @CommandParameter(name = "Befehl", help = "Der Befehl, für den die Hilfe angezeigt werden soll. Wenn leer, werden alle Befehle aufgelistet.")
+                             final String subject) {
+        // Gobal help
+        if (subject == null || subject.isEmpty()) {
+            messageService.sendEmbed(message.getAuthor().getOrCreatePMChannel(), globalHelp(message.getAuthor(), message.getGuild()));
+            if (!message.getChannel().isPrivate()) {
+                messageService.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+            }
+        }
+        else {
+            final Optional<EmbedObject> helpEmbed = helpForCommand(subject, message.getAuthor(), message.getGuild());
+            if (helpEmbed.isPresent()) {
+                messageService.sendEmbed(message.getChannel(), helpEmbed.get());
+            }
+            else {
+                messageService.sendMessage(message.getChannel(), ":x: Befehl nicht gefunden.");
+            }
+        }
+    }
 
-        for (ModuleWrapper module : loadedModules) {
+    private EmbedObject globalHelp(final IUser user, final IGuild guild) {
+        final EmbedBuilder helpEmbedBuilder = new EmbedBuilder();
+        for (ModuleWrapper module : bot.getLoadedModules()) {
             final StringBuilder moduleHelpBuilder = new StringBuilder();
 
             for (CommandWrapper command : module.getCommands()) {
                 // Only list commands that are available to that user
-                if (bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel()
+                if (bot.getUserPermissionLevel(user, guild).getLevel()
                         >= command.getPermissionLevel().getLevel()) {
 
                     moduleHelpBuilder.append(String.format("`%s` - %s%n", command.getName(), command.getHelp()));
@@ -55,21 +74,55 @@ public class BotSetup extends CommandModule {
             }
         }
 
-        final EmbedObject embedObject = helpEmbedBuilder.build();
-        messageService.sendEmbed(message.getAuthor().getOrCreatePMChannel(), embedObject);
+        return helpEmbedBuilder.build();
+    }
 
-        if (!message.getChannel().isPrivate()) {
-            messageService.sendMessage(message.getChannel(), ":mailbox_with_mail:");
+    private Optional<EmbedObject> helpForCommand(final String commandName, final IUser user, final IGuild guild) {
+        final Map<String, CommandWrapper> activeCommands = bot.getActiveCommands();
+        if (!activeCommands.containsKey(commandName.toLowerCase())) {
+            return Optional.empty();
         }
+        final CommandWrapper command = activeCommands.get(commandName.toLowerCase());
+
+        if (bot.getUserPermissionLevel(user, guild).getLevel()
+                < command.getPermissionLevel().getLevel()) {
+            return Optional.empty();
+        }
+
+        final EmbedBuilder helpEmbedBuilder = new EmbedBuilder();
+
+        helpEmbedBuilder.appendField(String.format("Befehl _%s_", command.getName()),
+                command.getHelp(), false);
+
+        final StringBuilder parameterBuilder = new StringBuilder();
+        int i = 1;
+        for (Map.Entry parameter : command.getParameterDescriptions().entrySet()) {
+            parameterBuilder.append(String.format("%d. __%s__ - %s", i, parameter.getKey(), parameter.getValue()));
+
+            if (parameterBuilder.length() > 0) {
+                parameterBuilder.append('\n');
+            }
+
+            i++;
+        }
+        if (parameterBuilder.length() > 0) {
+            helpEmbedBuilder.appendField("Parameter", parameterBuilder.toString(), false);
+        }
+
+        return Optional.of(helpEmbedBuilder.build());
     }
 
     @CommandSubscriber(command = "setModRole", help = "Moderator-Rolle setzen", pmAllowed = false, passContext = false, ignoreParameterCount = true)
-    public void command_setModRole (final IMessage message, final String roleIDParameter) {
+    public void command_setModRole (final IMessage message,
+                                    @CommandParameter(name = "Rolle", help = "Die Moderator-Rolle als ID oder @mention.")
+                                    final String roleIDParameter) {
         setRole(message, roleIDParameter, "modRole");
     }
 
     @CommandSubscriber(command = "setAdminRole", help = "Admin-Rolle setzen", pmAllowed = false, passContext = false, ignoreParameterCount = true)
-    public void command_setAdminRole (final IMessage message, final String roleIDParameter) {
+    public void command_setAdminRole (final IMessage message,
+                                      @CommandParameter(name = "Rolle", help = "Die Admin-Rolle als ID oder @mention.")
+                                      final String roleIDParameter) {
         setRole(message, roleIDParameter, "adminRole");
     }
 
@@ -158,7 +211,9 @@ public class BotSetup extends CommandModule {
     }
 
     @CommandSubscriber(command = "setbotname", help = "Nutzernamen des Bots ändern", permissionLevel = PermissionLevel.OWNER)
-    public void command_setUsername(final IMessage message, final String newUserName) {
+    public void command_setUsername(final IMessage message,
+                                    @CommandParameter(name = "Name", help = "Der neue Username.")
+                                    final String newUserName) {
         try {
             LOG.info("Changing the username to {}.", newUserName);
             this.bot.getClient().changeUsername(newUserName);
@@ -207,7 +262,9 @@ public class BotSetup extends CommandModule {
     }
 
     @CommandSubscriber(command = "loadmodule", help = "Ein Modul aktivieren", permissionLevel = PermissionLevel.ADMIN)
-    public void command_loadModule(final IMessage message, final String moduleName) {
+    public void command_loadModule(final IMessage message,
+                                   @CommandParameter(name = "Modul", help = "Das Modul das aktiviert werden soll.")
+                                   final String moduleName) {
         final ModuleWrapper result = bot.activateModule(moduleName);
 
         if (result == null) {
@@ -224,7 +281,9 @@ public class BotSetup extends CommandModule {
     }
 
     @CommandSubscriber(command = "unloadmodule", help = "Ein Modul deaktivieren", permissionLevel = PermissionLevel.ADMIN)
-    public void command_unloadModule(final IMessage message, final String moduleName) {
+    public void command_unloadModule(final IMessage message,
+                                     @CommandParameter(name = "Modul", help = "Das Modul das deaktiviert werden soll.")
+                                     final String moduleName) {
         if (moduleName.equalsIgnoreCase("Bot-Setup")) {
             messageService.sendMessage(message.getChannel(), ":x: Das Bot-Setup Modul kann nicht deaktiviert werden.");
             return;

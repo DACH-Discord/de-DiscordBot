@@ -3,6 +3,7 @@ package de.nikos410.discordbot.modules;
 import de.nikos410.discordbot.exception.InitializationException;
 import de.nikos410.discordbot.framework.CommandModule;
 import de.nikos410.discordbot.framework.PermissionLevel;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import de.nikos410.discordbot.util.CommandUtils;
 import de.nikos410.discordbot.util.discord.ChannelUtils;
@@ -113,7 +114,11 @@ public class ModStuff extends CommandModule {
 
     @CommandSubscriber(command = "kick", help = "Kickt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false, ignoreParameterCount = true)
-    public void command_kick(final IMessage message, final String userString, String customMessage) {
+    public void command_kick(final IMessage message,
+                             @CommandParameter(name = "Nutzer", help = "Nutzer der gekickt werden soll als ID oder @mention.")
+                             final String userString,
+                             @CommandParameter(name = "Nachricht", help = "Nachricht, die an den Nutzer und in den Modlog geschickt wird.")
+                             String customMessage) {
         // Only Moderators and upwards are allowed to use the command.
         // If a user is not a moderator they will be kicked instead.
         if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel() >=
@@ -177,7 +182,11 @@ public class ModStuff extends CommandModule {
 
     @CommandSubscriber(command = "ban", help = "Bannt den angegebenen Nutzer mit der angegeben Nachricht vom Server",
             pmAllowed = false, ignoreParameterCount = true)
-    public void command_ban(final IMessage message, final String userString, String customMessage) {
+    public void command_ban(final IMessage message,
+                            @CommandParameter(name = "Nutzer", help = "Nutzer der gebannt werden soll als ID oder @mention.")
+                            final String userString,
+                            @CommandParameter(name = "Nachricht", help = "Nachricht, die an den Nutzer und in den Modlog geschickt wird.")
+                            String customMessage) {
         // Only Moderators and upwards are allowed to use the command.
         // If a user is not a moderator they will be kicked instead.
         if (this.bot.getUserPermissionLevel(message.getAuthor(), message.getGuild()).getLevel() >=
@@ -253,7 +262,11 @@ public class ModStuff extends CommandModule {
 
     @CommandSubscriber(command = "mute", help = "Einen Nutzer für eine bestimmte Zeit muten", pmAllowed = false,
             permissionLevel = PermissionLevel.MODERATOR, ignoreParameterCount = true)
-    public void command_mute(final IMessage message, final String userString, final String muteDurationInput) {
+    public void command_mute(final IMessage message,
+                             @CommandParameter(name = "Nutzer", help = "Nutzer der gemuted werden soll als ID oder @mention.")
+                             final String userString,
+                             @CommandParameter(name = "Dauer", help = "Die Dauer, für den der Mute anhalten soll. Mögliche Einheiten: s, m, h, d")
+                             final String muteDurationInput) {
         // Find the user to mute
         final IUser muteUser = UserUtils.getUserFromMessage(message, userString);
         if (muteUser == null) {
@@ -325,7 +338,9 @@ public class ModStuff extends CommandModule {
 
     @CommandSubscriber(command = "selfmute", help = "Schalte dich selber für die angegebene Zeit stumm",
             pmAllowed = false)
-    public void command_selfmute(final IMessage message, final String muteDurationInput) {
+    public void command_selfmute(final IMessage message,
+                                 @CommandParameter(name = "Dauer", help = "Die Dauer, für den der Mute anhalten soll. Mögliche Einheiten: s, m, h, d")
+                                 final String muteDurationInput) {
         // The author of the message will be muted
         final IUser muteUser = message.getAuthor();
 
@@ -354,7 +369,9 @@ public class ModStuff extends CommandModule {
 
     @CommandSubscriber(command = "unmute", help = "Nutzer entmuten", pmAllowed = false,
             permissionLevel = PermissionLevel.MODERATOR)
-    public void command_unmute(final IMessage message, final String userString) {
+    public void command_unmute(final IMessage message,
+                               @CommandParameter(name = "Nutzer", help = "Nutzer der entmuted werden soll als ID oder @mention.")
+                               final String userString) {
         final IUser muteUser = UserUtils.getUserFromMessage(message, userString);
 
         unmuteUserForGuild(muteUser, message.getGuild(), message.getChannel());
@@ -483,7 +500,12 @@ public class ModStuff extends CommandModule {
 
     @CommandSubscriber(command = "channelMute", help = "Nutzer in einem Channel für eine bestimmte Zeit stummschalten",
             pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR)
-    public void command_channelMute(final IMessage message, final String userInput, final String channelInput,
+    public void command_channelMute(final IMessage message,
+                                    @CommandParameter(name = "Nutzer", help = "Nutzer der gemuted werden soll als ID oder @mention.")
+                                    final String userInput,
+                                    @CommandParameter(name = "Kanal", help = "Der Kanal für den der Mute gelten soll als ID oder #mention.")
+                                    final String channelInput,
+                                    @CommandParameter(name = "Dauer", help = "Die Dauer, für den der Mute anhalten soll. Mögliche Einheiten: s, m, h, d")
                                     final String muteDurationInput) {
         // Parse user
         final IUser muteUser = UserUtils.getUserFromMessage(message, userInput);
@@ -690,9 +712,11 @@ public class ModStuff extends CommandModule {
         return false;
     }
 
-    @CommandSubscriber(command = "voicelog", help = "Die letzten 20 Aktivitäten in Sprachkanälen auflisten",
+    @CommandSubscriber(command = "voicelog", help = "Die letzten Aktivitäten in Sprachkanälen auflisten",
     pmAllowed = false, permissionLevel = PermissionLevel.MODERATOR, ignoreParameterCount = true)
-    public void command_voicelog(final IMessage message, final String listCountArg) {
+    public void command_voicelog(final IMessage message,
+                                 @CommandParameter(name = "Anzahl", help = "Die Anzahl an Einträgen, die angezeigt werden sollen. (Standard 20)")
+                                 final String listCountArg) {
         final int listCount;
 
         if (listCountArg == null) {
@@ -766,7 +790,9 @@ public class ModStuff extends CommandModule {
 
     @CommandSubscriber(command = "setModlogChannel", help = "Kanal in dem die Modlog Nachrichten gesendet werden einstellen",
             pmAllowed = false, passContext = false, permissionLevel = PermissionLevel.ADMIN)
-    public void command_setModlogChannel(final IMessage message, final String channelParameter) {
+    public void command_setModlogChannel(final IMessage message,
+                                         @CommandParameter(name = "Kanal", help = "Der Kanal in den die Nachrichten gesendet werden sollen.")
+                                         final String channelParameter) {
         final IChannel modlogChannel = ChannelUtils.getChannelFromMessage(message, channelParameter);
         if (modlogChannel == null) {
             // No valid channel was specified
@@ -792,7 +818,9 @@ public class ModStuff extends CommandModule {
 
     @CommandSubscriber(command = "setMuteRole", help = "Mute Rolle einstellen",
             pmAllowed = false, passContext = false, permissionLevel = PermissionLevel.ADMIN)
-    public void command_setMuteRole(final IMessage message, final String roleParameter) {
+    public void command_setMuteRole(final IMessage message,
+                                    @CommandParameter(name = "Rolle", help = "Der Rolle die benutzt werden soll um Nutzer zu muten als ID oder @mention.")
+                                    final String roleParameter) {
         final IRole muteRole = GuildUtils.getRoleFromMessage(message, roleParameter);
         if(muteRole == null) {
             // No valid role specified

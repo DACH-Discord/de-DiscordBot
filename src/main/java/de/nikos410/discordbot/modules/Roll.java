@@ -1,6 +1,7 @@
 package de.nikos410.discordbot.modules;
 
 import de.nikos410.discordbot.framework.CommandModule;
+import de.nikos410.discordbot.framework.annotations.CommandParameter;
 import de.nikos410.discordbot.framework.annotations.CommandSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;
@@ -37,8 +38,10 @@ public class Roll extends CommandModule {
         return true;
     }
 
-    @CommandSubscriber(command = "roll",help = "Würfeln. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`")
-    public void command_roll(final IMessage commandMessage, final String diceArgsInput) {
+    @CommandSubscriber(command = "roll",help = "Würfeln.")
+    public void command_roll(final IMessage commandMessage,
+                             @CommandParameter(name = "Würfeleigenschaften", help = "Die Anzahl an Würfeln und Augenzahl. Syntax: `roll AnzahlWuerfel;[AugenJeWuerfel=6]`")
+                             final String diceArgsInput) {
         final IChannel channel = commandMessage.getChannel();
 
         final EmbedBuilder outputBuilder = new EmbedBuilder();
